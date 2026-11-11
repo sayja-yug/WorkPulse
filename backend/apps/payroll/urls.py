@@ -20,3 +20,4 @@ router.register(r'payments', SalaryPaymentViewSet, basename='salary-payment')
 urlpatterns = [
     path('', include(router.urls)),
 ]
+

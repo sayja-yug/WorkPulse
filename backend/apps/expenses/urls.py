@@ -11,3 +11,4 @@ urlpatterns = [
     path('balance/', CashbookBalanceView.as_view(), name='cashbook-balance'),
     path('', include(router.urls)),
 ]
+

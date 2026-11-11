@@ -56,3 +56,4 @@ class LeaveTransactionViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         business = getattr(self.request, 'business', None)
         return LeaveTransaction.objects.filter(employee__business=business)
+

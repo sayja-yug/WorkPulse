@@ -71,3 +71,4 @@ erDiagram
 2. **Attendance Lock:** `attendance_records` have a unique constraint on `(employee_id, date)`.
 3. **Leave Ledger:** `leave_balances` are strictly unique per `(employee_id, leave_type_id, year)`.
 4. **Payroll Item:** `payroll_items` are unique per `(payroll_run_id, employee_id)` and lock calculation historical state.
+

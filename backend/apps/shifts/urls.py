@@ -9,3 +9,4 @@ router.register(r'', ShiftViewSet, basename='shift')
 urlpatterns = [
     path('', include(router.urls)),
 ]
+

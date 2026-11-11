@@ -20,3 +20,4 @@ urlpatterns = [
     path('check-out/', CheckOutView.as_view(), name='attendance-check-out'),
     path('', include(router.urls)),
 ]
+

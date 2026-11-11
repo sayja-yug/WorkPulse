@@ -85,3 +85,4 @@ class SalaryPaymentSerializer(serializers.ModelSerializer):
         model = SalaryPayment
         fields = '__all__'
         read_only_fields = ['id', 'paid_by', 'created_at', 'updated_at']
+

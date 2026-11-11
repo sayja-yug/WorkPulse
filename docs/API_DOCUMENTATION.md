@@ -93,3 +93,4 @@ X-Business-ID: <business_uuid>
 | **GET** | `/api/v1/notifications/` | List user in-app notifications | Authenticated |
 | **PATCH** | `/api/v1/notifications/{id}/read/` | Mark notification as read | Authenticated |
 | **GET** | `/api/v1/subscriptions/current/` | Active plan tier & quota limits | `subscription.view` |
+

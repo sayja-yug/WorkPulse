@@ -23,3 +23,4 @@ class LoanRepaymentAdmin(admin.ModelAdmin):
 class ReimbursementAdmin(admin.ModelAdmin):
     list_display = ['employee', 'amount', 'category', 'status', 'submitted_at']
     list_filter = ['status']
+

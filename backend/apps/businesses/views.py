@@ -71,3 +71,4 @@ class BusinessViewSet(viewsets.ModelViewSet):
             'total_employees': business.employees.count()
         }
         return Response({'success': True, 'data': stats})
+

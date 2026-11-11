@@ -76,3 +76,4 @@ class BusinessMembership(BaseModel):
     def __str__(self):
         role_label = 'Owner' if self.is_owner else 'Member'
         return f'{self.user.email} -> {self.business.name} ({role_label})'
+

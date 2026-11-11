@@ -19,3 +19,4 @@ class DepartmentAdmin(admin.ModelAdmin):
 class DesignationAdmin(admin.ModelAdmin):
     list_display = ['name', 'level', 'business', 'is_active']
     search_fields = ['name', 'business__name']
+

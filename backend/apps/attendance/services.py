@@ -147,3 +147,4 @@ class AttendanceService:
             'leave': qs.filter(status__in=[AttendanceRecord.Status.PAID_LEAVE, AttendanceRecord.Status.UNPAID_LEAVE]).count(),
             'total_marked': qs.count()
         }
+

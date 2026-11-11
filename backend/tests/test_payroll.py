@@ -54,3 +54,4 @@ class TestPayrollEngine:
         assert approved_run.status == PayrollRun.Status.APPROVED
         assert approved_run.locked_at is not None
         assert approved_run.items.first().payslip is not None
+

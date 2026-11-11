@@ -46,3 +46,4 @@ class PayslipAdmin(admin.ModelAdmin):
 @admin.register(SalaryPayment)
 class SalaryPaymentAdmin(admin.ModelAdmin):
     list_display = ['employee', 'amount', 'payment_mode', 'payment_date', 'status']
+

@@ -37,6 +37,23 @@ class HasPermission(permissions.BasePermission):
         # Check business context
         business = getattr(request, 'business', None)
         if not business:
+            business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
+            from apps.businesses.models import BusinessMembership
+            if business_id:
+                membership = BusinessMembership.objects.filter(
+                    user=request.user,
+                    business_id=business_id,
+                    is_active=True,
+                ).select_related('business').first()
+                if membership:
+                    request.business = membership.business
+                    request.business_membership = membership
+                    business = membership.business
+            elif getattr(request.user, 'active_business', None):
+                business = request.user.active_business
+                request.business = business
+
+        if not business:
             return False
 
         # Check permissions
@@ -87,6 +104,23 @@ class IsBusinessOwner(permissions.BasePermission):
             return False
         business = getattr(request, 'business', None)
         if not business:
+            business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
+            from apps.businesses.models import BusinessMembership
+            if business_id:
+                membership = BusinessMembership.objects.filter(
+                    user=request.user,
+                    business_id=business_id,
+                    is_active=True,
+                ).select_related('business').first()
+                if membership:
+                    request.business = membership.business
+                    request.business_membership = membership
+                    business = membership.business
+            elif getattr(request.user, 'active_business', None):
+                business = request.user.active_business
+                request.business = business
+
+        if not business:
             return False
         from apps.businesses.models import BusinessMembership
         return BusinessMembership.objects.filter(
@@ -106,6 +140,23 @@ class IsBusinessMember(permissions.BasePermission):
         if request.user.is_superuser:
             return True
         business = getattr(request, 'business', None)
+        if not business:
+            business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
+            from apps.businesses.models import BusinessMembership
+            if business_id:
+                membership = BusinessMembership.objects.filter(
+                    user=request.user,
+                    business_id=business_id,
+                    is_active=True,
+                ).select_related('business').first()
+                if membership:
+                    request.business = membership.business
+                    request.business_membership = membership
+                    business = membership.business
+            elif getattr(request.user, 'active_business', None):
+                business = request.user.active_business
+                request.business = business
+
         if not business:
             return False
         from apps.businesses.models import BusinessMembership
@@ -142,6 +193,23 @@ class IsSelfOrHasPermission(permissions.BasePermission):
 
         business = getattr(request, 'business', None)
         if not business:
+            business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
+            from apps.businesses.models import BusinessMembership
+            if business_id:
+                membership = BusinessMembership.objects.filter(
+                    user=request.user,
+                    business_id=business_id,
+                    is_active=True,
+                ).select_related('business').first()
+                if membership:
+                    request.business = membership.business
+                    request.business_membership = membership
+                    business = membership.business
+            elif getattr(request.user, 'active_business', None):
+                business = request.user.active_business
+                request.business = business
+
+        if not business:
             return False
 
         from apps.accounts.services import PermissionService
@@ -156,6 +224,23 @@ class TenantAccessPermission(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         business = getattr(request, 'business', None)
+        if not business:
+            business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
+            from apps.businesses.models import BusinessMembership
+            if business_id:
+                membership = BusinessMembership.objects.filter(
+                    user=request.user,
+                    business_id=business_id,
+                    is_active=True,
+                ).select_related('business').first()
+                if membership:
+                    request.business = membership.business
+                    request.business_membership = membership
+                    business = membership.business
+            elif getattr(request.user, 'active_business', None):
+                business = request.user.active_business
+                request.business = business
+
         if not business:
             return False
 

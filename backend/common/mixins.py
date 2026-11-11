@@ -14,6 +14,17 @@ class TenantQuerySetMixin:
     def get_queryset(self):
         qs = super().get_queryset()
         business = getattr(self.request, 'business', None)
+        if not business:
+            business_id = self.request.headers.get('X-Business-ID') or self.request.META.get('HTTP_X_BUSINESS_ID')
+            if business_id:
+                from apps.businesses.models import Business
+                business = Business.objects.filter(id=business_id).first()
+                if business:
+                    self.request.business = business
+            elif getattr(self.request.user, 'active_business', None):
+                business = self.request.user.active_business
+                self.request.business = business
+
         if business and not self.request.user.is_superuser:
             qs = qs.filter(business=business)
         return qs

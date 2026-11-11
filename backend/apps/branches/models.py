@@ -78,3 +78,4 @@ class Designation(TenantModel):
 
     def __str__(self):
         return self.name
+

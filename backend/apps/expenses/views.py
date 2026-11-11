@@ -65,3 +65,4 @@ class CashbookBalanceView(views.APIView):
         business = getattr(request, 'business', None)
         balance = CashbookService.get_current_balance(business)
         return Response({'success': True, 'data': {'current_balance': str(balance)}})
+

@@ -259,7 +259,7 @@ class Invitation(BaseModel):
         on_delete=models.SET_NULL,
     )
     department = models.ForeignKey(
-        'employees.Department',
+        'branches.Department',
         null=True,
         blank=True,
         on_delete=models.SET_NULL,

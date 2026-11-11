@@ -31,3 +31,4 @@ class HolidayAdmin(admin.ModelAdmin):
 class OvertimeRecordAdmin(admin.ModelAdmin):
     list_display = ['employee', 'date', 'hours', 'rate_multiplier', 'status']
     list_filter = ['status']
+

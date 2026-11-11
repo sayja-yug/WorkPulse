@@ -96,3 +96,4 @@ class CashTransaction(TenantModel):
     class Meta:
         db_table = 'cash_transactions'
         ordering = ['-date', '-created_at']
+

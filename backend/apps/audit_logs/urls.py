@@ -8,3 +8,4 @@ router.register(r'', AuditLogViewSet, basename='audit-log')
 urlpatterns = [
     path('', include(router.urls)),
 ]
+

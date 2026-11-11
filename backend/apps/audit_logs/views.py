@@ -20,3 +20,4 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
             qs = AuditLog.objects.filter(user=user)
 
         return qs.select_related('user', 'business')
+

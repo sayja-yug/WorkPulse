@@ -39,3 +39,4 @@ class BusinessService:
         user.save(update_fields=['active_business'])
 
         return business
+

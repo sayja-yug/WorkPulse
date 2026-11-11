@@ -209,3 +209,4 @@ class OvertimeRecord(TenantModel):
 
     class Meta:
         db_table = 'overtime_records'
+

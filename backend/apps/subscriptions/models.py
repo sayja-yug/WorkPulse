@@ -114,3 +114,4 @@ class PaymentTransaction(BaseModel):
     class Meta:
         db_table = 'payment_transactions'
         ordering = ['-created_at']
+

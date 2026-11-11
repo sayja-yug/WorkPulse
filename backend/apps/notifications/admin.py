@@ -13,3 +13,4 @@ class NotificationAdmin(admin.ModelAdmin):
 class NotificationPreferenceAdmin(admin.ModelAdmin):
     list_display = ['user', 'channel', 'event_type', 'is_enabled']
     list_filter = ['channel', 'is_enabled']
+

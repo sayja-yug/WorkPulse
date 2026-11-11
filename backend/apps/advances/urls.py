@@ -10,3 +10,4 @@ router.register(r'', AdvanceViewSet, basename='advance')
 urlpatterns = [
     path('', include(router.urls)),
 ]
+

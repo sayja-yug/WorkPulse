@@ -27,3 +27,4 @@ class DesignationViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     queryset = Designation.objects.all()
     filterset_fields = ['is_active', 'level']
     search_fields = ['name']
+

@@ -47,3 +47,4 @@ class NotificationPreferenceViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         business = getattr(self.request, 'business', None)
         serializer.save(user=self.request.user, business=business)
+

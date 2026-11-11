@@ -17,3 +17,4 @@ class ShiftAssignmentSerializer(serializers.ModelSerializer):
         model = ShiftAssignment
         fields = '__all__'
         read_only_fields = ['id', 'assigned_by', 'created_at', 'updated_at']
+

@@ -48,3 +48,4 @@ All demo accounts share the following password:
   2. `BR-TECH`: Bengaluru R&D Center (Bengaluru) - Geofence 250m
   3. `BR-LOG`: Mumbai Logistics Hub (Bhiwandi) - Geofence 500m
 - **Departments:** Engineering, Human Resources, Finance & Accounting, Operations, Sales & Marketing
+

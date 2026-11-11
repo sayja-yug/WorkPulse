@@ -142,3 +142,4 @@ class LeaveTransaction(BaseModel):
     class Meta:
         db_table = 'leave_transactions'
         ordering = ['-created_at']
+

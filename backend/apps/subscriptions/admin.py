@@ -24,3 +24,4 @@ class InvoiceAdmin(admin.ModelAdmin):
 class PaymentTransactionAdmin(admin.ModelAdmin):
     list_display = ['invoice', 'amount', 'payment_method', 'status', 'created_at']
     list_filter = ['status']
+

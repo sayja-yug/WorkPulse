@@ -9,3 +9,4 @@ router.register(r'', NotificationViewSet, basename='notification')
 urlpatterns = [
     path('', include(router.urls)),
 ]
+

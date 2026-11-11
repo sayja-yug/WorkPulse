@@ -13,3 +13,4 @@ class ShiftAdmin(admin.ModelAdmin):
 class ShiftAssignmentAdmin(admin.ModelAdmin):
     list_display = ['employee', 'shift', 'effective_from', 'effective_to']
     search_fields = ['employee__first_name', 'employee__last_name', 'shift__name']
+

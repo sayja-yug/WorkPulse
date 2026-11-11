@@ -61,3 +61,4 @@ class ShiftAssignment(BaseModel):
         indexes = [
             models.Index(fields=['employee', 'effective_from']),
         ]
+

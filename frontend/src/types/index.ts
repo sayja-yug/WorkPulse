@@ -108,3 +108,4 @@ export interface CashTransaction {
   balance_after: string;
   payment_mode: string;
 }
+

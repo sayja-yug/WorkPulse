@@ -14,3 +14,4 @@ class BusinessMembershipAdmin(admin.ModelAdmin):
     list_display = ['user', 'business', 'is_owner', 'is_active', 'joined_at']
     search_fields = ['user__email', 'business__name']
     list_filter = ['is_owner', 'is_active']
+

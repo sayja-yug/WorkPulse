@@ -28,3 +28,4 @@ class LeaveApprovalAdmin(admin.ModelAdmin):
 @admin.register(LeaveTransaction)
 class LeaveTransactionAdmin(admin.ModelAdmin):
     list_display = ['employee', 'leave_type', 'transaction_type', 'days', 'balance_after']
+

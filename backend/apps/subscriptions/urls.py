@@ -10,3 +10,4 @@ urlpatterns = [
     path('current/', CurrentSubscriptionView.as_view(), name='subscription-current'),
     path('', include(router.urls)),
 ]
+

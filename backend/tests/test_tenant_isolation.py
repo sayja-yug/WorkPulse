@@ -73,3 +73,4 @@ class TestTenantIsolation:
             HTTP_X_BUSINESS_ID=str(self.biz_a.id)
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
+

@@ -153,3 +153,4 @@ class OvertimeRecordViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = OvertimeRecord.objects.all()
     filterset_fields = ['status']
+

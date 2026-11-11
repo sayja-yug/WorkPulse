@@ -38,3 +38,4 @@ class AuditLog(BaseModel):
     def __str__(self):
         actor = self.user.email if self.user else 'System'
         return f'{actor} -> {self.action} on {self.resource_type} at {self.created_at}'
+

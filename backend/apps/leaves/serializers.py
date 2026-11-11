@@ -53,3 +53,4 @@ class LeaveTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaveTransaction
         fields = '__all__'
+

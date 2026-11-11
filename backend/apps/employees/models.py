@@ -198,3 +198,4 @@ class EmploymentHistory(BaseModel):
     class Meta:
         db_table = 'employment_history'
         ordering = ['-effective_date', '-created_at']
+

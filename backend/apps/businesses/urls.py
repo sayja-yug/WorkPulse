@@ -8,3 +8,4 @@ router.register(r'', BusinessViewSet, basename='business')
 urlpatterns = [
     path('', include(router.urls)),
 ]
+

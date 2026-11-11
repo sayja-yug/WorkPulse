@@ -72,3 +72,4 @@ class NotificationPreference(BaseModel):
                 name='unique_user_notification_preference'
             )
         ]
+

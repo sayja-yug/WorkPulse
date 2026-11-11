@@ -19,3 +19,4 @@ class EmployeeDocumentAdmin(admin.ModelAdmin):
 class EmploymentHistoryAdmin(admin.ModelAdmin):
     list_display = ['employee', 'change_type', 'effective_date', 'changed_by']
     list_filter = ['change_type']
+

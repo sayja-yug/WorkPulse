@@ -27,3 +27,4 @@ class CashTransactionSerializer(serializers.ModelSerializer):
         model = CashTransaction
         fields = '__all__'
         read_only_fields = ['id', 'business', 'balance_after', 'created_by', 'created_at', 'updated_at']
+

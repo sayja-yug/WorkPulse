@@ -82,3 +82,4 @@ class TestAttendanceAndGeofencing:
         )
         assert updated_record.check_out == t2
         assert updated_record.working_hours == Decimal('8.50')
+

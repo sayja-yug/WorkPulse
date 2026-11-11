@@ -33,3 +33,4 @@ class DesignationSerializer(serializers.ModelSerializer):
             'is_active', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'business', 'created_at', 'updated_at']
+

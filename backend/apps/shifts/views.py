@@ -22,3 +22,4 @@ class ShiftAssignmentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(assigned_by=self.request.user)
+

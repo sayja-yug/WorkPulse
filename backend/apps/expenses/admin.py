@@ -18,3 +18,4 @@ class ExpenseAdmin(admin.ModelAdmin):
 class CashTransactionAdmin(admin.ModelAdmin):
     list_display = ['type', 'amount', 'balance_after', 'date', 'description']
     list_filter = ['type']
+

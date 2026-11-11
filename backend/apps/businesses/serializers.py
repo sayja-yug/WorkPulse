@@ -37,3 +37,4 @@ class BusinessMembershipSerializer(serializers.ModelSerializer):
         model = BusinessMembership
         fields = ['id', 'user', 'user_email', 'user_name', 'business', 'is_owner', 'is_active', 'joined_at']
         read_only_fields = ['id', 'joined_at']
+

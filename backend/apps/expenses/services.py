@@ -44,3 +44,4 @@ class CashbookService:
             created_by=created_by
         )
         return tx
+

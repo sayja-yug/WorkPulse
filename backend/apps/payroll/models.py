@@ -237,3 +237,4 @@ class SalaryPayment(BaseModel):
 
     class Meta:
         db_table = 'salary_payments'
+

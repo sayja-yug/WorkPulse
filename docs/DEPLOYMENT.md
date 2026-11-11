@@ -78,3 +78,4 @@ VITE_APP_TITLE=WorkPulse
 - [x] Rate limiting active on authentication endpoints (30/min anon, 120/min auth)
 - [x] Health check endpoint `/api/health/` returns database connectivity status
 - [x] Dockerfile & docker-compose configurations ready for containerized execution
+

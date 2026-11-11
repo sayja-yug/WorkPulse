@@ -97,3 +97,4 @@ class SalaryPaymentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(paid_by=self.request.user)
+

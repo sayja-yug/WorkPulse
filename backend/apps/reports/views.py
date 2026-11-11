@@ -123,3 +123,4 @@ class PayrollReportView(views.APIView):
             for run in runs
         ]
         return Response({'success': True, 'data': data})
+

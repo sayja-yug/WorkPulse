@@ -45,3 +45,4 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         business = getattr(self.request, 'business', None)
         return Invoice.objects.filter(business=business)
+

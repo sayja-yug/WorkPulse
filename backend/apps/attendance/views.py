@@ -1,3 +1,5 @@
+import datetime
+from decimal import Decimal
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, views
 from rest_framework.decorators import action
@@ -15,6 +17,61 @@ from .serializers import (
 from .services import AttendanceService
 
 
+def get_business_context(request):
+    """Safely resolve active business from request, headers, or authenticated user."""
+    business = getattr(request, 'business', None)
+    if not business:
+        business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
+        if business_id:
+            from apps.businesses.models import Business
+            business = Business.objects.filter(id=business_id).first()
+        elif getattr(request.user, 'active_business', None):
+            business = request.user.active_business
+        elif getattr(request.user, 'is_authenticated', False):
+            from apps.businesses.models import BusinessMembership
+            mem = BusinessMembership.objects.filter(user=request.user, is_active=True).first()
+            if mem:
+                business = mem.business
+    return business
+
+
+def get_or_link_employee(user, business):
+    """Guarantees employee profile exists and is properly linked to the user and business."""
+    if not user or not user.is_authenticated:
+        return None
+    emp = None
+    if business:
+        emp = Employee.objects.filter(user=user, business=business).first()
+    if not emp:
+        emp = Employee.objects.filter(user=user).first()
+    if not emp and user.email:
+        emp = Employee.objects.filter(email__iexact=user.email).first()
+        if emp:
+            emp.user = user
+            if business and not emp.business:
+                emp.business = business
+            emp.save(update_fields=['user', 'business', 'updated_at'])
+    if not emp and business:
+        from apps.branches.models import Branch, Department, Designation
+        branch = Branch.objects.filter(business=business).first()
+        dept = Department.objects.filter(business=business).first()
+        desig = Designation.objects.filter(business=business).first()
+        emp = Employee.objects.create(
+            user=user,
+            business=business,
+            employee_code=f'EMP-{user.id.hex[:6].upper()}',
+            first_name=user.first_name or 'Staff',
+            last_name=user.last_name or '',
+            email=user.email,
+            branch=branch,
+            department=dept,
+            designation=desig,
+            joining_date=timezone.now().date(),
+            status=Employee.Status.ACTIVE
+        )
+    return emp
+
+
 class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = AttendanceRecordSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -29,18 +86,47 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         att_status = request.data.get('status', AttendanceRecord.Status.PRESENT)
         notes = request.data.get('notes', '')
 
-        business = getattr(request, 'business', None)
+        business = get_business_context(request)
         try:
-            employee = Employee.objects.get(id=employee_id, business=business)
+            if business:
+                employee = Employee.objects.get(id=employee_id, business=business)
+            else:
+                employee = Employee.objects.get(id=employee_id)
         except Employee.DoesNotExist:
             return Response({'success': False, 'error': {'message': 'Employee not found.'}}, status=status.HTTP_404_NOT_FOUND)
 
+        if not business:
+            business = employee.business
+
+        if isinstance(date_val, str):
+            try:
+                date_obj = datetime.date.fromisoformat(date_val)
+            except ValueError:
+                date_obj = timezone.now().date()
+        else:
+            date_obj = date_val
+
+        check_in = None
+        check_out = None
+        working_hours = Decimal('0.00')
+
+        if att_status == AttendanceRecord.Status.PRESENT:
+            check_in = timezone.make_aware(datetime.datetime.combine(date_obj, datetime.time(9, 30)))
+            check_out = timezone.make_aware(datetime.datetime.combine(date_obj, datetime.time(18, 30)))
+            working_hours = Decimal('8.50')
+        elif att_status == AttendanceRecord.Status.HALF_DAY:
+            check_in = timezone.make_aware(datetime.datetime.combine(date_obj, datetime.time(9, 30)))
+            working_hours = Decimal('4.00')
+
         record, _ = AttendanceRecord.objects.update_or_create(
             employee=employee,
-            date=date_val,
+            date=date_obj,
             defaults={
                 'business': business,
                 'status': att_status,
+                'check_in': check_in,
+                'check_out': check_out,
+                'working_hours': working_hours,
                 'notes': notes,
                 'source': AttendanceRecord.Source.MANUAL,
                 'marked_by': request.user
@@ -50,7 +136,7 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='daily')
     def daily_summary(self, request):
-        business = getattr(request, 'business', None)
+        business = get_business_context(request)
         date_str = request.query_params.get('date', str(timezone.now().date()))
         summary = AttendanceService.get_daily_summary(business, date_str)
         return Response({'success': True, 'data': summary})
@@ -63,8 +149,8 @@ class CheckInView(views.APIView):
         serializer = CheckInPunchSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        business = getattr(request, 'business', None)
-        employee = Employee.objects.filter(user=request.user, business=business).first()
+        business = get_business_context(request)
+        employee = get_or_link_employee(request.user, business)
         if not employee:
             return Response(
                 {'success': False, 'error': {'code': 'NOT_FOUND', 'message': 'No employee profile linked to user.'}},
@@ -90,8 +176,8 @@ class CheckOutView(views.APIView):
         serializer = CheckInPunchSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        business = getattr(request, 'business', None)
-        employee = Employee.objects.filter(user=request.user, business=business).first()
+        business = get_business_context(request)
+        employee = get_or_link_employee(request.user, business)
         if not employee:
             return Response(
                 {'success': False, 'error': {'code': 'NOT_FOUND', 'message': 'No employee profile linked to user.'}},

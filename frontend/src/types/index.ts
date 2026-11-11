@@ -21,6 +21,7 @@ export interface User {
   avatar?: string | null;
   is_superuser: boolean;
   active_business?: string | null;
+  role?: UserRoleType;
 }
 
 export interface Business {
@@ -90,12 +91,17 @@ export interface LeaveRequest {
 export interface PayrollRun {
   id: string;
   name: string;
-  period_start: string;
-  period_end: string;
+  period_start?: string;
+  period_end?: string;
+  start_date?: string;
+  end_date?: string;
+  total_working_days?: number;
   status: 'DRAFT' | 'PROCESSING' | 'REVIEW' | 'APPROVED' | 'LOCKED';
-  total_gross: string;
-  total_deductions: string;
-  total_net: string;
+  total_gross?: string;
+  gross_total?: string;
+  total_deductions?: string;
+  total_net?: string;
+  net_total?: string;
   items_count?: number;
 }
 

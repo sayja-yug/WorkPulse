@@ -507,16 +507,76 @@ class Command(BaseCommand):
             (Role.RoleCode.FIELD_EMPLOYEE, 'Field Employee', 'Field mobile clocking user'),
             (Role.RoleCode.AUDITOR, 'Auditor', 'Read-only compliance auditor'),
         ]
-        all_perms = Permission.objects.all()
+        all_perms = {p.code: p for p in Permission.objects.all()}
+
+        role_permission_matrix = {
+            Role.RoleCode.SUPER_ADMIN: list(all_perms.keys()),
+            Role.RoleCode.BUSINESS_OWNER: list(all_perms.keys()),
+            Role.RoleCode.HR_MANAGER: [
+                'employee.view', 'employee.create', 'employee.update', 'employee.deactivate', 'employee.transfer',
+                'attendance.view', 'attendance.mark', 'attendance.correct', 'attendance.approve', 'attendance.view_reports',
+                'shift.view', 'shift.create', 'shift.assign',
+                'leave.view', 'leave.apply', 'leave.approve', 'leave.reject',
+                'report.view', 'business.view'
+            ],
+            Role.RoleCode.ACCOUNTANT: [
+                'payroll.view', 'payroll.calculate', 'payroll.approve', 'payroll.view_own',
+                'advance.view', 'advance.request', 'advance.approve',
+                'expense.view', 'expense.create', 'expense.approve',
+                'report.view', 'business.view'
+            ],
+            Role.RoleCode.BRANCH_MANAGER: [
+                'employee.view', 'employee.create', 'employee.update',
+                'attendance.view', 'attendance.mark', 'attendance.correct', 'attendance.approve', 'attendance.view_reports',
+                'shift.view', 'shift.assign',
+                'leave.view', 'leave.apply', 'leave.approve', 'leave.reject',
+                'report.view', 'business.view'
+            ],
+            Role.RoleCode.SUPERVISOR: [
+                'employee.view',
+                'attendance.view', 'attendance.mark', 'attendance.correct', 'attendance.approve',
+                'shift.view',
+                'leave.view', 'leave.approve',
+                'report.view'
+            ],
+            Role.RoleCode.EMPLOYEE: [
+                'attendance.view', 'attendance.mark_own', 'attendance.correct',
+                'shift.view',
+                'leave.view', 'leave.apply',
+                'payroll.view_own',
+                'advance.request', 'advance.view'
+            ],
+            Role.RoleCode.FIELD_EMPLOYEE: [
+                'attendance.view', 'attendance.mark_own', 'attendance.correct',
+                'shift.view',
+                'leave.view', 'leave.apply',
+                'payroll.view_own',
+                'advance.request', 'advance.view'
+            ],
+            Role.RoleCode.AUDITOR: [
+                'employee.view', 'attendance.view', 'attendance.view_reports',
+                'payroll.view', 'advance.view', 'expense.view', 'report.view',
+                'audit.view', 'business.view'
+            ],
+            Role.RoleCode.SUPPORT_ADMIN: [
+                'business.view', 'employee.view', 'report.view', 'audit.view'
+            ],
+            Role.RoleCode.BILLING_ADMIN: [
+                'subscription.view', 'business.view', 'report.view'
+            ],
+        }
+
         for code, name, desc in roles_data:
             role, _ = Role.objects.get_or_create(
                 code=code,
                 is_system=True,
                 defaults={'name': name, 'description': desc}
             )
-            if code == Role.RoleCode.BUSINESS_OWNER:
-                for p in all_perms:
-                    RolePermission.objects.get_or_create(role=role, permission=p)
+            # Assign configured permissions for this role
+            assigned_codes = role_permission_matrix.get(code, [])
+            for p_code in assigned_codes:
+                if p_code in all_perms:
+                    RolePermission.objects.get_or_create(role=role, permission=all_perms[p_code])
 
     def seed_subscription_plans(self):
         plans = [

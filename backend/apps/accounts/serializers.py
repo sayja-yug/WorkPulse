@@ -10,15 +10,26 @@ from .models import Invitation, Permission, Role, RolePermission, User, UserRole
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user details."""
     full_name = serializers.ReadOnlyField()
+    role = serializers.SerializerMethodField()
+
+    def get_role(self, obj):
+        from .services import PermissionService
+        if obj.is_superuser:
+            return 'SUPER_ADMIN'
+        if obj.active_business:
+            roles = PermissionService.get_user_roles(obj, obj.active_business)
+            if roles:
+                return roles[0]
+        return 'EMPLOYEE'
 
     class Meta:
         model = User
         fields = [
             'id', 'email', 'phone', 'first_name', 'last_name', 'full_name',
             'avatar', 'is_active', 'email_verified', 'phone_verified',
-            'active_business', 'date_joined', 'last_login',
+            'active_business', 'date_joined', 'last_login', 'role',
         ]
-        read_only_fields = ['id', 'email', 'is_active', 'email_verified', 'phone_verified', 'date_joined', 'last_login']
+        read_only_fields = ['id', 'email', 'is_active', 'email_verified', 'phone_verified', 'date_joined', 'last_login', 'role']
 
 
 class UserCreateSerializer(serializers.ModelSerializer):

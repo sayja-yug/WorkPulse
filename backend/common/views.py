@@ -1,4 +1,5 @@
 """Health check view."""
+from django.conf import settings
 from django.db import connection
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -12,14 +13,21 @@ class HealthCheckView(APIView):
     authentication_classes = []
 
     def get(self, request):
+        db_status = self._check_database()
+        db_conf = settings.DATABASES.get('default', {})
+        engine = db_conf.get('ENGINE', '')
+        engine_name = 'PostgreSQL' if 'postgresql' in engine else ('SQLite' if 'sqlite' in engine else 'Unknown')
+
         health = {
-            'status': 'healthy',
-            'database': self._check_database(),
+            'status': 'healthy' if db_status == 'connected' else 'degraded',
+            'database': db_status,
+            'database_engine': engine_name,
+            'database_name': db_conf.get('NAME', 'workpulse'),
+            'database_host': db_conf.get('HOST', 'localhost'),
             'version': '1.0.0',
         }
 
         if health['database'] != 'connected':
-            health['status'] = 'degraded'
             return Response(health, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         return Response(health, status=status.HTTP_200_OK)

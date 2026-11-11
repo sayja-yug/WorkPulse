@@ -8,13 +8,14 @@ interface AuthContextType {
   businesses: Business[];
   roles: string[];
   permissions: string[];
+  activeRole: string;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   switchBusiness: (businessId: string) => Promise<void>;
-  hasPermission: (perm: string) => boolean;
-  hasRole: (role: string) => boolean;
+  hasPermission: (perm: string | string[]) => boolean;
+  hasRole: (role: string | string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,14 +94,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (found) setBusiness(found);
   };
 
-  const hasPermission = (perm: string) => {
+  const activeRole = (roles.length > 0 ? roles[0] : (user?.role || (user?.is_superuser ? 'SUPER_ADMIN' : 'EMPLOYEE')));
+
+  const hasPermission = (perm: string | string[]) => {
     if (user?.is_superuser) return true;
+    if (roles.includes('BUSINESS_OWNER') || roles.includes('SUPER_ADMIN')) return true;
+    if (Array.isArray(perm)) {
+      return perm.some((p) => permissions.includes(p));
+    }
     return permissions.includes(perm);
   };
 
-  const hasRole = (role: string) => {
+  const hasRole = (role: string | string[]) => {
     if (user?.is_superuser) return true;
-    return roles.includes(role);
+    const currentRoles = roles.length > 0 ? roles : (user?.role ? [user.role] : []);
+    if (Array.isArray(role)) {
+      return role.some((r) => currentRoles.includes(r));
+    }
+    return currentRoles.includes(role);
   };
 
   return (
@@ -111,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         businesses,
         roles,
         permissions,
+        activeRole,
         isAuthenticated: !!user,
         isLoading,
         login,

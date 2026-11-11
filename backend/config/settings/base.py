@@ -265,13 +265,23 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-# Cache
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': config('REDIS_URL', default='redis://localhost:6379/1'),
+# Cache configuration (Safe fallback to LocMemCache if REDIS_URL is unconfigured or localhost)
+REDIS_URL = config('REDIS_URL', default='').strip()
+
+if REDIS_URL and not REDIS_URL.startswith('redis://localhost') and not REDIS_URL.startswith('redis://127.0.0.1'):
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'workpulse-locmem-cache',
+        }
+    }
 
 # File Upload
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB

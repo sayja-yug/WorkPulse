@@ -12,6 +12,9 @@ from drf_spectacular.views import (
 from common.views import HealthCheckView
 
 urlpatterns = [
+    # Root health check endpoint for platform monitoring (Render, Pingdom, UptimeRobot)
+    path('', HealthCheckView.as_view(), name='root-index'),
+
     # Admin
     path('admin/', admin.site.urls),
 

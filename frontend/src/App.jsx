@@ -15,29 +15,23 @@ import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { TestingPanel } from './pages/TestingPanel';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import { Loader } from './components/ui/Loader';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xs text-slate-400 font-medium tracking-wider uppercase">Loading WorkPulse Session...</p>
-        </div>
+        <Loader message="Loading WorkPulse Session..." size="lg" />
       </div>
     );
   }
 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
-const RoleRoute: React.FC<{
-  children: React.ReactNode;
-  allowedRoles: string[];
-  moduleName: string;
-}> = ({ children, allowedRoles, moduleName }) => {
+const RoleRoute = ({ children, allowedRoles, moduleName }) => {
   const { activeRole, hasRole } = useAuth();
 
   const isAllowed = allowedRoles.includes(activeRole) || hasRole('BUSINESS_OWNER') || hasRole('SUPER_ADMIN');
@@ -77,10 +71,10 @@ const RoleRoute: React.FC<{
     );
   }
 
-  return <>{children}</>;
+  return children;
 };
 
-export const App: React.FC = () => {
+export const App = () => {
   return (
     <BrowserRouter>
       <AuthProvider>

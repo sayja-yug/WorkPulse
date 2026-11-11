@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Sparkles, Building, Lock, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
 
-export const Login: React.FC = () => {
+export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -11,21 +11,21 @@ export const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
     try {
       await login(email, password);
       navigate('/');
-    } catch (err: any) {
+    } catch (err) {
       setError(err.response?.data?.error?.message || 'Invalid credentials or login failed.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const setDemoAccount = (demoEmail: string) => {
+  const setDemoAccount = (demoEmail) => {
     setEmail(demoEmail);
     setPassword('Demo@12345');
   };
@@ -57,74 +57,76 @@ export const Login: React.FC = () => {
 
             <h3 className="text-xl font-semibold mb-2">Enterprise SaaS Demonstration</h3>
             <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              Click any role below to prefill demo credentials and test permissions instantly:
+              Click any role below to prefill demo credentials and test role-based feature permissions:
             </p>
 
-            <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-2 mb-6">
               {demoRoles.map((r) => (
                 <button
                   key={r.email}
                   type="button"
                   onClick={() => setDemoAccount(r.email)}
-                  className={`text-left p-2.5 rounded-lg border text-xs font-medium transition-all hover:scale-[1.02] ${r.color}`}
+                  className={`text-left p-2.5 rounded-lg border text-xs font-semibold transition-all hover:scale-[1.02] flex items-center justify-between ${r.color}`}
                 >
-                  <p className="font-semibold">{r.label}</p>
-                  <p className="opacity-75 truncate">{r.email.split('@')[0]}</p>
+                  <span className="truncate">{r.label}</span>
+                  <ArrowRight className="w-3.5 h-3.5 opacity-60 flex-shrink-0" />
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-400 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>Pre-seeded with 20+ employees, attendance & payroll.</span>
+          <div className="pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-emerald-400" /> Multi-Tenant PostgreSQL Active
+            </span>
+            <span className="font-mono text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">v1.0.0</span>
           </div>
         </div>
 
         {/* Right: Login Form */}
         <div className="p-8 flex flex-col justify-center">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Sign in to your account</h2>
-            <p className="text-slate-500 text-sm mt-1">Enter your organization credentials</p>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Sign in to your account</h2>
+            <p className="text-sm text-slate-500 mt-1">Enter credentials to authenticate into tenant environment</p>
           </div>
 
           {error && (
-            <div className="p-3 mb-4 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+            <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                Email Address
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Work Email Address
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@company.com"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  placeholder="••••••••••••"
+                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all"
                 />
               </div>
             </div>
@@ -132,19 +134,24 @@ export const Login: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {isLoading ? 'Authenticating...' : 'Sign In'}
-              <ArrowRight className="w-4 h-4" />
+              {isLoading ? (
+                <span>Authenticating...</span>
+              ) : (
+                <>
+                  <span>Sign In to Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-500">
-            <span>Enterprise Multi-Tenant Authentication Protected</span>
-          </div>
+          <p className="text-center text-xs text-slate-400 mt-6">
+            Protected by WorkPulse Multi-Tenant Identity Engine
+          </p>
         </div>
       </div>
     </div>
   );
 };
-

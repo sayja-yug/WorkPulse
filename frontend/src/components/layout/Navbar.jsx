@@ -1,16 +1,20 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Building2, Bell, LogOut, ChevronDown, UserCircle } from 'lucide-react';
+import { ROLE_LABELS, ROLE_BADGE_COLORS } from '../../utils/constants';
 
-export const Navbar: React.FC = () => {
-  const { user, business, businesses, switchBusiness, logout, roles } = useAuth();
+export const Navbar = () => {
+  const { user, business, businesses, switchBusiness, logout, activeRole } = useAuth();
+
+  const roleLabel = ROLE_LABELS[activeRole] || activeRole;
+  const roleColor = ROLE_BADGE_COLORS[activeRole] || 'bg-slate-100 text-slate-700 border-slate-200';
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-30">
       <div className="flex items-center gap-4">
         {businesses.length > 0 && (
           <div className="relative flex items-center gap-2 bg-slate-100 hover:bg-slate-200 transition-colors py-1.5 px-3 rounded-lg cursor-pointer">
-            <Building2 className="w-4 h-4 text-brand-600" />
+            <Building2 className="w-4 h-4 text-indigo-600" />
             <select
               className="bg-transparent text-sm font-medium text-slate-800 outline-none cursor-pointer pr-4"
               value={business?.id || ''}
@@ -28,12 +32,10 @@ export const Navbar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Role Badge */}
-        {roles.length > 0 && (
-          <span className="text-xs font-semibold px-2.5 py-1 bg-brand-50 text-brand-700 rounded-full border border-brand-200">
-            {roles[0].replace('_', ' ')}
-          </span>
-        )}
+        {/* Dynamic Role Badge */}
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${roleColor}`}>
+          {roleLabel}
+        </span>
 
         <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg relative">
           <Bell className="w-5 h-5" />
@@ -43,7 +45,7 @@ export const Navbar: React.FC = () => {
         <div className="h-6 w-px bg-slate-200"></div>
 
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-semibold text-sm">
+          <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-semibold text-sm">
             {user?.first_name ? user.first_name[0] : <UserCircle className="w-5 h-5" />}
           </div>
           <div className="hidden md:block text-left">
@@ -63,4 +65,3 @@ export const Navbar: React.FC = () => {
     </header>
   );
 };
-

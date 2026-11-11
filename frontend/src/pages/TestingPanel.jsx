@@ -15,17 +15,18 @@ import {
   UserCheck,
   Check,
 } from 'lucide-react';
+import { Loader } from '../components/ui/Loader';
+import { ROLE_LABELS } from '../utils/constants';
 
-export const TestingPanel: React.FC = () => {
+export const TestingPanel = () => {
   const { user, business, roles, permissions, activeRole, login } = useAuth();
-  const [health, setHealth] = useState<any>(null);
+  const [health, setHealth] = useState(null);
   const [healthLoading, setHealthLoading] = useState(true);
-  const [switchMessage, setSwitchMessage] = useState<string | null>(null);
+  const [switchMessage, setSwitchMessage] = useState(null);
 
   const checkHealth = async () => {
     try {
       setHealthLoading(true);
-      // Try root api/health/ and api/v1/health/
       let res;
       try {
         res = await api.get('/health/');
@@ -33,7 +34,7 @@ export const TestingPanel: React.FC = () => {
         res = await axios.get('/api/health/');
       }
       setHealth(res.data);
-    } catch (err: any) {
+    } catch (err) {
       setHealth({ status: 'unhealthy', database: 'disconnected', error: err.message });
     } finally {
       setHealthLoading(false);
@@ -56,7 +57,7 @@ export const TestingPanel: React.FC = () => {
     { label: 'Super Admin', email: 'superadmin@workpulse.com', role: 'SUPER_ADMIN', desc: 'Platform tenant controls & health monitoring' },
   ];
 
-  const handleQuickSwitch = async (email: string, roleName: string) => {
+  const handleQuickSwitch = async (email, roleName) => {
     try {
       await login(email, 'Demo@12345');
       setSwitchMessage(`Switched session to ${roleName} (${email})! All role-based permissions reloaded.`);

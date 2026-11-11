@@ -16,25 +16,16 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { ROLE_LABELS, ROLE_BADGE_COLORS } from '../../utils/constants';
 
-interface NavItemConfig {
-  name: string;
-  path: string;
-  icon: any;
-  allowedRoles?: string[];
-  allowedPermissions?: string[];
-  employeeName?: string; // customized label for employee self-service
-}
-
-export const Sidebar: React.FC = () => {
+export const Sidebar = () => {
   const { user, activeRole, hasRole, hasPermission } = useAuth();
 
-  const allNavItems: NavItemConfig[] = [
+  const allNavItems = [
     {
       name: 'Dashboard',
       path: '/',
       icon: LayoutDashboard,
-      // Everyone has dashboard
     },
     {
       name: 'Employees',
@@ -47,7 +38,6 @@ export const Sidebar: React.FC = () => {
       path: '/attendance',
       icon: CalendarCheck2,
       employeeName: 'My Attendance & Clock-In',
-      // Everyone has attendance (self or management)
     },
     {
       name: 'Shifts & Roster',
@@ -60,7 +50,6 @@ export const Sidebar: React.FC = () => {
       path: '/leaves',
       icon: CalendarOff,
       employeeName: 'My Leave Applications',
-      // Everyone has leave access
     },
     {
       name: 'Payroll & Slips',
@@ -106,32 +95,8 @@ export const Sidebar: React.FC = () => {
     return false;
   });
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'BUSINESS_OWNER':
-        return { label: 'Business Owner', color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' };
-      case 'HR_MANAGER':
-        return { label: 'HR Manager', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
-      case 'ACCOUNTANT':
-        return { label: 'Accountant', color: 'bg-blue-500/20 text-blue-300 border-blue-500/40' };
-      case 'BRANCH_MANAGER':
-        return { label: 'Branch Manager', color: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
-      case 'SUPERVISOR':
-        return { label: 'Team Supervisor', color: 'bg-orange-500/20 text-orange-300 border-orange-500/40' };
-      case 'FIELD_EMPLOYEE':
-        return { label: 'Field Employee (GPS)', color: 'bg-purple-500/20 text-purple-300 border-purple-500/40' };
-      case 'EMPLOYEE':
-        return { label: 'Employee (Self-Service)', color: 'bg-sky-500/20 text-sky-300 border-sky-500/40' };
-      case 'AUDITOR':
-        return { label: 'Auditor (Read-Only)', color: 'bg-rose-500/20 text-rose-300 border-rose-500/40' };
-      case 'SUPER_ADMIN':
-        return { label: 'Super Admin', color: 'bg-zinc-700 text-zinc-200 border-zinc-600' };
-      default:
-        return { label: role, color: 'bg-slate-700 text-slate-300 border-slate-600' };
-    }
-  };
-
-  const badge = getRoleBadge(activeRole);
+  const roleLabel = ROLE_LABELS[activeRole] || activeRole;
+  const roleColor = ROLE_BADGE_COLORS[activeRole] || 'bg-slate-700 text-slate-300 border-slate-600';
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0 border-r border-slate-800">
@@ -152,8 +117,8 @@ export const Sidebar: React.FC = () => {
           <UserCheck className="w-3 h-3 text-indigo-400" />
           <span>Active Role Scope</span>
         </div>
-        <div className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${badge.color} inline-block`}>
-          {badge.label}
+        <div className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${roleColor} inline-block`}>
+          {roleLabel}
         </div>
         <p className="text-[11px] text-slate-400 mt-1 truncate">
           {user?.email}

@@ -18,3 +18,4 @@ echo Backend API Docs: http://localhost:8000/api/docs/
 echo Frontend App:     http://localhost:5173/
 echo ==========================================================
 pause
+

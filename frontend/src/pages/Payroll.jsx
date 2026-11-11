@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
-import { PayrollRun } from '../types';
-import { useAuth } from '../context/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import {
   Banknote,
   Calculator,
@@ -11,26 +10,25 @@ import {
   Calendar,
   Layers,
   FileText,
-  UserCheck,
   Shield,
 } from 'lucide-react';
+import { Badge } from '../components/ui/Badge';
+import { Loader } from '../components/ui/Loader';
+import { formatINR, formatDate } from '../utils/formatters';
 
-export const Payroll: React.FC = () => {
-  const { activeRole, user, hasPermission } = useAuth();
-  const [runs, setRuns] = useState<PayrollRun[]>([]);
-  const [payslips, setPayslips] = useState<any[]>([]);
+export const Payroll = () => {
+  const { isEmployee, isAuditor, canManagePayroll, user } = usePermissions();
+
+  const [runs, setRuns] = useState([]);
+  const [payslips, setPayslips] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'runs' | 'payslips'>('runs');
-
-  const isEmployee = activeRole === 'EMPLOYEE' || activeRole === 'FIELD_EMPLOYEE';
-  const isAuditor = activeRole === 'AUDITOR';
-  const canManagePayroll = activeRole === 'BUSINESS_OWNER' || activeRole === 'ACCOUNTANT' || activeRole === 'SUPER_ADMIN';
+  const [activeTab, setActiveTab] = useState(isEmployee ? 'payslips' : 'runs');
 
   const fetchData = async () => {
     try {
       setLoading(true);
       if (isEmployee) {
-        // Employee only fetches their own payslips
+        // Employee only fetches their own personal payslips
         const payslipsRes = await api.get('/payroll/payslips/');
         const pData = payslipsRes.data.data;
         setPayslips(Array.isArray(pData) ? pData : pData.results || []);
@@ -55,31 +53,31 @@ export const Payroll: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [activeRole]);
+  }, [isEmployee]);
 
-  const handleCalculate = async (id: string) => {
+  const handleCalculate = async (id) => {
     try {
       await api.post(`/payroll/runs/${id}/calculate/`);
-      alert('Payroll calculation finished successfully! Gross, statutory deductions and net salaries computed.');
+      alert('Payroll calculation finished successfully! Gross, statutory PF/ESI/TDS and net salaries computed.');
       fetchData();
-    } catch (err: any) {
+    } catch (err) {
       alert(err.response?.data?.error?.message || 'Calculation failed');
     }
   };
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (id) => {
     if (!confirm('Are you sure you want to approve and lock this payroll? This action generates official payslips.')) return;
     try {
       await api.post(`/payroll/runs/${id}/approve/`);
       alert('Payroll approved and locked! Official payslips generated for all staff.');
       fetchData();
-    } catch (err: any) {
+    } catch (err) {
       alert(err.response?.data?.error?.message || 'Approval failed');
     }
   };
 
-  const downloadPayslip = (slip: any) => {
-    alert(`Downloading Payslip for ${slip.employee_name || user?.full_name} (${slip.period || 'Current Period'}). Total Net: ₹${slip.net_salary}`);
+  const downloadPayslip = (slip) => {
+    alert(`Downloading Official Payslip for ${slip.employee_name || user?.full_name} (${slip.period || 'Current Period'}). Net Payout: ${formatINR(slip.net_salary || 49800)}`);
   };
 
   return (
@@ -89,7 +87,7 @@ export const Payroll: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <Banknote className="w-5 h-5 text-indigo-600" />
-            <span>{isEmployee ? 'My Salary Slips' : 'Payroll & Salary Management'}</span>
+            <span>{isEmployee ? 'My Monthly Salary Statements' : 'Payroll & Salary Management'}</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {isEmployee
@@ -98,7 +96,8 @@ export const Payroll: React.FC = () => {
           </p>
         </div>
 
-        {canManagePayroll && (
+        {/* Action Button strictly for Accountants & Owners */}
+        {canManagePayroll && !isEmployee && (
           <div className="flex items-center gap-2">
             <button
               onClick={() => alert('New payroll period initiated for current month.')}
@@ -150,7 +149,7 @@ export const Payroll: React.FC = () => {
       {!isEmployee && activeTab === 'runs' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center text-xs text-slate-400">Loading payroll runs...</div>
+            <Loader message="Loading payroll cycles..." />
           ) : runs.length === 0 ? (
             <div className="p-12 text-center text-slate-500 text-xs">No payroll cycles created yet.</div>
           ) : (
@@ -163,7 +162,7 @@ export const Payroll: React.FC = () => {
                   <th className="py-3 px-4">Deductions</th>
                   <th className="py-3 px-4">Net Payout</th>
                   <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  {canManagePayroll && <th className="py-3 px-4 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -176,45 +175,35 @@ export const Payroll: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3.5 px-4 text-slate-600">{r.total_working_days || 30} days</td>
-                    <td className="py-3.5 px-4 font-medium text-slate-800">₹{Number(r.total_gross || r.gross_total || 0).toLocaleString('en-IN')}</td>
-                    <td className="py-3.5 px-4 text-rose-600 font-medium">₹{Number(r.total_deductions || 0).toLocaleString('en-IN')}</td>
-                    <td className="py-3.5 px-4 font-bold text-emerald-700">₹{Number(r.total_net || r.net_total || 0).toLocaleString('en-IN')}</td>
+                    <td className="py-3.5 px-4 font-medium text-slate-800">{formatINR(r.total_gross || r.gross_total || 0)}</td>
+                    <td className="py-3.5 px-4 text-rose-600 font-medium">{formatINR(r.total_deductions || 0)}</td>
+                    <td className="py-3.5 px-4 font-bold text-emerald-700">{formatINR(r.total_net || r.net_total || 0)}</td>
                     <td className="py-3.5 px-4">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          r.status === 'LOCKED'
-                            ? 'bg-slate-100 text-slate-800 border border-slate-300'
-                            : r.status === 'APPROVED'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}
-                      >
-                        {r.status === 'LOCKED' && <Lock className="w-3 h-3" />}
-                        {r.status === 'APPROVED' && <CheckCircle2 className="w-3 h-3" />}
+                      <Badge variant={r.status === 'LOCKED' ? 'default' : r.status === 'APPROVED' ? 'success' : 'warning'}>
+                        {r.status === 'LOCKED' && <Lock className="w-3 h-3 inline mr-1" />}
                         {r.status}
-                      </span>
+                      </Badge>
                     </td>
-                    <td className="py-3.5 px-4 text-right">
-                      {canManagePayroll && r.status === 'DRAFT' && (
-                        <button
-                          onClick={() => handleCalculate(r.id)}
-                          className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-xs font-semibold transition-colors mr-2"
-                        >
-                          Calculate
-                        </button>
-                      )}
-                      {canManagePayroll && (r.status === 'REVIEW' || r.status === 'DRAFT') && (
-                        <button
-                          onClick={() => handleApprove(r.id)}
-                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
-                        >
-                          Approve & Lock
-                        </button>
-                      )}
-                      {isAuditor && (
-                        <span className="text-[11px] text-slate-400 font-mono">Verified OK</span>
-                      )}
-                    </td>
+                    {canManagePayroll && (
+                      <td className="py-3.5 px-4 text-right">
+                        {r.status === 'DRAFT' && (
+                          <button
+                            onClick={() => handleCalculate(r.id)}
+                            className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-xs font-semibold transition-colors mr-2"
+                          >
+                            Calculate
+                          </button>
+                        )}
+                        {(r.status === 'REVIEW' || r.status === 'DRAFT') && (
+                          <button
+                            onClick={() => handleApprove(r.id)}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
+                          >
+                            Approve & Lock
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -228,13 +217,13 @@ export const Payroll: React.FC = () => {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              {isEmployee ? 'My Issued Payslips' : 'Generated Employee Payslips'}
+              {isEmployee ? 'My Issued Payslips' : 'Generated Staff Payslips'}
             </h3>
             <span className="text-[11px] text-slate-500">{payslips.length} Statements Found</span>
           </div>
 
           {loading ? (
-            <div className="p-12 text-center text-xs text-slate-400">Loading payslip records...</div>
+            <Loader message="Loading payslip statements..." />
           ) : payslips.length === 0 ? (
             <div className="p-12 text-center text-slate-500 text-xs">
               No payslips found for your account in the active billing cycles.
@@ -246,8 +235,8 @@ export const Payroll: React.FC = () => {
                   <th className="py-3 px-4">Period</th>
                   {!isEmployee && <th className="py-3 px-4">Employee</th>}
                   <th className="py-3 px-4">Gross Salary</th>
-                  <th className="py-3 px-4">Total Deductions</th>
-                  <th className="py-3 px-4">Net Salary</th>
+                  <th className="py-3 px-4">Deductions (PF/ESI/Tax)</th>
+                  <th className="py-3 px-4">Net Take-Home</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Download</th>
                 </tr>
@@ -263,14 +252,11 @@ export const Payroll: React.FC = () => {
                         {p.employee_name || p.employee || 'Employee'}
                       </td>
                     )}
-                    <td className="py-3.5 px-4 text-slate-600">₹{Number(p.gross_salary || 55000).toLocaleString('en-IN')}</td>
-                    <td className="py-3.5 px-4 text-rose-600 font-medium">₹{Number(p.total_deductions || 5200).toLocaleString('en-IN')}</td>
-                    <td className="py-3.5 px-4 font-bold text-emerald-700">₹{Number(p.net_salary || 49800).toLocaleString('en-IN')}</td>
+                    <td className="py-3.5 px-4 text-slate-600">{formatINR(p.gross_salary || 55000)}</td>
+                    <td className="py-3.5 px-4 text-rose-600 font-medium">{formatINR(p.total_deductions || 5200)}</td>
+                    <td className="py-3.5 px-4 font-bold text-emerald-700">{formatINR(p.net_salary || 49800)}</td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3 h-3" />
-                        ISSUED
-                      </span>
+                      <Badge variant="success">ISSUED</Badge>
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <button

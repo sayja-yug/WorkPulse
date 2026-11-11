@@ -1,32 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/client';
-import { User, Business } from '../types';
 
-interface AuthContextType {
-  user: User | null;
-  business: Business | null;
-  businesses: Business[];
-  roles: string[];
-  permissions: string[];
-  activeRole: string;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  switchBusiness: (businessId: string) => Promise<void>;
-  hasPermission: (perm: string | string[]) => boolean;
-  hasRole: (role: string | string[]) => boolean;
-}
+const AuthContext = createContext(undefined);
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [business, setBusiness] = useState<Business | null>(null);
-  const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [roles, setRoles] = useState<string[]>([]);
-  const [permissions, setPermissions] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [business, setBusiness] = useState(null);
+  const [businesses, setBusinesses] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [permissions, setPermissions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchSession = async () => {
     const token = localStorage.getItem('access_token');
@@ -41,11 +24,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
 
       const bizRes = await api.get('/auth/me/businesses/');
-      const bizList = bizRes.data.data;
+      const bizList = bizRes.data.data || [];
       setBusinesses(bizList);
 
       const savedBizId = localStorage.getItem('active_business_id');
-      const activeBiz = bizList.find((b: any) => b.id === savedBizId) || bizList[0];
+      const activeBiz = bizList.find((b) => b.id === savedBizId) || bizList[0];
 
       if (activeBiz) {
         setBusiness(activeBiz);
@@ -66,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchSession();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email, password) => {
     const res = await api.post('/auth/login/', { email, password });
     const { access, refresh } = res.data.data;
     localStorage.setItem('access_token', access);
@@ -85,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPermissions([]);
   };
 
-  const switchBusiness = async (businessId: string) => {
+  const switchBusiness = async (businessId) => {
     localStorage.setItem('active_business_id', businessId);
     const res = await api.post('/auth/me/switch-business/', { business_id: businessId });
     setRoles(res.data.data.roles || []);
@@ -94,9 +77,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (found) setBusiness(found);
   };
 
-  const activeRole = (roles.length > 0 ? roles[0] : (user?.role || (user?.is_superuser ? 'SUPER_ADMIN' : 'EMPLOYEE')));
+  const activeRole = roles.length > 0 ? roles[0] : (user?.role || (user?.is_superuser ? 'SUPER_ADMIN' : 'EMPLOYEE'));
 
-  const hasPermission = (perm: string | string[]) => {
+  const hasPermission = (perm) => {
     if (user?.is_superuser) return true;
     if (roles.includes('BUSINESS_OWNER') || roles.includes('SUPER_ADMIN')) return true;
     if (Array.isArray(perm)) {
@@ -105,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return permissions.includes(perm);
   };
 
-  const hasRole = (role: string | string[]) => {
+  const hasRole = (role) => {
     if (user?.is_superuser) return true;
     const currentRoles = roles.length > 0 ? roles : (user?.role ? [user.role] : []);
     if (Array.isArray(role)) {
@@ -144,4 +127,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

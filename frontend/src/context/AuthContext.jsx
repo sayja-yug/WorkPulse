@@ -57,6 +57,16 @@ export const AuthProvider = ({ children }) => {
     await fetchSession();
   };
 
+  const register = async (registerData) => {
+    const res = await api.post('/auth/register/', registerData);
+    const { tokens } = res.data.data;
+    if (tokens) {
+      localStorage.setItem('access_token', tokens.access);
+      localStorage.setItem('refresh_token', tokens.refresh);
+      await fetchSession();
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -109,6 +119,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user,
         isLoading,
         login,
+        register,
         logout,
         switchBusiness,
         hasPermission,

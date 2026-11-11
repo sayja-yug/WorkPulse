@@ -33,13 +33,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    """Serializer for user registration."""
+    """Serializer for user and business registration."""
     password = serializers.CharField(write_only=True, min_length=8, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
+    company_name = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ['email', 'phone', 'first_name', 'last_name', 'password', 'password_confirm']
+        fields = ['email', 'phone', 'first_name', 'last_name', 'password', 'password_confirm', 'company_name']
 
     def validate(self, data):
         if data['password'] != data['password_confirm']:
@@ -47,8 +48,78 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data.pop('password_confirm')
+        from django.utils.text import slugify
+        import uuid
+        from apps.businesses.models import Business, BusinessMembership
+        from apps.branches.models import Branch
+        from apps.accounts.models import Role, UserRole
+        from apps.employees.models import Employee
+
+        validated_data.pop('password_confirm', None)
+        company_name = validated_data.pop('company_name', None)
+
         user = User.objects.create_user(**validated_data)
+
+        # Create business if company name is provided or default to user's company
+        biz_name = (company_name or f"{user.first_name}'s Organization").strip()
+        base_slug = slugify(biz_name) or 'company'
+        unique_slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+
+        business = Business.objects.create(
+            name=biz_name,
+            slug=unique_slug,
+            email=user.email,
+            phone=user.phone or '',
+            country='India',
+            currency='INR',
+            timezone='Asia/Kolkata',
+            working_days=['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+        )
+
+        # Create primary branch
+        branch = Branch.objects.create(
+            business=business,
+            name='Headquarters',
+            code='BR-HQ',
+            is_head_office=True,
+            geofence_radius=500
+        )
+
+        # Create business owner membership
+        BusinessMembership.objects.create(
+            user=user,
+            business=business,
+            is_owner=True
+        )
+
+        # Assign BUSINESS_OWNER role
+        owner_role = Role.objects.filter(code='BUSINESS_OWNER', is_system=True).first()
+        if owner_role:
+            UserRole.objects.create(
+                user=user,
+                business=business,
+                role=owner_role,
+                branch=branch
+            )
+
+        # Create self employee profile
+        from django.utils import timezone
+        Employee.objects.create(
+            user=user,
+            business=business,
+            branch=branch,
+            employee_code=f'WP-{uuid.uuid4().hex[:4].upper()}',
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email,
+            phone=user.phone or '',
+            joining_date=timezone.now().date(),
+            status=Employee.Status.ACTIVE
+        )
+
+        user.active_business = business
+        user.save(update_fields=['active_business'])
+
         return user
 
 

@@ -13,16 +13,14 @@ import {
   Layers,
   Cpu,
   UserCheck,
-  Check,
 } from 'lucide-react';
 import { Loader } from '../components/ui/Loader';
 import { ROLE_LABELS } from '../utils/constants';
 
 export const TestingPanel = () => {
-  const { user, business, roles, permissions, activeRole, login } = useAuth();
+  const { user, business, roles, permissions, activeRole } = useAuth();
   const [health, setHealth] = useState(null);
   const [healthLoading, setHealthLoading] = useState(true);
-  const [switchMessage, setSwitchMessage] = useState(null);
 
   const checkHealth = async () => {
     try {
@@ -45,29 +43,6 @@ export const TestingPanel = () => {
     checkHealth();
   }, []);
 
-  const demoRoles = [
-    { label: 'Business Owner', email: 'owner@apexglobal.com', role: 'BUSINESS_OWNER', desc: 'Full business operations, payroll approvals & settings' },
-    { label: 'HR Manager', email: 'hr@apexglobal.com', role: 'HR_MANAGER', desc: 'Workforce management, roster, shifts & leave policies' },
-    { label: 'Accountant', email: 'accountant@apexglobal.com', role: 'ACCOUNTANT', desc: 'Salary runs, advance recoveries & cashbook records' },
-    { label: 'Branch Manager', email: 'branchmanager@apexglobal.com', role: 'BRANCH_MANAGER', desc: 'Branch-scoped workforce & shift operations' },
-    { label: 'Supervisor', email: 'supervisor@apexglobal.com', role: 'SUPERVISOR', desc: 'Team attendance regularizations & approvals' },
-    { label: 'Employee', email: 'employee@apexglobal.com', role: 'EMPLOYEE', desc: 'Self-service attendance, leaves & payslip downloads' },
-    { label: 'Field Employee', email: 'field@apexglobal.com', role: 'FIELD_EMPLOYEE', desc: 'GPS & geofence mobile check-ins & visits' },
-    { label: 'Auditor', email: 'auditor@apexglobal.com', role: 'AUDITOR', desc: 'Read-only financial & attendance compliance audit' },
-    { label: 'Super Admin', email: 'superadmin@workpulse.com', role: 'SUPER_ADMIN', desc: 'Platform tenant controls & health monitoring' },
-  ];
-
-  const handleQuickSwitch = async (email, roleName) => {
-    try {
-      await login(email, 'Demo@12345');
-      setSwitchMessage(`Switched session to ${roleName} (${email})! All role-based permissions reloaded.`);
-      setTimeout(() => setSwitchMessage(null), 4000);
-      await checkHealth();
-    } catch (err) {
-      alert('Quick switch failed.');
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -78,7 +53,7 @@ export const TestingPanel = () => {
             <span>Developer & Testing Diagnostics Panel</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time environment metrics, PostgreSQL telemetry, and instantaneous multi-role simulation
+            Real-time environment metrics, live PostgreSQL telemetry, and active session permissions
           </p>
         </div>
 
@@ -91,13 +66,6 @@ export const TestingPanel = () => {
           <span>{healthLoading ? 'Checking...' : 'Refresh Telemetry'}</span>
         </button>
       </div>
-
-      {switchMessage && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2 font-medium">
-          <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{switchMessage}</span>
-        </div>
-      )}
 
       {/* System Status Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -155,56 +123,34 @@ export const TestingPanel = () => {
             <span>Active Tenant Session</span>
             <Shield className="w-4 h-4 text-purple-500" />
           </div>
-          <p className="text-sm font-bold text-slate-900 mt-2 truncate">{business?.name || 'Apex Global Enterprises'}</p>
-          <p className="text-[11px] text-slate-400 mt-1 font-mono truncate">{business?.slug || 'apex-global'}</p>
+          <p className="text-sm font-bold text-slate-900 mt-2 truncate">{business?.name || 'My Organization'}</p>
+          <p className="text-[11px] text-slate-400 mt-1 font-mono truncate">{business?.slug || 'my-org'}</p>
         </div>
       </div>
 
-      {/* Role Simulation Switcher */}
+      {/* Active User Session Details */}
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
         <h3 className="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
           <UserCheck className="w-4 h-4 text-indigo-600" />
-          <span>One-Click Role Simulation Switcher</span>
+          <span>Active Authenticated Session Profile</span>
         </h3>
         <p className="text-xs text-slate-500 mb-4">
-          Click any role below to switch your live session. The sidebar navigation, modules, and API permissions will update immediately to reflect that role.
+          Session identity and business membership verified from PostgreSQL
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {demoRoles.map((r) => {
-            const isCurrent = user?.email === r.email;
-            return (
-              <div
-                key={r.email}
-                className={`p-3.5 rounded-xl border transition-all ${
-                  isCurrent
-                    ? 'border-indigo-600 bg-indigo-50/50 shadow-sm ring-1 ring-indigo-500'
-                    : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-slate-900">{r.label}</span>
-                  {isCurrent && (
-                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
-                      ACTIVE NOW
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-slate-500 mb-3 min-h-[32px]">{r.desc}</p>
-                <button
-                  onClick={() => handleQuickSwitch(r.email, r.label)}
-                  disabled={isCurrent}
-                  className={`w-full py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                    isCurrent
-                      ? 'bg-slate-200 text-slate-500 cursor-default font-bold'
-                      : 'bg-white border border-slate-300 text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 shadow-sm'
-                  }`}
-                >
-                  {isCurrent ? 'Current Active Role' : `Switch to ${r.label}`}
-                </button>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+            <span className="text-slate-400 block font-medium mb-1">User Full Name</span>
+            <span className="font-bold text-slate-900 text-sm">{user?.full_name || 'Anonymous'}</span>
+          </div>
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+            <span className="text-slate-400 block font-medium mb-1">Email Address</span>
+            <span className="font-bold text-slate-900 text-sm font-mono">{user?.email || '-'}</span>
+          </div>
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+            <span className="text-slate-400 block font-medium mb-1">Assigned Role</span>
+            <span className="font-bold text-indigo-700 text-sm font-mono">{ROLE_LABELS[activeRole] || activeRole}</span>
+          </div>
         </div>
       </div>
 
@@ -217,7 +163,7 @@ export const TestingPanel = () => {
 
         <div className="flex flex-wrap gap-1.5 max-h-52 overflow-y-auto p-3 bg-slate-50 rounded-lg border border-slate-200">
           {permissions.length === 0 ? (
-            <span className="text-xs text-slate-400">All permissions granted (Superuser bypass mode active)</span>
+            <span className="text-xs text-slate-400">All permissions granted (Superuser / Business Owner mode active)</span>
           ) : (
             permissions.map((p) => (
               <span
@@ -233,4 +179,3 @@ export const TestingPanel = () => {
     </div>
   );
 };
-

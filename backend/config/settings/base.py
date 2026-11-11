@@ -104,6 +104,23 @@ DATABASES = {
     }
 }
 
+# Auto-parse DATABASE_URL if provided by cloud platforms (Render, Neon, Supabase, Railway)
+DATABASE_URL = config('DATABASE_URL', default=None)
+if DATABASE_URL:
+    from urllib.parse import urlparse, unquote
+    parsed = urlparse(DATABASE_URL)
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': parsed.path.lstrip('/'),
+        'USER': unquote(parsed.username) if parsed.username else 'postgres',
+        'PASSWORD': unquote(parsed.password) if parsed.password else '',
+        'HOST': parsed.hostname or 'localhost',
+        'PORT': str(parsed.port or 5432),
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
+    }
+
 # Custom user model
 AUTH_USER_MODEL = 'accounts.User'
 

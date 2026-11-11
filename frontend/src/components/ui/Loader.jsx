@@ -16,3 +16,4 @@ export const Loader = ({ message = 'Loading...', size = 'md' }) => {
     </div>
   );
 };
+

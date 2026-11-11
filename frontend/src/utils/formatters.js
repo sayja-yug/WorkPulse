@@ -30,3 +30,4 @@ export const formatTime = (timeString) => {
     return timeString;
   }
 };
+

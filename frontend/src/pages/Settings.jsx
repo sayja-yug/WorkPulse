@@ -115,3 +115,4 @@ export const Settings = () => {
     </div>
   );
 };
+

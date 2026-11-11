@@ -37,3 +37,4 @@ export const ROLE_BADGE_COLORS = {
   AUDITOR: 'bg-rose-50 text-rose-700 border-rose-200',
   SUPER_ADMIN: 'bg-zinc-800 text-zinc-100 border-zinc-700',
 };
+

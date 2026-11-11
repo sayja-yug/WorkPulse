@@ -114,6 +114,7 @@ class Employee(TenantModel):
 
     class Meta:
         db_table = 'employees'
+        ordering = ['-created_at']
         constraints = [
             models.UniqueConstraint(
                 fields=['business', 'employee_code'],

@@ -76,7 +76,7 @@ export const Dashboard = () => {
             <span className="text-xs font-semibold px-2.5 py-0.5 bg-indigo-500/40 rounded-full border border-indigo-300/30">
               {activeRole.replace('_', ' ')}
             </span>
-            <span className="text-xs text-indigo-200">Active Tenant: {business?.name || 'Apex Global Enterprises'}</span>
+            <span className="text-xs text-indigo-200">Active Tenant: {business?.name || 'Trinetra Technologies Pvt Ltd'}</span>
           </div>
           <h2 className="text-2xl font-bold tracking-tight">Welcome back, {user?.full_name}!</h2>
           <p className="text-indigo-100 text-sm mt-0.5">

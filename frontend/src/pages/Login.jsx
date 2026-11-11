@@ -218,20 +218,20 @@ export const Login = () => {
               <div className="pt-3 border-t border-slate-100">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Quick Role Sign-In (Click to Fill)
+                    Quick Sign-In: Trinetra Technologies
                   </span>
                   <span className="text-[10px] text-indigo-600 font-mono font-medium">Pass: WorkPulse@2026</span>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-0.5">
                   {[
-                    { name: 'Owner', email: 'owner@workpulse.com', cls: 'border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100' },
-                    { name: 'HR Mgr', email: 'hr@workpulse.com', cls: 'border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100' },
-                    { name: 'Branch Mgr', email: 'branchmanager@workpulse.com', cls: 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100' },
-                    { name: 'Accountant', email: 'accountant@workpulse.com', cls: 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' },
-                    { name: 'Supervisor', email: 'supervisor@workpulse.com', cls: 'border-cyan-200 text-cyan-700 bg-cyan-50 hover:bg-cyan-100' },
-                    { name: 'Employee', email: 'employee@workpulse.com', cls: 'border-slate-200 text-slate-700 bg-slate-50 hover:bg-slate-100' },
-                    { name: 'Field Staff', email: 'field@workpulse.com', cls: 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100' },
-                    { name: 'Auditor', email: 'auditor@workpulse.com', cls: 'border-teal-200 text-teal-700 bg-teal-50 hover:bg-teal-100' },
+                    { name: 'Owner', email: 'owner@trinetra.com', cls: 'border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100' },
+                    { name: 'HR Mgr', email: 'hr@trinetra.com', cls: 'border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100' },
+                    { name: 'Branch Mgr', email: 'branchmanager@trinetra.com', cls: 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100' },
+                    { name: 'Accountant', email: 'accountant@trinetra.com', cls: 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' },
+                    { name: 'Supervisor', email: 'supervisor@trinetra.com', cls: 'border-cyan-200 text-cyan-700 bg-cyan-50 hover:bg-cyan-100' },
+                    { name: 'Employee', email: 'employee@trinetra.com', cls: 'border-slate-200 text-slate-700 bg-slate-50 hover:bg-slate-100' },
+                    { name: 'Field Staff', email: 'field@trinetra.com', cls: 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100' },
+                    { name: 'Auditor', email: 'auditor@trinetra.com', cls: 'border-teal-200 text-teal-700 bg-teal-50 hover:bg-teal-100' },
                     { name: 'Super Admin', email: 'superadmin@workpulse.com', cls: 'border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100' },
                     { name: 'Support', email: 'support@workpulse.com', cls: 'border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100' },
                     { name: 'Billing', email: 'billing@workpulse.com', cls: 'border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100' },

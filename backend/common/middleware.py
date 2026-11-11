@@ -37,9 +37,8 @@ class TenantMiddleware:
         if hasattr(request, 'user') and request.user.is_authenticated:
             _thread_locals.user = request.user
             business_id = request.headers.get('X-Business-ID')
+            from apps.businesses.models import BusinessMembership
             if business_id:
-                # Validate business membership
-                from apps.businesses.models import BusinessMembership
                 try:
                     membership = BusinessMembership.objects.select_related('business').get(
                         user=request.user,
@@ -51,6 +50,9 @@ class TenantMiddleware:
                     request.business_membership = membership
                 except BusinessMembership.DoesNotExist:
                     pass
+            elif getattr(request.user, 'active_business', None):
+                _thread_locals.business = request.user.active_business
+                request.business = request.user.active_business
 
         response = self.get_response(request)
 

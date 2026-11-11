@@ -12,11 +12,29 @@ from apps.expenses.models import Expense
 from apps.expenses.services import CashbookService
 
 
+def get_business_context(request):
+    """Safely resolve active business from request, headers, or authenticated user."""
+    business = getattr(request, 'business', None)
+    if not business:
+        business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
+        if business_id:
+            from apps.businesses.models import Business
+            business = Business.objects.filter(id=business_id).first()
+        elif getattr(request.user, 'active_business', None):
+            business = request.user.active_business
+        elif getattr(request.user, 'is_authenticated', False):
+            from apps.businesses.models import BusinessMembership
+            membership = BusinessMembership.objects.filter(user=request.user, is_active=True).first()
+            if membership:
+                business = membership.business
+    return business
+
+
 class BusinessOverviewView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        business = getattr(request, 'business', None)
+        business = get_business_context(request)
         if not business:
             return Response({'success': False, 'error': {'message': 'No business context selected.'}}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -76,7 +94,9 @@ class AttendanceReportView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        business = getattr(request, 'business', None)
+        business = get_business_context(request)
+        if not business:
+            return Response({'success': False, 'error': {'message': 'No business context selected.'}}, status=status.HTTP_400_BAD_REQUEST)
         date_from = request.query_params.get('date_from', str(timezone.now().date().replace(day=1)))
         date_to = request.query_params.get('date_to', str(timezone.now().date()))
 
@@ -106,7 +126,9 @@ class PayrollReportView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        business = getattr(request, 'business', None)
+        business = get_business_context(request)
+        if not business:
+            return Response({'success': False, 'error': {'message': 'No business context selected.'}}, status=status.HTTP_400_BAD_REQUEST)
         runs = PayrollRun.objects.filter(business=business).order_by('-period_start')[:12]
         data = [
             {

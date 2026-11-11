@@ -34,7 +34,13 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Standardize paginated DRF responses so both res.data.data and res.data.results work seamlessly
+    if (response.data && response.data.results && !response.data.data) {
+      response.data.data = response.data.results;
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest?._retry) {

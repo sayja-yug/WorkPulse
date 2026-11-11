@@ -51,16 +51,19 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await api.post('/auth/login/', { email, password });
-    const { access, refresh } = res.data.data;
-    localStorage.setItem('access_token', access);
-    localStorage.setItem('refresh_token', refresh);
+    const payload = res.data?.data || res.data;
+    const access = payload?.access;
+    const refresh = payload?.refresh;
+    if (access) localStorage.setItem('access_token', access);
+    if (refresh) localStorage.setItem('refresh_token', refresh);
     await fetchSession();
   };
 
   const register = async (registerData) => {
     const res = await api.post('/auth/register/', registerData);
-    const { tokens } = res.data.data;
-    if (tokens) {
+    const payload = res.data?.data || res.data;
+    const tokens = payload?.tokens || payload;
+    if (tokens?.access) {
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
       await fetchSession();

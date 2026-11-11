@@ -15,4 +15,7 @@ python manage.py migrate
 echo "Initializing system roles and permission contracts..."
 python manage.py init_system
 
+echo "Seeding verified role accounts..."
+python manage.py seed_role_accounts
+
 echo "Backend build completed successfully!"

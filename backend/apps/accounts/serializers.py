@@ -20,6 +20,9 @@ class UserSerializer(serializers.ModelSerializer):
             roles = PermissionService.get_user_roles(obj, obj.active_business)
             if roles:
                 return roles[0]
+        fallback_role = obj.user_roles.values_list('role__code', flat=True).first()
+        if fallback_role:
+            return fallback_role
         return 'EMPLOYEE'
 
     class Meta:

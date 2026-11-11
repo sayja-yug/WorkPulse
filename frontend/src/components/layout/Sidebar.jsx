@@ -31,7 +31,7 @@ export const Sidebar = () => {
       name: 'Employees',
       path: '/employees',
       icon: Users,
-      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
+      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN', 'SUPPORT_ADMIN'],
     },
     {
       name: 'Attendance',
@@ -75,13 +75,13 @@ export const Sidebar = () => {
       name: 'Reports & Analytics',
       path: '/reports',
       icon: BarChart3,
-      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN'],
+      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN', 'BILLING_ADMIN', 'SUPPORT_ADMIN'],
     },
     {
       name: 'Organization Settings',
       path: '/settings',
       icon: Settings,
-      allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
+      allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN', 'BILLING_ADMIN'],
     },
   ];
 

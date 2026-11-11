@@ -181,3 +181,4 @@ class Command(BaseCommand):
             f'Standard Password for all accounts: {self.DEFAULT_PASSWORD}\n'
             '============================================================'
         ))
+

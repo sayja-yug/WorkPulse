@@ -16,8 +16,12 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Health check (both root api and v1)
+    path('health/', HealthCheckView.as_view(), name='root-health'),
     path('api/health/', HealthCheckView.as_view(), name='health-check'),
     path('api/v1/health/', HealthCheckView.as_view(), name='health-check-v1'),
+
+    # Direct auth fallback for requests without /api/v1 prefix
+    path('auth/', include('apps.accounts.urls')),
 
     # API v1
     path('api/v1/auth/', include('apps.accounts.urls')),

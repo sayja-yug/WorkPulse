@@ -1,7 +1,16 @@
 import axios from 'axios';
 
+const getBaseUrl = () => {
+  let url = (import.meta.env.VITE_API_BASE_URL || '/api/v1').trim();
+  url = url.replace(/\/+$/, ''); // Remove trailing slash
+  if (!url.endsWith('/api/v1') && !url.endsWith('/api')) {
+    url = `${url}/api/v1`;
+  }
+  return url;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -33,7 +42,7 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem('refresh_token');
       if (refresh) {
         try {
-          const res = await axios.post('/api/v1/auth/token/refresh/', { refresh });
+          const res = await axios.post(`${getBaseUrl()}/auth/token/refresh/`, { refresh });
           const newAccess = res.data.access;
           localStorage.setItem('access_token', newAccess);
           originalRequest.headers.Authorization = `Bearer ${newAccess}`;

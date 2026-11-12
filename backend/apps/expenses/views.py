@@ -45,7 +45,14 @@ class CashTransactionViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         business = getattr(self.request, 'business', None)
-        CashbookService.record_transaction(
+        if not business:
+            business_id = self.request.headers.get('X-Business-ID') or self.request.META.get('HTTP_X_BUSINESS_ID')
+            if business_id:
+                from apps.businesses.models import Business
+                business = Business.objects.filter(id=business_id).first()
+            elif getattr(self.request.user, 'active_business', None):
+                business = self.request.user.active_business
+        serializer.instance = CashbookService.record_transaction(
             business=business,
             tx_type=serializer.validated_data.get('type'),
             amount=serializer.validated_data.get('amount'),
@@ -63,6 +70,13 @@ class CashbookBalanceView(views.APIView):
 
     def get(self, request):
         business = getattr(request, 'business', None)
-        balance = CashbookService.get_current_balance(business)
+        if not business:
+            business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
+            if business_id:
+                from apps.businesses.models import Business
+                business = Business.objects.filter(id=business_id).first()
+            elif getattr(request.user, 'active_business', None):
+                business = request.user.active_business
+        balance = CashbookService.get_current_balance(business) if business else 0
         return Response({'success': True, 'data': {'current_balance': str(balance)}})
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Building2,
   Users,
   CalendarCheck2,
   Clock,
@@ -9,7 +10,12 @@ import {
   Banknote,
   HandCoins,
   Receipt,
+  Wallet,
+  Navigation,
   BarChart3,
+  Bell,
+  Shield,
+  CreditCard,
   Settings,
   Terminal,
   ShieldCheck,
@@ -19,7 +25,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from '../../utils/constants';
 
 export const Sidebar = () => {
-  const { user, activeRole, hasRole, hasPermission } = useAuth();
+  const { user, activeRole, hasPermission } = useAuth();
 
   const allNavItems = [
     {
@@ -28,16 +34,22 @@ export const Sidebar = () => {
       icon: LayoutDashboard,
     },
     {
+      name: 'Organization',
+      path: '/organization',
+      icon: Building2,
+      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
+    },
+    {
       name: 'Employees',
       path: '/employees',
       icon: Users,
-      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN', 'SUPPORT_ADMIN'],
+      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
     },
     {
       name: 'Attendance',
       path: '/attendance',
       icon: CalendarCheck2,
-      employeeName: 'My Attendance & Clock-In',
+      employeeName: 'Attendance',
     },
     {
       name: 'Shifts & Roster',
@@ -49,45 +61,73 @@ export const Sidebar = () => {
       name: 'Leave Management',
       path: '/leaves',
       icon: CalendarOff,
-      employeeName: 'My Leave Applications',
+      employeeName: 'My Leaves',
     },
     {
-      name: 'Payroll & Slips',
+      name: 'Payroll',
       path: '/payroll',
       icon: Banknote,
-      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'AUDITOR', 'EMPLOYEE', 'FIELD_EMPLOYEE'],
+      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'EMPLOYEE', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
       employeeName: 'My Payslips',
     },
     {
       name: 'Advances & Loans',
       path: '/advances',
       icon: HandCoins,
-      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'EMPLOYEE', 'FIELD_EMPLOYEE'],
-      employeeName: 'Salary Advance Requests',
+      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'EMPLOYEE', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
+      employeeName: 'Advances & Loans',
     },
     {
-      name: 'Expenses & Cashbook',
+      name: 'Expenses',
       path: '/expenses',
       icon: Receipt,
-      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'AUDITOR'],
+      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'SUPER_ADMIN'],
     },
     {
-      name: 'Reports & Analytics',
+      name: 'Cashbook',
+      path: '/cashbook',
+      icon: Wallet,
+      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'SUPER_ADMIN'],
+    },
+    {
+      name: 'Field Management',
+      path: '/field-management',
+      icon: Navigation,
+      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
+    },
+    {
+      name: 'Reports',
       path: '/reports',
       icon: BarChart3,
-      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN', 'BILLING_ADMIN', 'SUPPORT_ADMIN'],
+      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN'],
     },
     {
-      name: 'Organization Settings',
+      name: 'Notifications',
+      path: '/notifications',
+      icon: Bell,
+    },
+    {
+      name: 'Roles & Permissions',
+      path: '/roles',
+      icon: Shield,
+      allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
+    },
+    {
+      name: 'Subscription',
+      path: '/subscription',
+      icon: CreditCard,
+      allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
+    },
+    {
+      name: 'Settings',
       path: '/settings',
       icon: Settings,
-      allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN', 'BILLING_ADMIN'],
+      allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
     },
   ];
 
   const isEmployeeRole = activeRole === 'EMPLOYEE' || activeRole === 'FIELD_EMPLOYEE';
 
-  // Filter items strictly based on role
   const visibleNavItems = allNavItems.filter((item) => {
     if (!item.allowedRoles && !item.allowedPermissions) return true;
     if (item.allowedRoles && item.allowedRoles.includes(activeRole)) return true;
@@ -126,16 +166,16 @@ export const Sidebar = () => {
       </div>
 
       {/* Navigation Links Filtered by Role */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {visibleNavItems.map((item) => {
-          const displayName = (isEmployeeRole && item.employeeName) ? item.employeeName : item.name;
+          const displayName = isEmployeeRole && item.employeeName ? item.employeeName : item.name;
           return (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
                   isActive
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -148,14 +188,11 @@ export const Sidebar = () => {
           );
         })}
 
-        <div className="pt-4 mt-4 border-t border-slate-800">
-          <p className="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-            Diagnostics & Role Switcher
-          </p>
+        <div className="pt-3 mt-3 border-t border-slate-800">
           <NavLink
             to="/testing-panel"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 isActive
                   ? 'bg-emerald-600 text-white'
                   : 'text-emerald-400 hover:text-emerald-300 hover:bg-slate-800/60'
@@ -163,13 +200,13 @@ export const Sidebar = () => {
             }
           >
             <Terminal className="w-4 h-4" />
-            <span>Role Switch & Diagnostics</span>
+            <span>Diagnostics</span>
           </NavLink>
         </div>
       </nav>
 
       {/* Footer Security Badge */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between text-xs text-slate-400">
+      <div className="p-3.5 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between text-xs text-slate-400">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
           <span className="text-[11px]">Strict RBAC Active</span>
@@ -179,4 +216,3 @@ export const Sidebar = () => {
     </aside>
   );
 };
-

@@ -14,6 +14,12 @@ import { Leaves } from './pages/Leaves';
 import { Payroll } from './pages/Payroll';
 import { Advances } from './pages/Advances';
 import { Expenses } from './pages/Expenses';
+import { Cashbook } from './pages/Cashbook';
+import { Organization } from './pages/Organization';
+import { FieldManagement } from './pages/FieldManagement';
+import { Notifications } from './pages/Notifications';
+import { RolesPermissions } from './pages/RolesPermissions';
+import { Subscription } from './pages/Subscription';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { TestingPanel } from './pages/TestingPanel';
@@ -145,6 +151,14 @@ export const App = () => {
             />
             {/* Business Portal Routes */}
             <Route
+              path="organization"
+              element={
+                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN']} moduleName="Organization Structure">
+                  <Organization />
+                </RoleRoute>
+              }
+            />
+            <Route
               path="employees"
               element={
                 <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN']} moduleName="Employee Management">
@@ -167,8 +181,24 @@ export const App = () => {
             <Route
               path="expenses"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'AUDITOR']} moduleName="Expenses & Cashbook">
+                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'AUDITOR']} moduleName="Business Expenses">
                   <Expenses />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="cashbook"
+              element={
+                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'AUDITOR']} moduleName="Cashbook">
+                  <Cashbook />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="field-management"
+              element={
+                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'FIELD_EMPLOYEE', 'SUPER_ADMIN']} moduleName="Field Management">
+                  <FieldManagement />
                 </RoleRoute>
               }
             />
@@ -177,6 +207,23 @@ export const App = () => {
               element={
                 <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN']} moduleName="Reports & Analytics">
                   <Reports />
+                </RoleRoute>
+              }
+            />
+            <Route path="notifications" element={<Notifications />} />
+            <Route
+              path="roles"
+              element={
+                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'SUPER_ADMIN']} moduleName="Roles & Permissions">
+                  <RolesPermissions />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="subscription"
+              element={
+                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'SUPER_ADMIN']} moduleName="Subscription & Billing">
+                  <Subscription />
                 </RoleRoute>
               }
             />

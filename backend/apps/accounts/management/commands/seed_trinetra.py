@@ -304,10 +304,10 @@ class Command(BaseCommand):
                 effective_from=datetime.date(2026, 1, 1)
             )
 
-        # 7. Seed Attendance Records for the Past 7 Days
-        self.stdout.write(self.style.NOTICE('Seeding Trinetra live attendance records and punches...'))
+        # 7. Seed Attendance Records for the Past 6 Days (excluding today so live punches start fresh)
+        self.stdout.write(self.style.NOTICE('Seeding Trinetra historical attendance records...'))
         today = timezone.now().date()
-        for offset in range(7):
+        for offset in range(1, 7):
             att_date = today - datetime.timedelta(days=offset)
             for emp in created_employees:
                 status = AttendanceRecord.Status.PRESENT

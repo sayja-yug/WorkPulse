@@ -58,9 +58,11 @@ class AttendanceService:
                 'source': AttendanceRecord.Source.GPS if (latitude and longitude) else AttendanceRecord.Source.SELF
             }
         )
-        if not created and not record.check_in:
+        if not created and (not record.check_in or record.check_out is not None):
             record.check_in = ts
-            record.save(update_fields=['check_in'])
+            record.check_out = None
+            record.status = AttendanceRecord.Status.PRESENT
+            record.save(update_fields=['check_in', 'check_out', 'status', 'updated_at'])
 
         # Create check-in punch
         AttendancePunch.objects.create(

@@ -26,7 +26,7 @@ export const Attendance = () => {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('today'); // 'today' | 'history'
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = new Date().toLocaleDateString('en-CA');
 
   const fetchAttendance = async () => {
     try {

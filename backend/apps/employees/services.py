@@ -15,7 +15,7 @@ class EmployeeService:
 
     @classmethod
     @transaction.atomic
-    def create_employee(cls, business, validated_data, created_by=None):
+    def create_employee(cls, business, validated_data, created_by=None, base_salary=None, shift_id=None, send_invite=True):
         if not validated_data.get('employee_code'):
             validated_data['employee_code'] = cls.generate_employee_code(business)
 
@@ -24,9 +24,9 @@ class EmployeeService:
             from apps.branches.models import Branch
             validated_data['branch'] = Branch.objects.filter(business=business).first()
 
-        # Link or create User account if email is provided
+        # Link or create User account if email is provided and invitation requested
         email = validated_data.get('email')
-        if email and not validated_data.get('user'):
+        if email and send_invite and not validated_data.get('user'):
             from apps.accounts.models import User, Role, UserRole
             from apps.businesses.models import BusinessMembership
             user = User.objects.filter(email__iexact=email).first()
@@ -55,6 +55,35 @@ class EmployeeService:
             validated_data['user'] = user
 
         employee = Employee.objects.create(business=business, **validated_data)
+
+        # Optional Salary Structure creation
+        if base_salary and business:
+            try:
+                from decimal import Decimal
+                from apps.payroll.models import EmployeeSalaryStructure
+                EmployeeSalaryStructure.objects.create(
+                    employee=employee,
+                    business=business,
+                    base_salary=Decimal(str(base_salary)),
+                    effective_from=employee.joining_date or timezone.now().date(),
+                    is_current=True,
+                )
+            except Exception:
+                pass
+
+        # Optional Shift Assignment creation
+        if shift_id:
+            try:
+                from apps.shifts.models import Shift, ShiftAssignment
+                shift = Shift.objects.filter(id=shift_id, business=business).first()
+                if shift:
+                    ShiftAssignment.objects.create(
+                        employee=employee,
+                        shift=shift,
+                        effective_from=employee.joining_date or timezone.now().date(),
+                    )
+            except Exception:
+                pass
 
         # Log employment history
         EmploymentHistory.objects.create(

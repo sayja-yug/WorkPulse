@@ -8,6 +8,7 @@ import { BusinessSelection } from './pages/BusinessSelection';
 import { Dashboard } from './pages/Dashboard';
 import { PlatformDashboard } from './pages/PlatformDashboard';
 import { Employees } from './pages/Employees';
+import { EmployeeProfile } from './pages/EmployeeProfile';
 import { Attendance } from './pages/Attendance';
 import { Shifts } from './pages/Shifts';
 import { Leaves } from './pages/Leaves';
@@ -163,6 +164,14 @@ export const App = () => {
               element={
                 <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN']} moduleName="Employee Management">
                   <Employees />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="employees/:id"
+              element={
+                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN']} moduleName="Employee Profile">
+                  <EmployeeProfile />
                 </RoleRoute>
               }
             />

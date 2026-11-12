@@ -42,8 +42,18 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         serializer.instance = EmployeeService.create_employee(
             business=business,
             validated_data=serializer.validated_data,
-            created_by=self.request.user
+            created_by=self.request.user,
+            base_salary=self.request.data.get('base_salary'),
+            shift_id=self.request.data.get('shift_id'),
+            send_invite=self.request.data.get('send_invite', True),
         )
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        employee = self.get_object()
+        employee.status = Employee.Status.ACTIVE
+        employee.save(update_fields=['status', 'updated_at'])
+        return Response({'success': True, 'data': {'message': 'Employee activated successfully.'}})
 
     @action(detail=True, methods=['post'])
     def deactivate(self, request, pk=None):

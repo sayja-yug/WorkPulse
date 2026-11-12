@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [needsBusinessSelection, setNeedsBusinessSelection] = useState(false);
 
   const fetchSession = async () => {
     const token = localStorage.getItem('access_token');
@@ -28,6 +29,14 @@ export const AuthProvider = ({ children }) => {
       setBusinesses(bizList);
 
       const savedBizId = localStorage.getItem('active_business_id');
+      const confirmed = sessionStorage.getItem('business_confirmed') === 'true';
+
+      if (bizList.length > 1 && !confirmed && !userData?.is_superuser) {
+        setNeedsBusinessSelection(true);
+      } else {
+        setNeedsBusinessSelection(false);
+      }
+
       const activeBiz = bizList.find((b) => b.id === savedBizId) || bizList[0];
 
       if (activeBiz) {
@@ -74,24 +83,32 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('active_business_id');
+    sessionStorage.removeItem('business_confirmed');
     setUser(null);
     setBusiness(null);
     setBusinesses([]);
     setRoles([]);
     setPermissions([]);
+    setNeedsBusinessSelection(false);
   };
 
-  const switchBusiness = async (businessId) => {
+  const selectBusiness = async (businessId) => {
     localStorage.setItem('active_business_id', businessId);
+    sessionStorage.setItem('business_confirmed', 'true');
+    setNeedsBusinessSelection(false);
     try {
       const res = await api.post('/auth/me/switch-business/', { business_id: businessId });
       setRoles(res.data?.data?.roles || []);
       setPermissions(res.data?.data?.permissions || []);
     } catch (err) {
-      console.error('Switch business failed', err);
+      console.error('Select business failed', err);
     }
     const found = businesses.find((b) => b.id === businessId);
     if (found) setBusiness(found);
+  };
+
+  const switchBusiness = async (businessId) => {
+    await selectBusiness(businessId);
     window.location.reload();
   };
 
@@ -137,9 +154,11 @@ export const AuthProvider = ({ children }) => {
         activeRole,
         isAuthenticated: !!user,
         isLoading,
+        needsBusinessSelection,
         login,
         register,
         logout,
+        selectBusiness,
         switchBusiness,
         createBusiness,
         hasPermission,

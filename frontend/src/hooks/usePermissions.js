@@ -5,7 +5,10 @@ export const usePermissions = () => {
   const { user, activeRole, roles, permissions, hasPermission, hasRole } = useAuth();
 
   const isOwner = hasRole(ROLES.BUSINESS_OWNER) || user?.is_superuser;
-  const isSuperAdmin = hasRole(ROLES.SUPER_ADMIN) || user?.is_superuser;
+  const isSuperAdmin = activeRole === ROLES.SUPER_ADMIN || user?.is_superuser;
+  const isSupportAdmin = activeRole === ROLES.SUPPORT_ADMIN;
+  const isBillingAdmin = activeRole === ROLES.BILLING_ADMIN;
+  const isPlatformAdmin = isSuperAdmin || isSupportAdmin || isBillingAdmin;
   const isHR = hasRole(ROLES.HR_MANAGER) || isOwner;
   const isAccountant = hasRole(ROLES.ACCOUNTANT) || isOwner;
   const isBranchManager = hasRole(ROLES.BRANCH_MANAGER) || isOwner;
@@ -23,6 +26,9 @@ export const usePermissions = () => {
     hasRole,
     isOwner,
     isSuperAdmin,
+    isSupportAdmin,
+    isBillingAdmin,
+    isPlatformAdmin,
     isHR,
     isAccountant,
     isBranchManager,

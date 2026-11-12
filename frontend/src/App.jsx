@@ -2,8 +2,11 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import { PlatformLayout } from './components/layout/PlatformLayout';
 import { Login } from './pages/Login';
+import { BusinessSelection } from './pages/BusinessSelection';
 import { Dashboard } from './pages/Dashboard';
+import { PlatformDashboard } from './pages/PlatformDashboard';
 import { Employees } from './pages/Employees';
 import { Attendance } from './pages/Attendance';
 import { Shifts } from './pages/Shifts';
@@ -29,6 +32,32 @@ const ProtectedRoute = ({ children }) => {
   }
 
   return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+const PortalLayoutSwitch = () => {
+  const { activeRole, user, needsBusinessSelection } = useAuth();
+  const isPlatformAdmin =
+    user?.is_superuser ||
+    ['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN'].includes(activeRole);
+
+  if (isPlatformAdmin) {
+    return <PlatformLayout />;
+  }
+
+  if (needsBusinessSelection) {
+    return <Navigate to="/select-business" replace />;
+  }
+
+  return <DashboardLayout />;
+};
+
+const RoleIndexSwitch = () => {
+  const { activeRole, user } = useAuth();
+  const isPlatformAdmin =
+    user?.is_superuser ||
+    ['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN'].includes(activeRole);
+
+  return isPlatformAdmin ? <PlatformDashboard view="overview" /> : <Dashboard />;
 };
 
 const RoleRoute = ({ children, allowedRoles, moduleName }) => {
@@ -63,7 +92,7 @@ const RoleRoute = ({ children, allowedRoles, moduleName }) => {
               to="/testing-panel"
               className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors"
             >
-              Switch Role in Diagnostics
+              View Diagnostics
             </Link>
           </div>
         </div>
@@ -81,14 +110,40 @@ export const App = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route
+            path="/select-business"
+            element={
+              <ProtectedRoute>
+                <BusinessSelection />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/"
             element={
               <ProtectedRoute>
-                <DashboardLayout />
+                <PortalLayoutSwitch />
               </ProtectedRoute>
             }
           >
-            <Route index element={<Dashboard />} />
+            <Route index element={<RoleIndexSwitch />} />
+            {/* Platform Admin Routes */}
+            <Route
+              path="platform/tenants"
+              element={
+                <RoleRoute allowedRoles={['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN']} moduleName="Tenant Governance">
+                  <PlatformDashboard view="tenants" />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="platform/billing"
+              element={
+                <RoleRoute allowedRoles={['SUPER_ADMIN', 'BILLING_ADMIN']} moduleName="Platform Billing">
+                  <PlatformDashboard view="billing" />
+                </RoleRoute>
+              }
+            />
+            {/* Business Portal Routes */}
             <Route
               path="employees"
               element={
@@ -141,4 +196,3 @@ export const App = () => {
     </BrowserRouter>
   );
 };
-

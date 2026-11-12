@@ -17,7 +17,9 @@ class BusinessViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser:
+        if user.is_superuser or user.is_staff or user.user_roles.filter(
+            role__code__in=['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN']
+        ).exists():
             return Business.objects.all()
         return Business.objects.filter(memberships__user=user, memberships__is_active=True).distinct()
 
@@ -71,4 +73,13 @@ class BusinessViewSet(viewsets.ModelViewSet):
             'total_employees': business.employees.count()
         }
         return Response({'success': True, 'data': stats})
+
+    @action(detail=True, methods=['post'], url_path='toggle-status')
+    def toggle_status(self, request, pk=None):
+        if not (request.user.is_superuser or request.user.user_roles.filter(role__code='SUPER_ADMIN').exists()):
+            return Response({'success': False, 'error': {'message': 'Only Super Admin can suspend or activate tenants.'}}, status=status.HTTP_403_FORBIDDEN)
+        business = self.get_object()
+        business.is_active = not business.is_active
+        business.save(update_fields=['is_active', 'updated_at'])
+        return Response({'success': True, 'data': BusinessSerializer(business).data})
 

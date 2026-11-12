@@ -22,6 +22,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'aadhaar_number', 'is_field_employee', 'status', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'business', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'employee_code': {'required': False, 'allow_blank': True},
+        }
 
 
 class EmployeeListSerializer(serializers.ModelSerializer):

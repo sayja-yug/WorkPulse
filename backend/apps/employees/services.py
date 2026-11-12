@@ -6,16 +6,53 @@ from .models import Employee, EmploymentHistory
 class EmployeeService:
     @staticmethod
     def generate_employee_code(business):
-        """Generates sequential employee code, e.g. WP-0001."""
-        count = Employee.objects.filter(business=business).count() + 1
+        """Generates unique sequential employee code, e.g. WP-0001."""
         prefix = 'WP'
-        return f'{prefix}-{count:04d}'
+        num = Employee.objects.filter(business=business).count() + 1
+        while Employee.objects.filter(business=business, employee_code=f'{prefix}-{num:04d}').exists():
+            num += 1
+        return f'{prefix}-{num:04d}'
 
     @classmethod
     @transaction.atomic
     def create_employee(cls, business, validated_data, created_by=None):
         if not validated_data.get('employee_code'):
             validated_data['employee_code'] = cls.generate_employee_code(business)
+
+        # Auto-assign default branch if not specified
+        if not validated_data.get('branch') and business:
+            from apps.branches.models import Branch
+            validated_data['branch'] = Branch.objects.filter(business=business).first()
+
+        # Link or create User account if email is provided
+        email = validated_data.get('email')
+        if email and not validated_data.get('user'):
+            from apps.accounts.models import User, Role, UserRole
+            from apps.businesses.models import BusinessMembership
+            user = User.objects.filter(email__iexact=email).first()
+            if not user:
+                user = User.objects.create_user(
+                    email=email,
+                    password='WorkPulse@2026',
+                    first_name=validated_data.get('first_name', 'Staff'),
+                    last_name=validated_data.get('last_name', ''),
+                    phone=validated_data.get('phone', ''),
+                    active_business=business,
+                    email_verified=True,
+                )
+            BusinessMembership.objects.get_or_create(
+                user=user,
+                business=business,
+                defaults={'is_owner': False, 'is_active': True}
+            )
+            emp_role = Role.objects.filter(code=Role.RoleCode.EMPLOYEE, is_system=True).first()
+            if emp_role:
+                UserRole.objects.get_or_create(
+                    user=user,
+                    business=business,
+                    defaults={'role': emp_role, 'branch': validated_data.get('branch')}
+                )
+            validated_data['user'] = user
 
         employee = Employee.objects.create(business=business, **validated_data)
 

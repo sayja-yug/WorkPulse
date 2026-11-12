@@ -5,15 +5,14 @@ import {
   Users,
   Search,
   Plus,
-  Filter,
-  MoreVertical,
   Building,
   Mail,
   Phone,
-  CheckCircle,
-  XCircle,
-  X,
   Briefcase,
+  Calendar,
+  MapPin,
+  UserCheck,
+  Shield,
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
@@ -24,18 +23,29 @@ export const Employees = () => {
   const { canCreateEmployee, isOwner, isHR } = usePermissions();
 
   const [employees, setEmployees] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  // Create Modal
   const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
+    branch: '',
+    department: '',
     employment_type: 'FULL_TIME',
     salary_type: 'MONTHLY',
     joining_date: new Date().toISOString().split('T')[0],
   });
+
+  // View Profile Modal
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   const fetchEmployees = async () => {
     try {
@@ -43,8 +53,8 @@ export const Employees = () => {
       const res = await api.get('/employees/', {
         params: { search: search || undefined },
       });
-      const data = res.data.data;
-      setEmployees(Array.isArray(data) ? data : data.results || []);
+      const data = res.data?.data || res.data?.results || res.data || [];
+      setEmployees(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load employees', err);
     } finally {
@@ -56,24 +66,79 @@ export const Employees = () => {
     fetchEmployees();
   }, [search]);
 
+  useEffect(() => {
+    if (canCreateEmployee) {
+      api.get('/branches/').then((res) => {
+        const list = res.data?.data || res.data?.results || res.data || [];
+        setBranches(Array.isArray(list) ? list : []);
+      }).catch(() => {});
+      api.get('/branches/departments/').then((res) => {
+        const list = res.data?.data || res.data?.results || res.data || [];
+        setDepartments(Array.isArray(list) ? list : []);
+      }).catch(() => {});
+    }
+  }, [canCreateEmployee]);
+
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/employees/', formData);
+      setSubmitting(true);
+      const payload = { ...formData };
+      if (!payload.branch) delete payload.branch;
+      if (!payload.department) delete payload.department;
+
+      await api.post('/employees/', payload);
       setShowModal(false);
       setFormData({
         first_name: '',
         last_name: '',
         email: '',
         phone: '',
+        branch: '',
+        department: '',
         employment_type: 'FULL_TIME',
         salary_type: 'MONTHLY',
         joining_date: new Date().toISOString().split('T')[0],
       });
       fetchEmployees();
-      alert('Employee created successfully and invitation queued!');
+      alert('Employee onboarded successfully! Login account linked (Default Password: WorkPulse@2026).');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to create employee');
+      const errData = err.response?.data;
+      const msg =
+        errData?.error?.message ||
+        errData?.detail ||
+        (typeof errData === 'object' ? Object.entries(errData).map(([k, v]) => `${k}: ${Array.isArray(v) ? v[0] : v}`).join('\n') : null) ||
+        'Failed to create employee';
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleViewEmployee = async (emp) => {
+    setSelectedEmployee(emp);
+    try {
+      setViewLoading(true);
+      const res = await api.get(`/employees/${emp.id}/`);
+      const detail = res.data?.data || res.data;
+      if (detail && detail.id) {
+        setSelectedEmployee(detail);
+      }
+    } catch (err) {
+      console.error('Failed to load full employee profile', err);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+  const handleDeactivate = async (empId) => {
+    if (!confirm('Deactivate this employee?')) return;
+    try {
+      await api.post(`/employees/${empId}/deactivate/`);
+      setSelectedEmployee(null);
+      fetchEmployees();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Failed to deactivate employee');
     }
   };
 
@@ -150,14 +215,14 @@ export const Employees = () => {
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-xs uppercase">
-                          {emp.first_name[0]}
+                          {emp.first_name?.[0] || 'E'}
                           {emp.last_name ? emp.last_name[0] : ''}
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900 leading-tight">
                             {emp.first_name} {emp.last_name}
                           </p>
-                          <p className="text-[11px] text-slate-500">{emp.designation_name || emp.designation || 'Staff Associate'}</p>
+                          <p className="text-[11px] text-slate-500">{emp.designation_name || 'Staff Associate'}</p>
                         </div>
                       </div>
                     </td>
@@ -168,7 +233,7 @@ export const Employees = () => {
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5 text-slate-600">
                           <Mail className="w-3 h-3 text-slate-400" />
-                          <span>{emp.email}</span>
+                          <span>{emp.email || '-'}</span>
                         </div>
                         {emp.phone && (
                           <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
@@ -180,8 +245,8 @@ export const Employees = () => {
                     </td>
                     <td className="py-3 px-4">
                       <div>
-                        <p className="font-medium text-slate-800">{emp.branch_name || 'Cyber City HQ'}</p>
-                        <p className="text-[11px] text-slate-400">{emp.department_name || 'Engineering'}</p>
+                        <p className="font-medium text-slate-800">{emp.branch_name || 'Headquarters'}</p>
+                        <p className="text-[11px] text-slate-400">{emp.department_name || 'General'}</p>
                       </div>
                     </td>
                     <td className="py-3 px-4 text-slate-600">
@@ -194,8 +259,8 @@ export const Employees = () => {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <button
-                        onClick={() => alert(`Employee Details for ${emp.first_name} ${emp.last_name}`)}
-                        className="text-indigo-600 hover:text-indigo-800 font-semibold text-xs px-2 py-1 rounded hover:bg-indigo-50 transition-colors"
+                        onClick={() => handleViewEmployee(emp)}
+                        className="text-indigo-600 hover:text-indigo-800 font-semibold text-xs px-2.5 py-1 rounded hover:bg-indigo-50 transition-colors"
                       >
                         View
                       </button>
@@ -213,7 +278,7 @@ export const Employees = () => {
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">First Name</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">First Name *</label>
               <input
                 type="text"
                 required
@@ -233,26 +298,62 @@ export const Employees = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none"
-            />
-          </div>
+          {(branches.length > 0 || departments.length > 0) && (
+            <div className="grid grid-cols-2 gap-3">
+              {branches.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Branch</label>
+                  <select
+                    value={formData.branch}
+                    onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                    className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none bg-white"
+                  >
+                    <option value="">Default Branch</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {departments.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Department</label>
+                  <select
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none bg-white"
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -269,7 +370,7 @@ export const Employees = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Joining Date</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Joining Date *</label>
               <input
                 type="date"
                 required
@@ -290,14 +391,98 @@ export const Employees = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors"
+              disabled={submitting}
+              className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
             >
-              Save & Onboard
+              {submitting ? 'Onboarding...' : 'Save & Onboard'}
             </button>
           </div>
         </form>
       </Modal>
+
+      {/* View Employee Profile Modal */}
+      <Modal
+        isOpen={!!selectedEmployee}
+        onClose={() => setSelectedEmployee(null)}
+        title="Employee Profile Details"
+      >
+        {selectedEmployee && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
+              <div className="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-base uppercase">
+                {selectedEmployee.first_name?.[0] || 'E'}
+                {selectedEmployee.last_name?.[0] || ''}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-slate-900">
+                    {selectedEmployee.full_name || `${selectedEmployee.first_name} ${selectedEmployee.last_name}`}
+                  </h4>
+                  <Badge variant={selectedEmployee.status === 'ACTIVE' ? 'success' : 'default'}>
+                    {selectedEmployee.status}
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {selectedEmployee.designation_name || 'Staff Associate'} •{' '}
+                  <span className="font-mono text-indigo-600 font-semibold">{selectedEmployee.employee_code}</span>
+                </p>
+              </div>
+            </div>
+
+            {viewLoading ? (
+              <Loader message="Loading profile details..." />
+            ) : (
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-2.5 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Email</p>
+                  <p className="font-medium text-slate-800 mt-0.5 break-all">{selectedEmployee.email || '-'}</p>
+                </div>
+                <div className="p-2.5 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Phone</p>
+                  <p className="font-medium text-slate-800 mt-0.5">{selectedEmployee.phone || '-'}</p>
+                </div>
+                <div className="p-2.5 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Branch</p>
+                  <p className="font-medium text-slate-800 mt-0.5">{selectedEmployee.branch_name || 'Headquarters'}</p>
+                </div>
+                <div className="p-2.5 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Department</p>
+                  <p className="font-medium text-slate-800 mt-0.5">{selectedEmployee.department_name || 'General'}</p>
+                </div>
+                <div className="p-2.5 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Employment Type</p>
+                  <p className="font-medium text-slate-800 mt-0.5">{selectedEmployee.employment_type || 'FULL_TIME'}</p>
+                </div>
+                <div className="p-2.5 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Joining Date</p>
+                  <p className="font-medium text-slate-800 mt-0.5">{formatDate(selectedEmployee.joining_date)}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              {(isOwner || isHR) && selectedEmployee.status === 'ACTIVE' ? (
+                <button
+                  type="button"
+                  onClick={() => handleDeactivate(selectedEmployee.id)}
+                  className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                >
+                  Deactivate Employee
+                </button>
+              ) : (
+                <div></div>
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedEmployee(null)}
+                className="px-4 py-1.5 text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
-

@@ -83,11 +83,27 @@ export const AuthProvider = ({ children }) => {
 
   const switchBusiness = async (businessId) => {
     localStorage.setItem('active_business_id', businessId);
-    const res = await api.post('/auth/me/switch-business/', { business_id: businessId });
-    setRoles(res.data.data.roles || []);
-    setPermissions(res.data.data.permissions || []);
+    try {
+      const res = await api.post('/auth/me/switch-business/', { business_id: businessId });
+      setRoles(res.data?.data?.roles || []);
+      setPermissions(res.data?.data?.permissions || []);
+    } catch (err) {
+      console.error('Switch business failed', err);
+    }
     const found = businesses.find((b) => b.id === businessId);
     if (found) setBusiness(found);
+    window.location.reload();
+  };
+
+  const createBusiness = async (businessData) => {
+    const res = await api.post('/businesses/', businessData);
+    const created = res.data?.data || res.data;
+    if (created?.id) {
+      localStorage.setItem('active_business_id', created.id);
+      await fetchSession();
+      window.location.reload();
+    }
+    return created;
   };
 
   const activeRole = roles.length > 0 ? roles[0] : (user?.role || (user?.is_superuser ? 'SUPER_ADMIN' : 'EMPLOYEE'));
@@ -125,6 +141,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         switchBusiness,
+        createBusiness,
         hasPermission,
         hasRole,
       }}

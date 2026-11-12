@@ -134,6 +134,33 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         )
         return Response({'success': True, 'data': AttendanceRecordSerializer(record).data})
 
+    @action(detail=False, methods=['post'], url_path='punch-employee')
+    def punch_employee(self, request):
+        """Allows HR/Manager to punch in (IN) or punch out (OUT) for any employee."""
+        employee_id = request.data.get('employee_id')
+        punch_action = str(request.data.get('action', 'IN')).upper()
+        business = get_business_context(request)
+
+        try:
+            if business:
+                employee = Employee.objects.get(id=employee_id, business=business)
+            else:
+                employee = Employee.objects.get(id=employee_id)
+        except Employee.DoesNotExist:
+            return Response({'success': False, 'error': {'message': 'Employee not found.'}}, status=status.HTTP_404_NOT_FOUND)
+
+        if punch_action == 'OUT':
+            record = AttendanceService.check_out(
+                employee=employee,
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+        else:
+            record = AttendanceService.check_in(
+                employee=employee,
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+        return Response({'success': True, 'data': AttendanceRecordSerializer(record).data})
+
     @action(detail=False, methods=['get'], url_path='daily')
     def daily_summary(self, request):
         business = get_business_context(request)

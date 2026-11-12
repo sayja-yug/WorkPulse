@@ -27,7 +27,19 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         business = getattr(self.request, 'business', None)
-        EmployeeService.create_employee(
+        if not business:
+            business_id = self.request.headers.get('X-Business-ID') or self.request.META.get('HTTP_X_BUSINESS_ID')
+            if business_id:
+                from apps.businesses.models import Business
+                business = Business.objects.filter(id=business_id).first()
+            elif getattr(self.request.user, 'active_business', None):
+                business = self.request.user.active_business
+            elif getattr(self.request.user, 'is_authenticated', False):
+                from apps.businesses.models import BusinessMembership
+                mem = BusinessMembership.objects.filter(user=self.request.user, is_active=True).first()
+                if mem:
+                    business = mem.business
+        serializer.instance = EmployeeService.create_employee(
             business=business,
             validated_data=serializer.validated_data,
             created_by=self.request.user

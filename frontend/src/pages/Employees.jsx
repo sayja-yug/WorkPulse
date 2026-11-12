@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import { usePermissions } from '../hooks/usePermissions';
 import {
@@ -21,6 +22,7 @@ import { formatDate } from '../utils/formatters';
 
 export const Employees = () => {
   const { canCreateEmployee, isOwner, isHR } = usePermissions();
+  const [searchParams] = useSearchParams();
 
   const [employees, setEmployees] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -29,7 +31,7 @@ export const Employees = () => {
   const [search, setSearch] = useState('');
 
   // Create Modal
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(searchParams.get('action') === 'add');
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',

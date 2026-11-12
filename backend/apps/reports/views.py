@@ -50,6 +50,51 @@ class BusinessOverviewView(views.APIView):
         absent_count = today_att.filter(status=AttendanceRecord.Status.ABSENT).count()
         half_day_count = today_att.filter(status=AttendanceRecord.Status.HALF_DAY).count()
         leave_count = today_att.filter(status__in=[AttendanceRecord.Status.PAID_LEAVE, AttendanceRecord.Status.UNPAID_LEAVE]).count()
+        late_count = today_att.filter(is_late=True).count()
+
+        # Employment type breakdown
+        emp_types_qs = Employee.objects.filter(business=business, status=Employee.Status.ACTIVE).values('employment_type').annotate(count=Count('id'))
+        employment_types = {item['employment_type']: item['count'] for item in emp_types_qs}
+
+        # Leave distribution
+        leave_dist_qs = LeaveRequest.objects.filter(business=business).values('leave_type__name').annotate(count=Count('id'))
+        leave_distribution = [{'name': item['leave_type__name'] or 'Leave', 'count': item['count']} for item in leave_dist_qs]
+
+        # Branch statistics
+        branches_qs = Branch.objects.filter(business=business, is_active=True).annotate(
+            employee_count=Count('employees')
+        )
+        branch_stats = [
+            {'id': str(b.id), 'name': b.name, 'city': b.city, 'employee_count': b.employee_count}
+            for b in branches_qs
+        ]
+
+        # Recent activity feed
+        recent_activity = []
+        for lr in LeaveRequest.objects.filter(business=business).select_related('employee', 'leave_type').order_by('-created_at')[:3]:
+            recent_activity.append({
+                'id': f'leave-{lr.id}',
+                'title': f'Leave Request: {lr.employee.full_name}',
+                'subtitle': f'{lr.leave_type.name if lr.leave_type else "Leave"} ({lr.status})',
+                'link': '/leaves',
+                'date': str(lr.start_date),
+            })
+        for exp in Expense.objects.filter(business=business).order_by('-created_at')[:2]:
+            recent_activity.append({
+                'id': f'exp-{exp.id}',
+                'title': f'Expense: {exp.description}',
+                'subtitle': f'₹{exp.amount} ({exp.status})',
+                'link': '/expenses',
+                'date': str(exp.date),
+            })
+        for att in AttendanceRecord.objects.filter(business=business).select_related('employee').order_by('-updated_at')[:3]:
+            recent_activity.append({
+                'id': f'att-{att.id}',
+                'title': f'Punch: {att.employee.full_name}',
+                'subtitle': f'{att.date} • {att.working_hours or 0} hrs',
+                'link': '/attendance',
+                'date': str(att.date),
+            })
 
         # Pending approvals
         pending_leaves = LeaveRequest.objects.filter(business=business, status=LeaveRequest.Status.PENDING).count()
@@ -71,15 +116,20 @@ class BusinessOverviewView(views.APIView):
             'data': {
                 'total_employees': total_employees,
                 'active_employees': active_employees,
-                'branches_count': Branch.objects.filter(business=business, is_active=True).count(),
+                'branches_count': branches_qs.count(),
                 'departments_count': Department.objects.filter(business=business, is_active=True).count(),
                 'attendance_today': {
                     'present': present_count,
                     'absent': absent_count,
                     'half_day': half_day_count,
                     'on_leave': leave_count,
+                    'late': late_count,
                     'attendance_percentage': f'{(present_count / active_employees * 100):.1f}%' if active_employees > 0 else '0%'
                 },
+                'employment_types': employment_types,
+                'leave_distribution': leave_distribution,
+                'branch_stats': branch_stats,
+                'recent_activity': recent_activity[:6],
                 'pending_leaves_count': pending_leaves,
                 'financials': {
                     'monthly_payroll_total': monthly_payroll_total,

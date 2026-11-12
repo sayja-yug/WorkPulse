@@ -58,7 +58,10 @@ class AttendanceService:
                 'source': AttendanceRecord.Source.GPS if (latitude and longitude) else AttendanceRecord.Source.SELF
             }
         )
-        if not created and (not record.check_in or record.check_out is not None):
+        if not created:
+            if record.check_in and not record.check_out:
+                # Already punched in; prevent duplicate PI punches
+                return record
             record.check_in = ts
             record.check_out = None
             record.status = AttendanceRecord.Status.PRESENT

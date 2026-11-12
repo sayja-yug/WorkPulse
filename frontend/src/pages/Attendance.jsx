@@ -218,26 +218,29 @@ export const Attendance = () => {
           </div>
         </div>
 
-        {/* PI / PO Buttons */}
+        {/* PI / PO Single-Action Toggle */}
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={handleSelfPunchIn}
-            disabled={punching || isCheckedIn}
-            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <LogIn className="w-4 h-4" />
-            <span>{punching && !isCheckedIn ? 'Punching In...' : 'Punch In (PI)'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleSelfPunchOut}
-            disabled={punching || !isCheckedIn}
-            className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>{punching && isCheckedIn ? 'Punching Out...' : 'Punch Out (PO)'}</span>
-          </button>
+          {!isCheckedIn ? (
+            <button
+              type="button"
+              onClick={handleSelfPunchIn}
+              disabled={punching}
+              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-40"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>{punching ? 'Punching In...' : 'Punch In (PI)'}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSelfPunchOut}
+              disabled={punching}
+              className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-40"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{punching ? 'Punching Out...' : 'Punch Out (PO)'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -299,32 +302,27 @@ export const Attendance = () => {
                       </td>
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleEmployeePunch(row.employee_id, 'IN')}
-                            disabled={!!punchingId}
-                            className={`px-3 py-1 rounded-md text-[11px] font-bold border transition-all ${
-                              row.check_in
-                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
-                            } disabled:opacity-50`}
-                            title="Record Punch In (PI)"
-                          >
-                            {punchingId === `${row.employee_id}-IN` ? '...' : 'PI'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleEmployeePunch(row.employee_id, 'OUT')}
-                            disabled={!!punchingId || !row.check_in}
-                            className={`px-3 py-1 rounded-md text-[11px] font-bold border transition-all ${
-                              row.check_out
-                                ? 'bg-rose-600 text-white border-rose-600'
-                                : 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100'
-                            } disabled:opacity-40 disabled:cursor-not-allowed`}
-                            title="Record Punch Out (PO)"
-                          >
-                            {punchingId === `${row.employee_id}-OUT` ? '...' : 'PO'}
-                          </button>
+                          {!(row.check_in && !row.check_out) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleEmployeePunch(row.employee_id, 'IN')}
+                              disabled={!!punchingId}
+                              className="px-3 py-1 rounded-md text-[11px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 transition-all disabled:opacity-50"
+                              title="Record Punch In (PI)"
+                            >
+                              {punchingId === `${row.employee_id}-IN` ? '...' : 'PI'}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleEmployeePunch(row.employee_id, 'OUT')}
+                              disabled={!!punchingId}
+                              className="px-3 py-1 rounded-md text-[11px] font-bold border bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 transition-all disabled:opacity-50"
+                              title="Record Punch Out (PO)"
+                            >
+                              {punchingId === `${row.employee_id}-OUT` ? '...' : 'PO'}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -377,30 +375,25 @@ export const Attendance = () => {
                     {!isEmployee && (
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleEmployeePunch(r.employee, 'IN')}
-                            disabled={!!punchingId}
-                            className={`px-3 py-1 rounded-md text-[11px] font-bold border transition-all ${
-                              r.check_in
-                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
-                            } disabled:opacity-50`}
-                          >
-                            PI
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleEmployeePunch(r.employee, 'OUT')}
-                            disabled={!!punchingId || !r.check_in}
-                            className={`px-3 py-1 rounded-md text-[11px] font-bold border transition-all ${
-                              r.check_out
-                                ? 'bg-rose-600 text-white border-rose-600'
-                                : 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100'
-                            } disabled:opacity-40 disabled:cursor-not-allowed`}
-                          >
-                            PO
-                          </button>
+                          {!(r.check_in && !r.check_out) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleEmployeePunch(r.employee, 'IN')}
+                              disabled={!!punchingId}
+                              className="px-3 py-1 rounded-md text-[11px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 transition-all disabled:opacity-50"
+                            >
+                              PI
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleEmployeePunch(r.employee, 'OUT')}
+                              disabled={!!punchingId}
+                              className="px-3 py-1 rounded-md text-[11px] font-bold border bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 transition-all disabled:opacity-50"
+                            >
+                              PO
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}

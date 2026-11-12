@@ -247,67 +247,84 @@ export const EmployeeProfile = () => {
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">Field Staff</p><p className="font-semibold mt-1">{employee.is_field_employee ? 'Yes' : 'No'}</p></div>
           </div>
         ) : activeTab === 'attendance' ? (
-          <div className="space-y-4">
-            {(isOwner || isHR) && (
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span className="text-xs font-semibold text-slate-700">Record Live Punch for {employee.first_name}</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await api.post('/attendance/punch-employee/', { employee_id: id, action: 'IN' });
-                      const res = await api.get('/attendance/', { params: { employee: id } });
-                      setAttendance(res.data?.data || res.data?.results || []);
-                    }}
-                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold"
-                  >
-                    Punch In (PI)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await api.post('/attendance/punch-employee/', { employee_id: id, action: 'OUT' });
-                      const res = await api.get('/attendance/', { params: { employee: id } });
-                      setAttendance(res.data?.data || res.data?.results || []);
-                    }}
-                    className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold"
-                  >
-                    Punch Out (PO)
-                  </button>
-                </div>
+          (() => {
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            const todayRec = attendance.find((a) => a.date === todayStr);
+            const isPunchedInToday = !!(todayRec && todayRec.check_in && !todayRec.check_out);
+
+            return (
+              <div className="space-y-4">
+                {(isOwner || isHR) && (
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-700">
+                        {isPunchedInToday
+                          ? `${employee.first_name} is currently Punched In (since ${formatTime(todayRec.check_in)})`
+                          : `Record Live Punch for ${employee.first_name}`}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      {!isPunchedInToday ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await api.post('/attendance/punch-employee/', { employee_id: id, action: 'IN' });
+                            const res = await api.get('/attendance/', { params: { employee: id } });
+                            setAttendance(res.data?.data || res.data?.results || []);
+                          }}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm"
+                        >
+                          Punch In (PI)
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await api.post('/attendance/punch-employee/', { employee_id: id, action: 'OUT' });
+                            const res = await api.get('/attendance/', { params: { employee: id } });
+                            setAttendance(res.data?.data || res.data?.results || []);
+                          }}
+                          className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-sm"
+                        >
+                          Punch Out (PO)
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {attendance.length === 0 ? (
+                  <p className="text-xs text-slate-500">No attendance punch logs for this employee yet.</p>
+                ) : (
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b text-slate-500 uppercase text-[11px]">
+                        <th className="py-2">Date</th>
+                        <th className="py-2">Punch In</th>
+                        <th className="py-2">Punch Out</th>
+                        <th className="py-2">Hours</th>
+                        <th className="py-2">Punch Logs</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {attendance.map((a) => (
+                        <tr key={a.id}>
+                          <td className="py-2.5 font-semibold">{formatDate(a.date)}</td>
+                          <td className="py-2.5 font-mono">{formatTime(a.check_in)}</td>
+                          <td className="py-2.5 font-mono">{formatTime(a.check_out)}</td>
+                          <td className="py-2.5">{a.working_hours || '-'}</td>
+                          <td className="py-2.5 font-mono text-[11px] text-slate-500">
+                            {Array.isArray(a.punches) && a.punches.length > 0
+                              ? a.punches.map((p) => `${p.punch_type === 'CHECK_IN' ? 'PI' : 'PO'}: ${formatTime(p.timestamp)}`).join(' • ')
+                              : `${a.check_in ? `PI: ${formatTime(a.check_in)}` : ''}${a.check_out ? ` • PO: ${formatTime(a.check_out)}` : ''}` || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
-            )}
-            {attendance.length === 0 ? (
-              <p className="text-xs text-slate-500">No attendance punch logs for this employee yet.</p>
-            ) : (
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b text-slate-500 uppercase text-[11px]">
-                    <th className="py-2">Date</th>
-                    <th className="py-2">Punch In</th>
-                    <th className="py-2">Punch Out</th>
-                    <th className="py-2">Hours</th>
-                    <th className="py-2">Punch Logs</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {attendance.map((a) => (
-                    <tr key={a.id}>
-                      <td className="py-2.5 font-semibold">{formatDate(a.date)}</td>
-                      <td className="py-2.5 font-mono">{formatTime(a.check_in)}</td>
-                      <td className="py-2.5 font-mono">{formatTime(a.check_out)}</td>
-                      <td className="py-2.5">{a.working_hours || '-'}</td>
-                      <td className="py-2.5 font-mono text-[11px] text-slate-500">
-                        {Array.isArray(a.punches) && a.punches.length > 0
-                          ? a.punches.map((p) => `${p.punch_type === 'CHECK_IN' ? 'PI' : 'PO'}: ${formatTime(p.timestamp)}`).join(' • ')
-                          : `${a.check_in ? `PI: ${formatTime(a.check_in)}` : ''}${a.check_out ? ` • PO: ${formatTime(a.check_out)}` : ''}` || '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+            );
+          })()
         ) : activeTab === 'shifts' ? (
           shifts.length === 0 ? <p className="text-xs text-slate-500">No shift assignments recorded.</p> : (
             <div className="space-y-2 text-xs">{shifts.map((s) => (

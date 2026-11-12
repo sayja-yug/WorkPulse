@@ -75,9 +75,21 @@ def get_or_link_employee(user, business):
 class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = AttendanceRecordSerializer
     permission_classes = [permissions.IsAuthenticated]
-    queryset = AttendanceRecord.objects.select_related('employee', 'shift').prefetch_related('punches').all()
+    queryset = AttendanceRecord.objects.select_related('employee', 'shift').prefetch_related('punches').all().order_by('-date', '-check_in')
     filterset_fields = ['employee', 'date', 'status', 'is_late', 'source']
     search_fields = ['employee__first_name', 'employee__last_name', 'employee__employee_code']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        business = get_business_context(self.request)
+        if not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            roles = PermissionService.get_user_roles(user, business) if business else []
+            manager_roles = {'BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'AUDITOR', 'SUPER_ADMIN'}
+            if not any(r in manager_roles for r in roles) and not self.request.query_params.get('employee'):
+                qs = qs.filter(employee__user=user)
+        return qs.order_by('-date', '-check_in')
 
     @action(detail=False, methods=['post'], url_path='mark-manual')
     def mark_manual(self, request):

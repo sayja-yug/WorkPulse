@@ -40,10 +40,11 @@ class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
     company_name = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    defer_business = serializers.BooleanField(write_only=True, required=False, default=False)
 
     class Meta:
         model = User
-        fields = ['email', 'phone', 'first_name', 'last_name', 'password', 'password_confirm', 'company_name']
+        fields = ['email', 'phone', 'first_name', 'last_name', 'password', 'password_confirm', 'company_name', 'defer_business']
 
     def validate(self, data):
         if data['password'] != data['password_confirm']:
@@ -60,8 +61,12 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
         validated_data.pop('password_confirm', None)
         company_name = validated_data.pop('company_name', None)
+        defer_business = validated_data.pop('defer_business', False)
 
         user = User.objects.create_user(**validated_data)
+
+        if defer_business:
+            return user
 
         # Create business if company name is provided or default to user's company
         biz_name = (company_name or f"{user.first_name}'s Organization").strip()

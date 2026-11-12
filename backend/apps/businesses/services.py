@@ -34,7 +34,21 @@ class BusinessService:
             business=business
         )
 
-        # 3. Set active business context on user
+        # 3. Create default Headquarters branch
+        from apps.branches.models import Branch
+        Branch.objects.get_or_create(
+            business=business,
+            code='BR-HQ',
+            defaults={
+                'name': 'Headquarters',
+                'city': business.city or '',
+                'state': business.state or '',
+                'is_head_office': True,
+                'geofence_radius': 500,
+            }
+        )
+
+        # 4. Set active business context on user
         user.active_business = business
         user.save(update_fields=['active_business'])
 

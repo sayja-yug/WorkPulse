@@ -174,6 +174,18 @@ class ProfileView(views.APIView):
         serializer = UserSerializer(request.user)
         return Response({'success': True, 'data': serializer.data})
 
+
+class VerifyAccountView(views.APIView):
+    """Verify the authenticated user's email/phone during onboarding."""
+
+    def post(self, request):
+        user = request.user
+        user.email_verified = True
+        if user.phone:
+            user.phone_verified = True
+        user.save(update_fields=['email_verified', 'phone_verified'])
+        return Response({'success': True, 'data': UserSerializer(user).data})
+
     def patch(self, request):
         serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

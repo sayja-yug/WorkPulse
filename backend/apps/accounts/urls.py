@@ -18,6 +18,7 @@ urlpatterns = [
 
     # Profile
     path('me/', views.ProfileView.as_view(), name='profile'),
+    path('me/verify/', views.VerifyAccountView.as_view(), name='verify-account'),
     path('me/avatar/', views.ProfileAvatarView.as_view(), name='profile-avatar'),
     path('me/businesses/', views.UserBusinessesView.as_view(), name='user-businesses'),
     path('me/switch-business/', views.SwitchBusinessView.as_view(), name='switch-business'),

@@ -35,6 +35,13 @@ class TenantCreateMixin:
 
     def perform_create(self, serializer):
         business = getattr(self.request, 'business', None)
+        if not business:
+            business_id = self.request.headers.get('X-Business-ID') or self.request.META.get('HTTP_X_BUSINESS_ID')
+            if business_id:
+                from apps.businesses.models import Business
+                business = Business.objects.filter(id=business_id).first()
+            elif getattr(self.request.user, 'active_business', None):
+                business = self.request.user.active_business
         if business:
             serializer.save(business=business)
         else:

@@ -32,10 +32,11 @@ export const Leaves = () => {
     try {
       setLoading(true);
       const res = await api.get('/leaves/');
-      const data = res.data.data;
-      setLeaves(Array.isArray(data) ? data : data.results || []);
+      const data = res.data?.data || res.data?.results || res.data || [];
+      setLeaves(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load leaves', err);
+      setLeaves([]);
     } finally {
       setLoading(false);
     }

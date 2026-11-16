@@ -31,10 +31,11 @@ export const Advances = () => {
     try {
       setLoading(true);
       const res = await api.get('/advances/');
-      const data = res.data.data;
-      setAdvances(Array.isArray(data) ? data : data.results || []);
+      const data = res.data?.data || res.data?.results || res.data || [];
+      setAdvances(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load advances', err);
+      setAdvances([]);
     } finally {
       setLoading(false);
     }
@@ -53,7 +54,7 @@ export const Advances = () => {
       fetchAdvances();
       alert('Salary advance request submitted successfully!');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Request failed');
+      alert(err.response?.data?.error?.message || err.response?.data?.detail || 'Request failed');
     }
   };
 
@@ -63,7 +64,17 @@ export const Advances = () => {
       fetchAdvances();
       alert('Salary advance approved and marked for payroll recovery!');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Approval failed');
+      alert(err.response?.data?.error?.message || err.response?.data?.detail || 'Approval failed');
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await api.post(`/advances/${id}/reject/`);
+      fetchAdvances();
+      alert('Salary advance request rejected.');
+    } catch (err) {
+      alert(err.response?.data?.error?.message || err.response?.data?.detail || 'Rejection failed');
     }
   };
 

@@ -362,11 +362,11 @@ export const Payroll = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Banknote className="w-5 h-5 text-indigo-600" />
+          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-zinc-900" />
             <span>{isEmployee ? 'My Monthly Salary Statements' : 'Payroll & Salary Management'}</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             {isEmployee
               ? 'View and download your monthly salary statements, overtime earnings, and deduction breakdowns'
               : 'Rule-driven monthly payroll engine with automated overtime bonuses, shortfall hour cuts, and Indian statutory PF/Tax'}
@@ -377,19 +377,8 @@ export const Payroll = () => {
         {canManagePayroll && !isEmployee && (
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setActiveTab('rules')}
-              className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'rules'
-                  ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
-                  : 'bg-white border-slate-300 hover:bg-slate-50 text-slate-700'
-              }`}
-            >
-              <Settings className="w-4 h-4 text-indigo-600" />
-              <span>Company Rules</span>
-            </button>
-            <button
               onClick={() => setShowProcessModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
             >
               <Calculator className="w-4 h-4" />
               <span>Process Monthly Payroll</span>
@@ -398,8 +387,8 @@ export const Payroll = () => {
         )}
 
         {isAuditor && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-semibold">
-            <Shield className="w-4 h-4" />
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 border border-zinc-300 text-zinc-800 rounded-lg text-xs font-semibold">
+            <Shield className="w-4 h-4 text-zinc-700" />
             <span>Auditor Compliance Mode (Read-Only)</span>
           </div>
         )}
@@ -407,13 +396,13 @@ export const Payroll = () => {
 
       {/* Tabs - Only shown for Management & Auditors */}
       {!isEmployee && (
-        <div className="flex items-center gap-2 border-b border-slate-200">
+        <div className="flex items-center gap-2 border-b border-zinc-200">
           <button
             onClick={() => setActiveTab('runs')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
               activeTab === 'runs'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-zinc-950 text-zinc-950'
+                : 'border-transparent text-zinc-500 hover:text-zinc-800'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -421,10 +410,10 @@ export const Payroll = () => {
           </button>
           <button
             onClick={() => setActiveTab('payslips')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
               activeTab === 'payslips'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-zinc-950 text-zinc-950'
+                : 'border-transparent text-zinc-500 hover:text-zinc-800'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -433,10 +422,10 @@ export const Payroll = () => {
           {canManagePayroll && (
             <button
               onClick={() => setActiveTab('rules')}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
                 activeTab === 'rules'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  ? 'border-zinc-950 text-zinc-950'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
               }`}
             >
               <Sliders className="w-4 h-4" />
@@ -450,19 +439,19 @@ export const Payroll = () => {
       {!isEmployee && activeTab === 'runs' && (
         <div className="space-y-4">
           {/* Active Company Rule Status Banner */}
-          <div className="p-3 bg-gradient-to-r from-indigo-50/80 via-white to-slate-50 rounded-xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
+          <div className="p-3.5 bg-white rounded-xl border border-zinc-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 bg-zinc-100 text-zinc-900 rounded-lg">
                 <Clock className="w-4 h-4" />
               </span>
               <div>
-                <p className="font-bold text-slate-800">
-                  Active Company Rules: {policy.standard_daily_hours}h/day standard
+                <p className="font-bold text-zinc-900">
+                  Active Work &amp; Overtime Rules: {policy.standard_daily_hours}h/day standard
                   {policy.enable_overtime && ` • ${policy.overtime_multiplier}x Overtime Pay`}
                   {policy.enable_shortfall_deduction && ` • Shortfall Cut Active`}
                   {policy.enable_unpaid_leave_deduction && ` • Unpaid Leave Cut Active`}
                 </p>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-zinc-500">
                   Salaries are automatically prorated with hour shortfall cuts and overtime bonuses during computation.
                 </p>
               </div>
@@ -470,14 +459,14 @@ export const Payroll = () => {
             {canManagePayroll && (
               <button
                 onClick={() => setActiveTab('rules')}
-                className="px-2.5 py-1 text-indigo-700 hover:bg-indigo-100/60 rounded border border-indigo-200 font-semibold text-[11px] whitespace-nowrap self-start sm:self-auto"
+                className="px-3 py-1.5 text-zinc-900 hover:bg-zinc-100 rounded-lg border border-zinc-300 font-semibold text-[11px] whitespace-nowrap self-start sm:self-auto cursor-pointer transition-colors"
               >
                 Modify Rules &rarr;
               </button>
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-zinc-200 shadow-xs overflow-hidden">
             {loading ? (
               <Loader message="Loading payroll cycles..." />
             ) : runs.length === 0 ? (

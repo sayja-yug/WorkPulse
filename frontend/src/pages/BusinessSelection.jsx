@@ -31,21 +31,21 @@ export const BusinessSelection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-slate-800 overflow-hidden">
-        <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-slate-800">
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-zinc-800 overflow-hidden">
+        <div className="bg-black px-6 py-5 text-white flex items-center justify-between border-b border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-lg">
+            <div className="w-9 h-9 rounded-xl bg-white text-zinc-950 flex items-center justify-center font-black text-lg shadow-xs">
               W
             </div>
             <div>
-              <h2 className="text-base font-bold tracking-tight">Select Business Organization</h2>
-              <p className="text-xs text-slate-400">Signed in as {user?.email}</p>
+              <h2 className="text-base font-bold tracking-tight text-white">Select Business Organization</h2>
+              <p className="text-xs text-zinc-400">Signed in as {user?.email}</p>
             </div>
           </div>
           <button
             onClick={logout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
@@ -54,7 +54,7 @@ export const BusinessSelection = () => {
 
         <div className="p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-zinc-600">
               Choose an organization workspace to load your role-specific dashboard and permissions:
             </p>
             <button

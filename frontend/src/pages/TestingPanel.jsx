@@ -48,11 +48,11 @@ export const TestingPanel = () => {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Terminal className="w-5 h-5 text-indigo-600" />
-            <span>Developer & Testing Diagnostics Panel</span>
+          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
+            <Terminal className="w-5 h-5 text-zinc-900" />
+            <span>Developer &amp; Testing Diagnostics Panel</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             Real-time environment metrics, live PostgreSQL telemetry, and active session permissions
           </p>
         </div>
@@ -60,7 +60,7 @@ export const TestingPanel = () => {
         <button
           onClick={checkHealth}
           disabled={healthLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-300 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${healthLoading ? 'animate-spin' : ''}`} />
           <span>{healthLoading ? 'Checking...' : 'Refresh Telemetry'}</span>

@@ -269,11 +269,11 @@ export const Shifts = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Clock className="w-5 h-5 text-indigo-600" />
-            <span>Shifts & Rostering</span>
+          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
+            <Clock className="w-5 h-5 text-zinc-900" />
+            <span>Shifts &amp; Rostering</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             Configure work schedules, night shifts, late-grace periods, and department roster assignments
           </p>
         </div>
@@ -281,7 +281,7 @@ export const Shifts = () => {
         {canManageShifts && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Create New Shift</span>

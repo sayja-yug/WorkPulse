@@ -27,14 +27,14 @@ export const ROLE_LABELS = {
 };
 
 export const ROLE_BADGE_COLORS = {
-  BUSINESS_OWNER: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  HR_MANAGER: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  ACCOUNTANT: 'bg-blue-50 text-blue-700 border-blue-200',
-  BRANCH_MANAGER: 'bg-amber-50 text-amber-700 border-amber-200',
-  SUPERVISOR: 'bg-orange-50 text-orange-700 border-orange-200',
-  EMPLOYEE: 'bg-sky-50 text-sky-700 border-sky-200',
-  FIELD_EMPLOYEE: 'bg-purple-50 text-purple-700 border-purple-200',
-  AUDITOR: 'bg-rose-50 text-rose-700 border-rose-200',
-  SUPER_ADMIN: 'bg-zinc-800 text-zinc-100 border-zinc-700',
+  BUSINESS_OWNER: 'bg-zinc-900 text-white border-zinc-800',
+  HR_MANAGER: 'bg-zinc-800 text-zinc-100 border-zinc-700',
+  ACCOUNTANT: 'bg-zinc-800 text-zinc-100 border-zinc-700',
+  BRANCH_MANAGER: 'bg-zinc-700 text-zinc-100 border-zinc-600',
+  SUPERVISOR: 'bg-zinc-700 text-zinc-100 border-zinc-600',
+  EMPLOYEE: 'bg-zinc-100 text-zinc-900 border-zinc-300',
+  FIELD_EMPLOYEE: 'bg-zinc-100 text-zinc-900 border-zinc-300',
+  AUDITOR: 'bg-zinc-100 text-zinc-900 border-zinc-300',
+  SUPER_ADMIN: 'bg-black text-white border-zinc-800',
 };
 

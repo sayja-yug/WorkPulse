@@ -38,26 +38,26 @@ export const FieldManagement = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <Navigation className="w-5 h-5 text-indigo-600" />
+        <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
+          <Navigation className="w-5 h-5 text-zinc-900" />
           <span>Field Management &amp; GPS Operations</span>
         </h2>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <p className="text-xs text-zinc-500 mt-0.5">
           Monitor field staff, mobile GPS check-ins, and site visit logs
         </p>
       </div>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Field Staff</span>
-            <Users className="w-5 h-5 text-indigo-600" />
+            <span className="text-xs font-semibold text-zinc-500 uppercase">Field Staff</span>
+            <Users className="w-5 h-5 text-zinc-900" />
           </div>
-          <p className="text-2xl font-bold text-slate-900 mt-2">{fieldEmployees.length}</p>
-          <p className="text-xs text-slate-500 mt-1">Assigned field personnel</p>
+          <p className="text-2xl font-bold text-zinc-950 mt-2">{fieldEmployees.length}</p>
+          <p className="text-xs text-zinc-500 mt-1">Assigned field personnel</p>
         </div>
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase">Active Punch Logs</span>
             <MapPin className="w-5 h-5 text-emerald-600" />

@@ -424,15 +424,15 @@ export const Employees = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-              Module 4 – Employee Management
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+              Employee Directory
             </span>
           </div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2 mt-1">
-            <Users className="w-5 h-5 text-indigo-600" />
+          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2 mt-1">
+            <Users className="w-5 h-5 text-zinc-900" />
             <span>Employees ({totalCount})</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             Search, filter, view contact details, import/export, and manage organizational directory
           </p>
         </div>
@@ -447,10 +447,10 @@ export const Employees = () => {
                 setImportResult(null);
                 setShowImportModal(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-sm transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-800 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
               title="Import employees from Excel (.xlsx) or CSV"
             >
-              <Upload className="w-3.5 h-3.5 text-indigo-600" />
+              <Upload className="w-3.5 h-3.5 text-zinc-700" />
               <span>Import Excel</span>
             </button>
           )}
@@ -459,10 +459,10 @@ export const Employees = () => {
             type="button"
             disabled={exporting}
             onClick={handleExportExcel}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-sm transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-800 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
             title="Export full filtered directory to formatted Excel spreadsheet"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-600" />
+            <Download className="w-3.5 h-3.5 text-zinc-700" />
             <span>{exporting ? 'Exporting...' : 'Export Excel'}</span>
           </button>
 
@@ -470,7 +470,7 @@ export const Employees = () => {
             <button
               type="button"
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add Employee</span>

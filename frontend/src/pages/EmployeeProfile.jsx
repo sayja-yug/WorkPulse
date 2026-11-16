@@ -188,29 +188,29 @@ export const EmployeeProfile = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Link to="/employees" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600">
+        <Link to="/employees" className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-600 hover:text-black transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Employees</span>
         </Link>
       </div>
 
       {/* Profile Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xl uppercase">
+          <div className="w-14 h-14 rounded-2xl bg-zinc-950 text-white flex items-center justify-center font-bold text-xl uppercase shadow-xs">
             {employee.first_name?.[0]}
             {employee.last_name?.[0] || ''}
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="text-xl font-bold text-zinc-950">
                 {employee.full_name || `${employee.first_name} ${employee.last_name}`}
               </h2>
               <Badge variant={employee.status === 'ACTIVE' ? 'success' : 'danger'}>{employee.status}</Badge>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              <span className="font-mono font-semibold text-indigo-600">{employee.employee_code}</span> •{' '}
-              {employee.designation_name || 'Staff'} • {employee.department_name || 'General'} • {employee.branch_name || 'HQ'}
+            <p className="text-xs text-zinc-500 mt-0.5">
+              <span className="font-mono font-semibold text-zinc-900">{employee.employee_code}</span> &bull;{' '}
+              {employee.designation_name || 'Staff'} &bull; {employee.department_name || 'General'} &bull; {employee.branch_name || 'HQ'}
             </p>
           </div>
         </div>
@@ -221,7 +221,7 @@ export const EmployeeProfile = () => {
             <button
               type="button"
               onClick={handleDeleteEmployee}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-colors shadow-2xs cursor-pointer"
               title="Permanently remove employee from company"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
@@ -232,13 +232,13 @@ export const EmployeeProfile = () => {
       </div>
 
       {/* 11-Tab Bar (Horizontal scroll on mobile, flex on desktop) */}
-      <div className="flex items-center gap-1.5 border-b border-slate-200 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-1.5 border-b border-zinc-200 pb-2 overflow-x-auto">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeTab === t.id ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === t.id ? 'bg-zinc-950 text-white font-bold shadow-xs' : 'text-zinc-600 hover:bg-zinc-100'
             }`}
           >
             <t.icon className="w-3.5 h-3.5" />

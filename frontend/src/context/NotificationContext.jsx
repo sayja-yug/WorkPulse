@@ -238,7 +238,7 @@ export const NotificationProvider = ({ children }) => {
                     ? 'bg-rose-50 text-rose-600'
                     : confirmDialog.type === 'warning'
                     ? 'bg-amber-50 text-amber-600'
-                    : 'bg-indigo-50 text-indigo-600'
+                    : 'bg-zinc-100 text-zinc-900'
                 }`}
               >
                 {confirmDialog.type === 'danger' ? (
@@ -251,32 +251,32 @@ export const NotificationProvider = ({ children }) => {
               </div>
 
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                <h3 className="text-base font-bold text-zinc-950 tracking-tight">
                   {confirmDialog.title}
                 </h3>
-                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                <p className="text-xs text-zinc-600 mt-2 leading-relaxed">
                   {confirmDialog.message}
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
               <button
                 type="button"
                 onClick={() => handleConfirmClose(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-200 rounded-xl transition-colors cursor-pointer"
               >
                 {confirmDialog.cancelText}
               </button>
               <button
                 type="button"
                 onClick={() => handleConfirmClose(true)}
-                className={`px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm transition-colors cursor-pointer ${
+                className={`px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-colors cursor-pointer ${
                   confirmDialog.type === 'danger'
                     ? 'bg-rose-600 hover:bg-rose-700'
                     : confirmDialog.type === 'warning'
                     ? 'bg-amber-600 hover:bg-amber-700'
-                    : 'bg-indigo-600 hover:bg-indigo-700'
+                    : 'bg-zinc-950 hover:bg-black'
                 }`}
               >
                 {confirmDialog.confirmText}

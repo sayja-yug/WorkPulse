@@ -30,14 +30,14 @@ export const Settings = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Organization & Branch Configuration</h2>
-        <p className="text-xs text-slate-500 mt-0.5">Manage multi-site branch geofences, business timezone, and localization</p>
+        <h2 className="text-xl font-bold text-zinc-950 tracking-tight">Organization &amp; Branch Configuration</h2>
+        <p className="text-xs text-zinc-500 mt-0.5">Manage multi-site branch geofences, business timezone, and localization</p>
       </div>
 
       {/* Business Details Card */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+      <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-xs space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-zinc-100 border border-zinc-300 text-zinc-900 font-bold flex items-center justify-center">
             <Building2 className="w-5 h-5" />
           </div>
           <div>

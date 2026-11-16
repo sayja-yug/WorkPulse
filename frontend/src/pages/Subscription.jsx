@@ -81,40 +81,40 @@ export const Subscription = () => {
       {/* Page Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-indigo-600" />
+          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-zinc-900" />
             <span>Subscription &amp; Licensing</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             Active WorkPulse SaaS plan, license entitlements, and billing invoices for {companyName}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-bold">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-100 border border-zinc-300 text-zinc-800 rounded-lg text-xs font-bold">
+            <ShieldCheck className="w-4 h-4 text-zinc-900" />
             <span>Enterprise License Active</span>
           </span>
         </div>
       </div>
 
       {/* Main Purchased Subscription Card */}
-      <div className="bg-gradient-to-r from-indigo-700 via-indigo-800 to-violet-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+      <div className="bg-zinc-950 rounded-2xl p-6 text-white shadow-xs border border-zinc-800 relative overflow-hidden">
         {/* Decorative background glow */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="space-y-3">
             {/* Company Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-xs rounded-full border border-white/20 text-xs font-semibold">
-              <Building2 className="w-3.5 h-3.5 text-indigo-200" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-900 backdrop-blur-xs rounded-full border border-zinc-800 text-xs font-semibold text-zinc-200">
+              <Building2 className="w-3.5 h-3.5 text-zinc-400" />
               <span>Purchased by: <strong>{companyName}</strong></span>
             </div>
 
             <div>
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
                 {planName}
               </h3>
-              <p className="text-xs text-indigo-200 mt-1 max-w-xl">
+              <p className="text-xs text-zinc-400 mt-1 max-w-xl">
                 {currentSub?.plan_description || purchasedPlan.description || 'Full feature access with automated Indian statutory payroll, multi-branch geofencing, and cashbook.'}
               </p>
             </div>

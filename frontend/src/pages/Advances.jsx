@@ -166,11 +166,11 @@ export const Advances = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <HandCoins className="w-5 h-5 text-indigo-600" />
+          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
+            <HandCoins className="w-5 h-5 text-zinc-900" />
             <span>{isEmployee ? 'My Salary Advance Requests' : 'Salary Advances & Employee Loans'}</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             {isEmployee
               ? 'Request a salary advance against upcoming salary and track approval & EMI deductions.'
               : 'Review incoming employee advance requests, approve or reject them, or directly issue advances to staff.'}
@@ -180,11 +180,7 @@ export const Advances = () => {
         {/* Action Button: Role-Aware */}
         <button
           onClick={() => setShowModal(true)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors text-white ${
-            isEmployee
-              ? 'bg-indigo-600 hover:bg-indigo-700'
-              : 'bg-emerald-600 hover:bg-emerald-700'
-          }`}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold shadow-xs transition-colors text-white bg-zinc-950 hover:bg-black cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>{isEmployee ? 'Request Advance' : 'Issue Advance to Employee'}</span>

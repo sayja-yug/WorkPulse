@@ -72,11 +72,11 @@ export const Cashbook = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-indigo-600" />
-            <span>Cashbook — Income &amp; Expense Ledger</span>
+          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-zinc-900" />
+            <span>Cashbook &mdash; Income &amp; Expense Ledger</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             Track daily cash-in, cash-out, and running petty cash balances
           </p>
         </div>
@@ -84,7 +84,7 @@ export const Cashbook = () => {
         {canManageExpenses && !isAuditor && (
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Record Cash Entry</span>
@@ -93,13 +93,13 @@ export const Cashbook = () => {
       </div>
 
       {/* Balance Card */}
-      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-6 text-white shadow-md flex items-center justify-between">
+      <div className="bg-zinc-950 rounded-2xl p-6 text-white shadow-xs border border-zinc-800 flex items-center justify-between">
         <div>
-          <p className="text-xs text-indigo-200 uppercase font-bold tracking-wider">Current Cashbook Balance</p>
-          <p className="text-3xl font-bold mt-1">{formatINR(balance)}</p>
+          <p className="text-xs text-zinc-400 uppercase font-bold tracking-wider">Current Cashbook Balance</p>
+          <p className="text-3xl font-bold mt-1 text-white">{formatINR(balance)}</p>
         </div>
-        <div className="p-3 bg-white/10 rounded-xl">
-          <Wallet className="w-7 h-7 text-indigo-300" />
+        <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl">
+          <Wallet className="w-7 h-7 text-white" />
         </div>
       </div>
 

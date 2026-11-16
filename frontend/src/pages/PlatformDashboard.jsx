@@ -149,7 +149,7 @@ export const PlatformDashboard = ({ view = 'overview' }) => {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-rose-950 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-zinc-950 rounded-2xl p-6 text-white shadow-xs border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold px-2.5 py-0.5 bg-rose-500/30 border border-rose-400/40 rounded-full uppercase tracking-wider text-rose-200">

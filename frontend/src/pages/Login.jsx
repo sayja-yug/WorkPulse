@@ -241,83 +241,83 @@ export const Login = () => {
       : companies.find((c) => c.id === selectedCompanyId)?.name || 'Your Company';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="max-w-4xl w-full grid md:grid-cols-2 bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-800">
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+      <div className="max-w-4xl w-full grid md:grid-cols-2 bg-white rounded-2xl shadow-2xl overflow-hidden border border-zinc-800">
         {/* Left: Enterprise Workforce Branding */}
-        <div className="bg-slate-900 p-8 text-white flex flex-col justify-between border-r border-slate-800">
+        <div className="bg-black p-8 text-white flex flex-col justify-between border-r border-zinc-800">
           <div>
             <div className="flex items-center gap-2 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-xl text-white shadow-lg shadow-indigo-500/40">
+              <div className="w-10 h-10 rounded-xl bg-white text-zinc-950 flex items-center justify-center font-black text-xl shadow-xs">
                 W
               </div>
               <div>
-                <h2 className="text-xl font-bold tracking-tight">WorkPulse</h2>
-                <p className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider">
+                <h2 className="text-xl font-bold tracking-tight text-white">WorkPulse</h2>
+                <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">
                   Enterprise Workforce SaaS
                 </p>
               </div>
             </div>
 
-            <h3 className="text-2xl font-bold mb-3 tracking-tight">
+            <h3 className="text-2xl font-bold mb-3 tracking-tight text-white">
               Modern Workforce, Attendance &amp; Payroll Management
             </h3>
-            <p className="text-slate-400 text-xs mb-6 leading-relaxed">
+            <p className="text-zinc-400 text-xs mb-6 leading-relaxed">
               Enterprise multi-tenant platform with multi-site geofencing, Indian statutory payroll (PF/ESI/TDS), shift scheduling, and company isolation.
             </p>
 
-            <div className="space-y-3 text-xs text-slate-300">
+            <div className="space-y-3 text-xs text-zinc-300">
               <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-white flex-shrink-0" />
                 <span>Employees sign in strictly into their registered company</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-white flex-shrink-0" />
                 <span>Sign up is reserved exclusively for Business Owners</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-white flex-shrink-0" />
                 <span>Multi-branch geofenced clock-in &amp; selfie attendance</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-white flex-shrink-0" />
                 <span>Strict tenant isolation with PostgreSQL database security</span>
               </div>
             </div>
 
             {/* Registered Companies badge */}
-            <div className="mt-6 p-3 rounded-xl bg-slate-800/80 border border-slate-700/80">
-              <div className="flex items-center justify-between text-[11px] text-slate-300">
+            <div className="mt-6 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+              <div className="flex items-center justify-between text-[11px] text-zinc-300">
                 <span className="flex items-center gap-1.5 font-semibold">
-                  <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+                  <Building2 className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Registered Platform Tenants:</span>
                 </span>
-                <span className="font-bold text-emerald-400 font-mono">{companies.length} Companies</span>
+                <span className="font-bold text-white font-mono">{companies.length} Companies</span>
               </div>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <div className="pt-6 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
             <span className="flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-emerald-400" /> PostgreSQL Multi-Tenant Protected
+              <Shield className="w-3.5 h-3.5 text-white" /> PostgreSQL Multi-Tenant Protected
             </span>
-            <span className="font-mono text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">v1.0.0</span>
+            <span className="font-mono text-[10px] bg-zinc-900 px-2 py-0.5 rounded text-zinc-400">v1.0.0</span>
           </div>
         </div>
 
         {/* Right: Auth Forms */}
         <div className="p-8 flex flex-col justify-center">
           {/* Form Selector Tabs */}
-          <div className="flex items-center border-b border-slate-200 mb-6">
+          <div className="flex items-center border-b border-zinc-200 mb-6">
             <button
               type="button"
               onClick={() => {
                 setIsRegistering(false);
                 setError('');
               }}
-              className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+              className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
                 !isRegistering
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
+                  ? 'border-zinc-950 text-zinc-950'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-600'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -330,10 +330,10 @@ export const Login = () => {
                 setRegStep('account');
                 setError('');
               }}
-              className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+              className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
                 isRegistering
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
+                  ? 'border-zinc-950 text-zinc-950'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-600'
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
@@ -458,7 +458,7 @@ export const Login = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isLoading ? (
                     <span>Verifying Company &amp; Credentials...</span>

@@ -182,13 +182,13 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Banner + Quick Actions */}
-      <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-800 rounded-2xl p-6 text-white shadow-lg shadow-indigo-600/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-zinc-950 rounded-2xl p-6 text-white shadow-xs border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-semibold px-2.5 py-0.5 bg-indigo-500/40 rounded-full border border-indigo-300/30 uppercase tracking-wide">
+            <span className="text-[10px] font-bold px-2.5 py-0.5 bg-zinc-800 text-zinc-200 rounded-full border border-zinc-700 uppercase tracking-wide">
               {activeRole.replace('_', ' ')}
             </span>
-            <span className="text-xs text-indigo-100 font-medium">
+            <span className="text-xs text-zinc-300 font-medium">
               {business?.name || 'No Company Selected'}
             </span>
             {isEmployee && (
@@ -196,16 +196,16 @@ export const Dashboard = () => {
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                   isPunchedIn
                     ? 'bg-emerald-500 text-white shadow-xs'
-                    : 'bg-indigo-950/60 text-slate-300 border border-indigo-400/30'
+                    : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${isPunchedIn ? 'bg-white animate-pulse' : 'bg-slate-400'}`}></span>
+                <span className={`w-2 h-2 rounded-full ${isPunchedIn ? 'bg-white animate-pulse' : 'bg-zinc-500'}`}></span>
                 {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'INACTIVE (OFF DUTY)'}
               </span>
             )}
           </div>
-          <h2 className="text-2xl font-bold tracking-tight">Welcome back, {user?.full_name}!</h2>
-          <p className="text-indigo-100 text-xs mt-1">
+          <h2 className="text-2xl font-bold tracking-tight text-white">Welcome back, {user?.full_name}!</h2>
+          <p className="text-zinc-400 text-xs mt-1">
             {isEmployee
               ? isPunchedIn
                 ? `You clocked in at ${formatTime(todayRecord.check_in)}. Shift hours are actively tracked below.`
@@ -225,7 +225,7 @@ export const Dashboard = () => {
                   type="button"
                   disabled={punchingAction}
                   onClick={handleDashboardPunchIn}
-                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
                   <Clock className="w-3.5 h-3.5" />
                   <span>{punchingAction ? 'Punching In...' : 'Punch In (PI)'}</span>
@@ -235,7 +235,7 @@ export const Dashboard = () => {
                   type="button"
                   disabled={punchingAction}
                   onClick={handleDashboardPunchOut}
-                  className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
                   <Clock className="w-3.5 h-3.5" />
                   <span>{punchingAction ? 'Punching Out...' : 'Punch Out (PO)'}</span>
@@ -243,13 +243,13 @@ export const Dashboard = () => {
               )}
               <Link
                 to="/attendance"
-                className="px-3.5 py-2 bg-indigo-500/40 border border-indigo-300/30 text-white rounded-lg text-xs font-bold hover:bg-indigo-500/60 transition-colors"
+                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
               >
                 Punch Logs
               </Link>
               <Link
                 to="/payroll"
-                className="px-3.5 py-2 bg-indigo-500/40 border border-indigo-300/30 text-white rounded-lg text-xs font-bold hover:bg-indigo-500/60 transition-colors"
+                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
               >
                 My Payslips
               </Link>
@@ -259,7 +259,7 @@ export const Dashboard = () => {
           {canCreateEmployee && !isEmployee && (
             <Link
               to="/employees?action=add"
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-white text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-50 shadow-sm transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Employee</span>
@@ -269,7 +269,7 @@ export const Dashboard = () => {
           {canManageEmployees && !isEmployee && (
             <Link
               to="/attendance"
-              className="px-3.5 py-2 bg-indigo-500/40 border border-indigo-300/30 text-white rounded-lg text-xs font-bold hover:bg-indigo-500/60 transition-colors"
+              className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
             >
               Mark Attendance
             </Link>
@@ -278,7 +278,7 @@ export const Dashboard = () => {
           {canManagePayroll && !isEmployee && (
             <Link
               to="/payroll"
-              className="px-3.5 py-2 bg-emerald-500/90 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm transition-colors"
+              className="px-3.5 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
             >
               Process Payroll
             </Link>
@@ -287,7 +287,7 @@ export const Dashboard = () => {
           {isAuditor && (
             <Link
               to="/reports"
-              className="px-4 py-2 bg-white text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-50 shadow-sm transition-colors"
+              className="px-4 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
             >
               Compliance Reports
             </Link>

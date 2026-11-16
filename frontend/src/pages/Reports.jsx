@@ -28,11 +28,11 @@ export const Reports = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-indigo-600" />
-            <span>Executive Reports & Analytics</span>
+          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-zinc-900" />
+            <span>Executive Reports &amp; Analytics</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-0.5">
             Live database aggregations, workforce KPIs, and exportable business registers
           </p>
         </div>
@@ -40,14 +40,14 @@ export const Reports = () => {
         <div className="flex gap-2">
           <button
             onClick={() => alert('Exporting complete Excel workforce & payroll register...')}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-sm transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-800 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <FileSpreadsheet className="w-4 h-4 text-zinc-700" />
             <span>Export Excel</span>
           </button>
           <button
             onClick={() => alert('Generating compliance audit PDF summary...')}
-            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Export PDF</span>

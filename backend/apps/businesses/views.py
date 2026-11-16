@@ -20,8 +20,8 @@ class BusinessViewSet(viewsets.ModelViewSet):
         if user.is_superuser or user.is_staff or user.user_roles.filter(
             role__code__in=['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN']
         ).exists():
-            return Business.objects.all()
-        return Business.objects.filter(memberships__user=user, memberships__is_active=True).distinct()
+            return Business.objects.all().select_related('subscription__plan').prefetch_related('employees', 'memberships__user').order_by('-created_at')
+        return Business.objects.filter(memberships__user=user, memberships__is_active=True).distinct().select_related('subscription__plan').order_by('-created_at')
 
     def get_serializer_class(self):
         if self.action == 'list':

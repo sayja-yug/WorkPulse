@@ -52,5 +52,22 @@ class BusinessService:
         user.active_business = business
         user.save(update_fields=['active_business'])
 
+        # 5. Attach default Starter Subscription
+        from apps.subscriptions.models import Subscription, SubscriptionPlan
+        from django.utils import timezone
+        default_plan = SubscriptionPlan.objects.filter(code='FREE').first() or SubscriptionPlan.objects.first()
+        if default_plan:
+            today = timezone.now().date()
+            Subscription.objects.get_or_create(
+                business=business,
+                defaults={
+                    'plan': default_plan,
+                    'status': Subscription.Status.ACTIVE,
+                    'billing_cycle': Subscription.Cycle.MONTHLY,
+                    'current_period_start': today,
+                    'current_period_end': today + timezone.timedelta(days=365)
+                }
+            )
+
         return business
 

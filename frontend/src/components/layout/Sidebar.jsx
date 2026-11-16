@@ -261,12 +261,12 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 w-64 sm:w-72 bg-zinc-950 text-zinc-300 flex flex-col h-screen border-r border-zinc-800/80 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:z-30 select-none ${
+      className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-zinc-950 text-zinc-300 flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] border-r border-zinc-800/80 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:z-30 select-none ${
         isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
       }`}
     >
       {/* 1. Header: Brand & Notification Quick Action */}
-      <div className="h-16 px-4 sm:px-5 flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950">
+      <div className="h-16 px-4 sm:px-5 flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-white text-zinc-950 flex items-center justify-center font-black text-base shadow-sm shrink-0">
             W
@@ -303,9 +303,9 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
               )}
             </button>
 
-            {/* Notification Popover Dropdown (Aligned right of button, or floating) */}
+            {/* Notification Popover Dropdown (Aligned within mobile bounds) */}
             {showNotifications && (
-              <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-84 bg-white text-zinc-900 rounded-xl shadow-2xl border border-zinc-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute -right-12 sm:right-0 top-full mt-2 w-[calc(85vw-2rem)] max-w-[300px] sm:max-w-none sm:w-84 bg-white text-zinc-900 rounded-xl shadow-2xl border border-zinc-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                 {/* Popover Header */}
                 <div className="p-3 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -410,7 +410,7 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
       </div>
 
       {/* 2. Workspace / Company Switcher Card */}
-      <div className="p-3 border-b border-zinc-800/80 bg-zinc-950 relative" ref={companyMenuRef}>
+      <div className="p-3 border-b border-zinc-800/80 bg-zinc-950 relative shrink-0" ref={companyMenuRef}>
         <button
           type="button"
           onClick={() => setShowCompanyMenu(!showCompanyMenu)}
@@ -482,7 +482,7 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
       </div>
 
       {/* 3. Navigation Menu Items */}
-      <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 min-h-0 px-3 py-3 space-y-1 overflow-y-auto overscroll-contain">
         {visibleNavItems.map((item) => {
           const displayName = isEmployeeRole && item.employeeName ? item.employeeName : item.name;
           return (
@@ -524,8 +524,8 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
       </nav>
 
       {/* 4. Bottom User Profile & Logout Bar */}
-      <div className="p-3 border-t border-zinc-800/80 bg-zinc-950">
-        <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-zinc-900/60 border border-zinc-800/70">
+      <div className="p-3 border-t border-zinc-800/80 bg-zinc-950 shrink-0 pb-safe pb-4 sm:pb-3">
+        <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-full bg-white text-zinc-950 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
               {user?.first_name ? user.first_name[0].toUpperCase() : 'U'}
@@ -544,12 +544,16 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
 
           <button
             type="button"
-            onClick={logout}
+            onClick={() => {
+              onClose();
+              logout();
+            }}
             title="Log out of account"
-            className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800 hover:bg-rose-950/80 hover:text-rose-200 border border-zinc-700 hover:border-rose-800 rounded-lg transition-colors cursor-pointer shrink-0"
             aria-label="Logout"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="text-[11px] font-bold">Logout</span>
           </button>
         </div>
       </div>

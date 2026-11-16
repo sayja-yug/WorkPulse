@@ -3,18 +3,47 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  @supports (height: 100dvh) {
+    html, body, #root {
+      min-height: 100dvh;
+    }
+  }
+
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: #09090b;
     background-color: #fafafa;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
   }
 
   ::selection {
     background-color: #18181b;
     color: #ffffff;
   }
+}
+
+/* Mobile Safe-Area Inset Utilities */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+}
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0.5rem);
+}
+
+/* Hide scrollbar on mobile scroll tabs while preserving touch swipe */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom sleek minimal monochrome scrollbars */

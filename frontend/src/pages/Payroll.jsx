@@ -396,7 +396,7 @@ export const Payroll = () => {
 
       {/* Tabs - Only shown for Management & Auditors */}
       {!isEmployee && (
-        <div className="flex items-center gap-2 border-b border-zinc-200">
+        <div className="flex items-center gap-2 border-b border-zinc-200 overflow-x-auto no-scrollbar whitespace-nowrap">
           <button
             onClick={() => setActiveTab('runs')}
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${

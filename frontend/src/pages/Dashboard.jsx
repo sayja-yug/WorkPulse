@@ -182,7 +182,7 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Banner + Quick Actions */}
-      <div className="bg-zinc-950 rounded-2xl p-6 text-white shadow-xs border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-zinc-950 rounded-2xl p-4 sm:p-6 text-white shadow-xs border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <span className="text-[10px] font-bold px-2.5 py-0.5 bg-zinc-800 text-zinc-200 rounded-full border border-zinc-700 uppercase tracking-wide">

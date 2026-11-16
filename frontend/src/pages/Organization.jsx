@@ -398,7 +398,7 @@ export const Organization = () => {
             </button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[650px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
                   <th className="py-3 px-4">Branch Name</th>
@@ -470,37 +470,39 @@ export const Organization = () => {
               <span>Add Department</span>
             </button>
           </div>
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                <th className="py-3 px-4">Department Name</th>
-                <th className="py-3 px-4">Code</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredDepts.map((d) => (
-                <tr key={d.id} className="hover:bg-slate-50">
-                  <td className="py-3 px-4 font-semibold text-slate-900">{d.name}</td>
-                  <td className="py-3 px-4 font-mono text-slate-600">{d.code || '-'}</td>
-                  <td className="py-3 px-4 text-right space-x-2">
-                    <button
-                      onClick={() => handleViewDeptUsers(d)}
-                      className="text-indigo-600 hover:underline font-semibold text-xs"
-                    >
-                      View assigned users
-                    </button>
-                    <button
-                      onClick={() => openEditDept(d)}
-                      className="text-slate-700 hover:text-indigo-700 font-semibold text-xs px-2 py-1 rounded hover:bg-slate-100"
-                    >
-                      Edit
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[500px] text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
+                  <th className="py-3 px-4">Department Name</th>
+                  <th className="py-3 px-4">Code</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredDepts.map((d) => (
+                  <tr key={d.id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 font-semibold text-slate-900">{d.name}</td>
+                    <td className="py-3 px-4 font-mono text-slate-600">{d.code || '-'}</td>
+                    <td className="py-3 px-4 text-right space-x-2">
+                      <button
+                        onClick={() => handleViewDeptUsers(d)}
+                        className="text-indigo-600 hover:underline font-semibold text-xs"
+                      >
+                        View assigned users
+                      </button>
+                      <button
+                        onClick={() => openEditDept(d)}
+                        className="text-slate-700 hover:text-indigo-700 font-semibold text-xs px-2 py-1 rounded hover:bg-slate-100"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : activeTab === 'designations' ? (
         /* 4. Designations */
@@ -515,22 +517,24 @@ export const Organization = () => {
               <span>Add Designation</span>
             </button>
           </div>
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                <th className="py-3 px-4">Designation Title</th>
-                <th className="py-3 px-4">Hierarchy Level</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {designations.map((g) => (
-                <tr key={g.id} className="hover:bg-slate-50">
-                  <td className="py-3 px-4 font-semibold text-slate-900">{g.name}</td>
-                  <td className="py-3 px-4 font-mono text-slate-600">Level {g.level ?? 1}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[450px] text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
+                  <th className="py-3 px-4">Designation Title</th>
+                  <th className="py-3 px-4">Hierarchy Level</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {designations.map((g) => (
+                  <tr key={g.id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 font-semibold text-slate-900">{g.name}</td>
+                    <td className="py-3 px-4 font-mono text-slate-600">Level {g.level ?? 1}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : activeTab === 'working-days' ? (
         /* 5. Working Days */
@@ -580,24 +584,26 @@ export const Organization = () => {
           {holidays.length === 0 ? (
             <div className="p-10 text-center text-xs text-slate-500">No holidays added yet. Click Add Holiday to create one.</div>
           ) : (
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                  <th className="py-3 px-4">Holiday Name</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Type</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {holidays.map((h) => (
-                  <tr key={h.id} className="hover:bg-slate-50">
-                    <td className="py-3 px-4 font-semibold text-slate-900">{h.name}</td>
-                    <td className="py-3 px-4 text-slate-600">{formatDate(h.date)}</td>
-                    <td className="py-3 px-4"><Badge variant="info">{h.type || 'PUBLIC'}</Badge></td>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[450px] text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
+                    <th className="py-3 px-4">Holiday Name</th>
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4">Type</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {holidays.map((h) => (
+                    <tr key={h.id} className="hover:bg-slate-50">
+                      <td className="py-3 px-4 font-semibold text-slate-900">{h.name}</td>
+                      <td className="py-3 px-4 text-slate-600">{formatDate(h.date)}</td>
+                      <td className="py-3 px-4"><Badge variant="info">{h.type || 'PUBLIC'}</Badge></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

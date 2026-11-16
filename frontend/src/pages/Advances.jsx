@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { usePermissions } from '../hooks/usePermissions';
+import { useNotification } from '../context/NotificationContext';
 import {
   HandCoins,
   Plus,
@@ -21,6 +22,7 @@ import { formatINR, formatDate } from '../utils/formatters';
 
 export const Advances = () => {
   const { isEmployee, canApproveAdvances } = usePermissions();
+  const { toast, confirm } = useNotification();
 
   const [advances, setAdvances] = useState([]);
   const [employeesList, setEmployeesList] = useState([]);
@@ -80,11 +82,11 @@ export const Advances = () => {
           reason: formData.reason,
           repayment_months: formData.repayment_months,
         });
-        alert('Your salary advance request has been submitted to your employer!');
+        toast.success('Your salary advance request has been submitted to your employer!');
       } else {
         // Owner / Admin direct disbursement to employee
         if (!formData.employee) {
-          alert('Please select an employee to receive this advance.');
+          toast.warning('Please select an employee to receive this advance.');
           setIsSubmitting(false);
           return;
         }
@@ -95,7 +97,7 @@ export const Advances = () => {
           repayment_months: formData.repayment_months,
           status: 'APPROVED',
         });
-        alert('Salary advance issued and approved for the selected employee!');
+        toast.success('Salary advance issued and approved for the selected employee!');
       }
 
       setShowModal(false);
@@ -107,7 +109,7 @@ export const Advances = () => {
       });
       fetchAdvances();
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.response?.data?.detail || 'Action failed.');
+      toast.error(err.response?.data?.error?.message || err.response?.data?.detail || 'Action failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -117,9 +119,9 @@ export const Advances = () => {
     try {
       await api.post(`/advances/${id}/approve/`);
       fetchAdvances();
-      alert('Salary advance approved! It will be scheduled for payroll recovery.');
+      toast.success('Salary advance approved! It will be scheduled for payroll recovery.');
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.response?.data?.detail || 'Approval failed');
+      toast.error(err.response?.data?.error?.message || err.response?.data?.detail || 'Approval failed');
     }
   };
 
@@ -127,20 +129,28 @@ export const Advances = () => {
     try {
       await api.post(`/advances/${id}/disburse/`);
       fetchAdvances();
-      alert('Advance disbursed and funds marked as paid to employee!');
+      toast.success('Advance disbursed and funds marked as paid to employee!');
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.response?.data?.detail || 'Disbursement failed');
+      toast.error(err.response?.data?.error?.message || err.response?.data?.detail || 'Disbursement failed');
     }
   };
 
   const handleReject = async (id) => {
-    if (!window.confirm('Are you sure you want to reject this salary advance request?')) return;
+    const confirmed = await confirm({
+      title: 'Reject Advance Request',
+      message: 'Are you sure you want to reject this salary advance request?',
+      confirmText: 'Reject Request',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
+
     try {
       await api.post(`/advances/${id}/reject/`);
       fetchAdvances();
-      alert('Salary advance request rejected.');
+      toast.info('Salary advance request rejected.');
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.response?.data?.detail || 'Rejection failed');
+      toast.error(err.response?.data?.error?.message || err.response?.data?.detail || 'Rejection failed');
     }
   };
 
@@ -244,7 +254,7 @@ export const Advances = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Request Date</th>

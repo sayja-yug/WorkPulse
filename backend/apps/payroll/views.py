@@ -70,8 +70,19 @@ class PayrollRunViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         payroll_run = self.get_object()
-        PayrollService.approve_and_lock(payroll_run, approved_by=request.user)
-        return Response({'success': True, 'data': PayrollRunSerializer(payroll_run).data})
+        if payroll_run.status == PayrollRun.Status.LOCKED:
+            return Response(
+                {'success': False, 'error': {'message': 'This payroll run is already locked.'}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            PayrollService.approve_and_lock(payroll_run, approved_by=request.user)
+            return Response({'success': True, 'data': PayrollRunSerializer(payroll_run).data})
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': {'message': f'Approval failed: {str(e)}'}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(detail=True, methods=['post'])
     def disburse(self, request, pk=None):

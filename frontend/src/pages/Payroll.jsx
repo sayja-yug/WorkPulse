@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import {
   Banknote,
   Calculator,
@@ -29,6 +30,8 @@ import {
   TrendingDown,
   TrendingUp,
   Info,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
@@ -43,6 +46,7 @@ const MONTH_NAMES = [
 export const Payroll = () => {
   const { isEmployee, isAuditor, canManagePayroll, user } = usePermissions();
   const { business } = useAuth();
+  const { toast, confirm } = useNotification();
 
   const [runs, setRuns] = useState([]);
   const [payslips, setPayslips] = useState([]);
@@ -53,6 +57,97 @@ export const Payroll = () => {
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [disburseRun, setDisburseRun] = useState(null);
   const [viewPayslip, setViewPayslip] = useState(null);
+  const [breakdownModalPayslip, setBreakdownModalPayslip] = useState(null);
+  const [expandedPayslips, setExpandedPayslips] = useState({});
+
+  const toggleExpandPayslip = (key) => {
+    setExpandedPayslips(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const getPayslipBreakdown = (p) => {
+    if (!p) return null;
+    const components = Array.isArray(p.components) ? p.components : [];
+    const earnings = components.filter(c => c.component_type === 'EARNING');
+    const deductions = components.filter(c => c.component_type === 'DEDUCTION');
+
+    // Overtime
+    const otComp = earnings.find(c =>
+      c.component_name?.toLowerCase().includes('overtime') ||
+      c.component_name?.toLowerCase().includes('ot')
+    );
+    const overtimeHours = Number(p.overtime_hours || otComp?.calculation_details?.overtime_hours || 0);
+    let overtimePay = otComp ? Number(otComp.amount) : 0;
+    if (!otComp && overtimeHours > 0) {
+      const gross = Number(p.gross_salary || 55000);
+      const hourly = (gross / 30) / 8;
+      overtimePay = Math.round(overtimeHours * hourly * 1.5 * 100) / 100;
+    }
+
+    // Shortfall Cut
+    const shortfallComp = deductions.find(c =>
+      c.component_name?.toLowerCase().includes('shortfall') ||
+      c.component_name?.toLowerCase().includes('deficit')
+    );
+    let shortfallAmount = shortfallComp ? Number(shortfallComp.amount) : 0;
+    const shortfallHours = Number(shortfallComp?.calculation_details?.shortfall_hours || 0);
+
+    // Unpaid Leave Cut
+    const leaveComp = deductions.find(c =>
+      c.component_name?.toLowerCase().includes('unpaid') ||
+      c.component_name?.toLowerCase().includes('absent')
+    );
+    let leaveCutAmount = leaveComp ? Number(leaveComp.amount) : 0;
+    const leaveCutDays = Number(leaveComp?.calculation_details?.unpaid_days || 0);
+
+    // Advance
+    const advComp = deductions.find(c => c.component_name?.toLowerCase().includes('advance'));
+    let advanceAmount = advComp ? Number(advComp.amount) : 0;
+
+    // PF
+    const pfComp = deductions.find(c =>
+      c.component_name?.toLowerCase().includes('provident') ||
+      c.component_name?.toLowerCase().includes('pf')
+    );
+    const totalDed = Number(p.total_deductions || 0);
+    const gross = Number(p.gross_salary || 0);
+    const estimatedBasic = Math.max(0, gross - overtimePay);
+    let pfAmount = pfComp ? Number(pfComp.amount) : Math.round(estimatedBasic * 0.12 * 100) / 100;
+
+    // Tax / TDS
+    const taxComp = deductions.find(c =>
+      c.component_name?.toLowerCase().includes('tax') ||
+      c.component_name?.toLowerCase().includes('tds')
+    );
+    let taxAmount = taxComp ? Number(taxComp.amount) : Math.round(estimatedBasic * 0.05 * 100) / 100;
+
+    // If components were not present, deduce shortfall from remaining deductions
+    if (components.length === 0 && totalDed > (pfAmount + taxAmount)) {
+      shortfallAmount = Math.round((totalDed - (pfAmount + taxAmount)) * 100) / 100;
+    }
+
+    const basicSalary = estimatedBasic;
+
+    return {
+      earnings,
+      deductions,
+      basicSalary,
+      overtimePay,
+      overtimeHours,
+      shortfallAmount,
+      shortfallHours,
+      leaveCutAmount,
+      leaveCutDays,
+      pfAmount,
+      taxAmount,
+      advanceAmount,
+      totalDeductions: totalDed,
+      grossSalary: gross,
+      netSalary: Number(p.net_salary || 0),
+      hasShortfall: shortfallAmount > 0,
+      hasLeaveCut: leaveCutAmount > 0,
+      hasAdvance: advanceAmount > 0,
+    };
+  };
 
   // New Payroll Form State
   const now = new Date();
@@ -149,10 +244,10 @@ export const Payroll = () => {
 
       setShowProcessModal(false);
       await fetchData();
-      alert(`Payroll cycle for ${monthName} ${selectedYear} initiated and computed according to company work hours & overtime rules!`);
+      toast.success(`Payroll cycle for ${monthName} ${selectedYear} initiated and computed according to company work hours & overtime rules!`);
     } catch (err) {
       const msg = err.response?.data?.error?.message || err.response?.data?.detail || err.message || 'Payroll initiation failed';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setProcessingPayroll(false);
     }
@@ -162,22 +257,30 @@ export const Payroll = () => {
   const handleCalculate = async (id) => {
     try {
       await api.post(`/payroll/runs/${id}/calculate/`);
-      alert('Payroll calculation updated with current company work hour & overtime rules! Gross, overtime, shortfall cuts, statutory PF/Tax, and net salaries re-computed.');
+      toast.success('Payroll calculation updated with company work hour & overtime rules!');
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Calculation failed');
+      toast.error(err.response?.data?.error?.message || 'Calculation failed');
     }
   };
 
   // Step 3: Approve & Lock Payroll (Generates official payslips)
   const handleApprove = async (id) => {
-    if (!confirm('Are you sure you want to approve and lock this payroll? This action generates official payslips for all staff members.')) return;
+    const confirmed = await confirm({
+      title: 'Approve & Lock Payroll',
+      message: 'Are you sure you want to approve and lock this payroll? This action generates official payslips for all staff members and unlocks salary disbursement.',
+      confirmText: 'Approve & Lock',
+      cancelText: 'Cancel',
+      type: 'primary',
+    });
+    if (!confirmed) return;
+
     try {
       await api.post(`/payroll/runs/${id}/approve/`);
-      alert('Payroll approved! Official payslips generated for all staff. You can now disburse salaries.');
+      toast.success('Payroll approved! Official payslips generated for all staff.');
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Approval failed');
+      toast.error(err.response?.data?.error?.message || 'Approval failed');
     }
   };
 
@@ -197,9 +300,9 @@ export const Payroll = () => {
       const data = res.data?.data;
       setDisburseRun(null);
       await fetchData();
-      alert(data?.message || 'Salaries successfully disbursed! Payment records recorded in organization ledger.');
+      toast.success(data?.message || 'Salaries successfully disbursed! Payment records recorded in organization ledger.');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Disbursement failed');
+      toast.error(err.response?.data?.error?.message || 'Disbursement failed');
     } finally {
       setDisbursing(false);
     }
@@ -215,10 +318,11 @@ export const Payroll = () => {
       if (res.data?.data) {
         setPolicy(res.data.data);
       }
+      toast.success('Company payroll, work hour & overtime rules saved successfully!');
       setPolicySuccessMsg('Company payroll, work hour & overtime rules saved successfully! Future and re-calculated payroll cycles will strictly follow these rules.');
       setTimeout(() => setPolicySuccessMsg(''), 6000);
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to save company policy rules');
+      toast.error(err.response?.data?.error?.message || 'Failed to save company policy rules');
     } finally {
       setSavingPolicy(false);
     }
@@ -391,7 +495,7 @@ export const Payroll = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[800px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
                       <th className="py-3 px-4">Cycle / Period</th>
@@ -728,89 +832,158 @@ export const Payroll = () => {
         </div>
       )}
 
-      {/* Payslips Table (Self-service for employee, or all staff for management) */}
+      {/* Payslips Section (Self-service for employee, or all staff for management) */}
       {(isEmployee || activeTab === 'payslips') && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              {isEmployee ? 'My Issued Payslips' : 'Generated Staff Payslips'}
-            </h3>
-            <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+            <div>
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                {isEmployee ? 'My Issued Payslips' : 'Generated Staff Payslips'}
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Click &quot;Details&quot; on any statement to view itemized overtime earnings and salary cut deductions.
+              </p>
+            </div>
+            <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-100">
               {payslips.length} Statements Found
             </span>
           </div>
 
-          {loading ? (
-            <Loader message="Loading payslip statements..." />
-          ) : payslips.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-xs space-y-2">
-              <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-              <p className="font-semibold text-slate-700">No payslips found in the active billing cycles.</p>
-              <p className="text-slate-400">
-                {isEmployee
-                  ? 'Your company administrators have not yet locked or released this period’s payslips.'
-                  : 'Approve and lock a payroll run to generate official payslips for all staff members.'}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
-                    <th className="py-3 px-4">Period</th>
-                    {!isEmployee && <th className="py-3 px-4">Employee</th>}
-                    <th className="py-3 px-4">Gross Salary</th>
-                    <th className="py-3 px-4">Overtime</th>
-                    <th className="py-3 px-4">Deductions (PF/Tax/Cuts)</th>
-                    <th className="py-3 px-4">Net Take-Home</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Official Payslip</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {payslips.map((p, idx) => (
-                    <tr key={p.id || idx} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3.5 px-4 font-semibold text-slate-900">
-                        {p.period_display || p.period || 'Monthly Period'}
-                      </td>
-                      {!isEmployee && (
-                        <td className="py-3.5 px-4 text-slate-700 font-medium">
-                          <p className="font-semibold text-slate-900">{p.employee_name || 'Staff Member'}</p>
-                          <p className="text-[11px] text-slate-400 font-mono">{p.employee_code || p.payslip_number}</p>
-                        </td>
-                      )}
-                      <td className="py-3.5 px-4 text-slate-600 font-medium">{formatINR(p.gross_salary || 55000)}</td>
-                      <td className="py-3.5 px-4 font-medium">
-                        {Number(p.overtime_hours || 0) > 0 ? (
-                          <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-[11px]">
-                            +{Number(p.overtime_hours).toFixed(1)} hrs OT
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">0.0 hrs</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-rose-600 font-medium">{formatINR(p.total_deductions || 5200)}</td>
-                      <td className="py-3.5 px-4 font-bold text-emerald-700 text-sm">{formatINR(p.net_salary || 49800)}</td>
-                      <td className="py-3.5 px-4">
-                        <Badge variant="success">ISSUED</Badge>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <button
-                          onClick={() => setViewPayslip(p)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded text-xs font-bold transition-colors shadow-2xs"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>View &amp; Print</span>
-                        </button>
-                      </td>
+            {loading ? (
+              <Loader message="Loading payslip statements..." />
+            ) : payslips.length === 0 ? (
+              <div className="p-12 text-center text-slate-500 text-xs space-y-2">
+                <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="font-semibold text-slate-700">No payslips found in the active billing cycles.</p>
+                <p className="text-slate-400">
+                  {isEmployee
+                    ? 'Your company administrators have not yet locked or released this period’s payslips.'
+                    : 'Approve and lock a payroll run to generate official payslips for all staff members.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[850px] text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
+                      <th className="py-3 px-4">Period</th>
+                      {!isEmployee && <th className="py-3 px-4">Employee</th>}
+                      <th className="py-3 px-4">Gross Salary</th>
+                      <th className="py-3 px-4">Overtime Pay</th>
+                      <th className="py-3 px-4">Salary Cuts &amp; Deductions</th>
+                      <th className="py-3 px-4">Net Take-Home</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Actions / Payslip</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {payslips.map((p, idx) => {
+                      const pKey = p.id || idx;
+                      const isExpanded = Boolean(expandedPayslips[pKey]);
+                      const b = getPayslipBreakdown(p);
+
+                      return (
+                        <React.Fragment key={pKey}>
+                          <tr className={`hover:bg-slate-50/60 transition-colors ${isExpanded ? 'bg-indigo-50/20' : ''}`}>
+                            <td className="py-3.5 px-4 font-semibold text-slate-900">
+                              <p className="font-bold text-slate-900">{p.period_display || p.period || 'Monthly Period'}</p>
+                              <p className="text-[10px] text-slate-400 font-mono">{p.payslip_number || `PS-${idx + 1}`}</p>
+                            </td>
+                            {!isEmployee && (
+                              <td className="py-3.5 px-4 text-slate-700 font-medium">
+                                <p className="font-semibold text-slate-900">{p.employee_name || 'Staff Member'}</p>
+                                <p className="text-[11px] text-slate-400 font-mono">{p.employee_code || p.payslip_number}</p>
+                              </td>
+                            )}
+                            <td className="py-3.5 px-4 text-slate-700 font-medium">
+                              <span className="font-semibold">{formatINR(p.gross_salary || 55000)}</span>
+                            </td>
+                            <td className="py-3.5 px-4 font-medium">
+                              {b.overtimeHours > 0 ? (
+                                <div className="space-y-0.5">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-[11px] inline-flex items-center gap-1">
+                                      <TrendingUp className="w-3 h-3 text-emerald-600" />
+                                      +{b.overtimeHours.toFixed(1)} hrs OT
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] font-bold text-emerald-700 font-mono">
+                                    +{formatINR(b.overtimePay)}
+                                  </p>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 text-[11px]">0.0 hrs (₹0)</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="space-y-1">
+                                <span className="font-bold text-rose-600 text-xs">
+                                  -{formatINR(p.total_deductions || 5200)}
+                                </span>
+                                {/* Short details pills showing WHERE salary was cut */}
+                                <div className="flex flex-wrap gap-1 max-w-[280px]">
+                                  {b.shortfallAmount > 0 && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200" title={`${b.shortfallHours.toFixed(1)}h deficit from standard quota`}>
+                                      Shortfall: -{formatINR(b.shortfallAmount)}
+                                    </span>
+                                  )}
+                                  {b.leaveCutAmount > 0 && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200" title={`${b.leaveCutDays} days unpaid leave`}>
+                                      Leave Cut: -{formatINR(b.leaveCutAmount)}
+                                    </span>
+                                  )}
+                                  {b.advanceAmount > 0 && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                      Advance: -{formatINR(b.advanceAmount)}
+                                    </span>
+                                  )}
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] text-slate-500 bg-slate-100 border border-slate-200">
+                                    PF (12%): -{formatINR(b.pfAmount)}
+                                  </span>
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] text-slate-500 bg-slate-100 border border-slate-200">
+                                    Tax (5%): -{formatINR(b.taxAmount)}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 font-bold text-emerald-700 text-sm">
+                              {formatINR(p.net_salary || 49800)}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <Badge variant="success">ISSUED</Badge>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="inline-flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setBreakdownModalPayslip(p)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                                  title="View itemized breakdown of overtime earnings and salary cuts"
+                                >
+                                  <Calculator className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>Details</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setViewPayslip(p)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                                  title="View and print official payslip"
+                                >
+                                  <FileText className="w-3.5 h-3.5 text-slate-600" />
+                                  <span className="hidden sm:inline">View &amp; Print</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
       {/* MODAL 1: Process Monthly Payroll Modal */}
       <Modal
@@ -966,6 +1139,263 @@ export const Payroll = () => {
             </div>
           </form>
         )}
+      </Modal>
+
+      {/* MODAL: Salary & Deduction Breakdown Detail Modal */}
+      <Modal
+        isOpen={Boolean(breakdownModalPayslip)}
+        onClose={() => setBreakdownModalPayslip(null)}
+        title={`Salary Breakdown — ${breakdownModalPayslip?.period_display || breakdownModalPayslip?.period || 'Monthly Period'}`}
+        subtitle={`Itemized details of overtime compensation and wage cuts for ${breakdownModalPayslip?.employee_name || user?.full_name || 'Employee'}`}
+        maxWidth="max-w-2xl"
+      >
+        {breakdownModalPayslip && (() => {
+          const b = getPayslipBreakdown(breakdownModalPayslip);
+          if (!b) return null;
+
+          return (
+            <div className="space-y-4 text-xs">
+              {/* Top Banner: Statement & Net Take-Home */}
+              <div className="p-4 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 rounded-xl text-white shadow-md border border-indigo-800/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Statement Overview
+                    </span>
+                    <span className="text-xs text-indigo-200 font-mono">
+                      {breakdownModalPayslip.payslip_number || 'N/A'}
+                    </span>
+                  </div>
+                  <h4 className="text-base font-bold text-white mt-1">
+                    {breakdownModalPayslip.period_display || breakdownModalPayslip.period || 'Monthly Period'} Compensation
+                  </h4>
+                  <p className="text-[11px] text-indigo-200/80">
+                    Gross Earnings: {formatINR(b.grossSalary)} • Total Deductions: -{formatINR(b.totalDeductions)}
+                  </p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 text-right sm:min-w-[170px]">
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-indigo-200">Net Take-Home</p>
+                  <p className="text-2xl font-black text-emerald-400">{formatINR(b.netSalary)}</p>
+                </div>
+              </div>
+
+              {/* 4 Metric Chips */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 1. Overtime Pay */}
+                <div className="p-3 bg-emerald-50/70 border border-emerald-200/70 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between text-emerald-900">
+                    <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <TrendingUp className="w-4 h-4 text-emerald-600" />
+                      Overtime Pay Earned
+                    </span>
+                    {b.overtimeHours > 0 && (
+                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-200">
+                        +{b.overtimeHours.toFixed(1)} hrs
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-lg font-black text-emerald-700">
+                    +{formatINR(b.overtimePay)}
+                  </p>
+                  <p className="text-[11px] text-emerald-800">
+                    {b.overtimeHours > 0
+                      ? `Paid for ${b.overtimeHours.toFixed(1)} hrs worked extra @ 1.5x overtime multiplier`
+                      : 'No overtime hours logged for this billing period'}
+                  </p>
+                </div>
+
+                {/* 2. Hour Shortfall Cut */}
+                <div className={`p-3 rounded-xl border space-y-1 ${
+                  b.shortfallAmount > 0
+                    ? 'bg-rose-50/80 border-rose-200'
+                    : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                      b.shortfallAmount > 0 ? 'text-rose-900' : 'text-slate-700'
+                    }`}>
+                      <Clock className={`w-4 h-4 ${b.shortfallAmount > 0 ? 'text-rose-600' : 'text-slate-400'}`} />
+                      Work Hour Shortfall Cut
+                    </span>
+                    {b.shortfallHours > 0 && (
+                      <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded border border-rose-200">
+                        -{b.shortfallHours.toFixed(1)}h deficit
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-lg font-black ${b.shortfallAmount > 0 ? 'text-rose-700' : 'text-slate-400'}`}>
+                    {b.shortfallAmount > 0 ? `-${formatINR(b.shortfallAmount)}` : '₹0.00'}
+                  </p>
+                  <p className="text-[11px] text-slate-600">
+                    {b.shortfallAmount > 0
+                      ? `Deducted for ${b.shortfallHours.toFixed(1)} deficit hours below standard daily quota`
+                      : 'Zero shortfall (Full standard shift hours fulfilled)'}
+                  </p>
+                </div>
+
+                {/* 3. Statutory Deductions */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Shield className="w-4 h-4 text-indigo-600" />
+                    Statutory Deductions (PF &amp; Tax)
+                  </span>
+                  <p className="text-lg font-black text-slate-900">
+                    -{formatINR(b.pfAmount + b.taxAmount)}
+                  </p>
+                  <p className="text-[11px] text-slate-600">
+                    PF (12%): {formatINR(b.pfAmount)} • TDS/Tax (5%): {formatINR(b.taxAmount)}
+                  </p>
+                </div>
+
+                {/* 4. Leaves & Advances */}
+                <div className={`p-3 rounded-xl border space-y-1 ${
+                  (b.leaveCutAmount > 0 || b.advanceAmount > 0)
+                    ? 'bg-amber-50/80 border-amber-200'
+                    : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                    (b.leaveCutAmount > 0 || b.advanceAmount > 0) ? 'text-amber-900' : 'text-slate-700'
+                  }`}>
+                    <Banknote className="w-4 h-4 text-amber-600" />
+                    Leaves &amp; Advances Recovery
+                  </span>
+                  <p className={`text-lg font-black ${
+                    (b.leaveCutAmount > 0 || b.advanceAmount > 0) ? 'text-amber-700' : 'text-slate-400'
+                  }`}>
+                    {(b.leaveCutAmount > 0 || b.advanceAmount > 0)
+                      ? `-${formatINR(b.leaveCutAmount + b.advanceAmount)}`
+                      : '₹0.00'}
+                  </p>
+                  <p className="text-[11px] text-slate-600">
+                    {b.leaveCutAmount > 0
+                      ? `${b.leaveCutDays} unpaid day(s) cut (${formatINR(b.leaveCutAmount)})`
+                      : b.advanceAmount > 0
+                      ? `Salary advance recovery: ${formatINR(b.advanceAmount)}`
+                      : 'No unpaid leave cuts or advance recovery active'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Itemized Comparison Breakdown */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Earnings List */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="bg-slate-100/90 px-3 py-1.5 font-bold text-slate-800 text-[11px] uppercase tracking-wider flex justify-between">
+                    <span>Earnings</span>
+                    <span>Amount (₹)</span>
+                  </div>
+                  <div className="p-3 divide-y divide-slate-100 space-y-2">
+                    <div className="flex justify-between text-slate-700">
+                      <span>Basic Salary</span>
+                      <span className="font-semibold text-slate-900">{formatINR(b.basicSalary)}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-700 pt-1.5">
+                      <div>
+                        <span className="font-semibold text-emerald-800">Overtime Earnings</span>
+                        <span className="block text-[10px] text-slate-400 font-mono">
+                          +{b.overtimeHours.toFixed(1)} hrs @ 1.5x rate
+                        </span>
+                      </div>
+                      <span className="font-bold text-emerald-700">+{formatINR(b.overtimePay)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-slate-900 pt-2 border-t border-slate-200">
+                      <span>Total Gross Pay</span>
+                      <span className="text-indigo-600">{formatINR(b.grossSalary)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Where Salary Was Cut List */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="bg-slate-100/90 px-3 py-1.5 font-bold text-slate-800 text-[11px] uppercase tracking-wider flex justify-between">
+                    <span>Where Salary Was Cut</span>
+                    <span>Deduction (₹)</span>
+                  </div>
+                  <div className="p-3 divide-y divide-slate-100 space-y-2">
+                    {b.shortfallAmount > 0 ? (
+                      <div className="flex justify-between text-rose-700">
+                        <div>
+                          <span className="font-semibold">Shortfall Cut</span>
+                          <span className="block text-[10px] text-rose-500 font-mono">
+                            {b.shortfallHours.toFixed(1)}h deficit hours
+                          </span>
+                        </div>
+                        <span className="font-bold">-{formatINR(b.shortfallAmount)}</span>
+                      </div>
+                    ) : null}
+
+                    {b.leaveCutAmount > 0 ? (
+                      <div className="flex justify-between text-amber-700 pt-1.5">
+                        <div>
+                          <span className="font-semibold">Unpaid Leave Cut</span>
+                          <span className="block text-[10px] text-amber-500 font-mono">
+                            {b.leaveCutDays} day(s) absent
+                          </span>
+                        </div>
+                        <span className="font-bold">-{formatINR(b.leaveCutAmount)}</span>
+                      </div>
+                    ) : null}
+
+                    {b.advanceAmount > 0 ? (
+                      <div className="flex justify-between text-purple-700 pt-1.5">
+                        <span className="font-semibold">Advance Recovery</span>
+                        <span className="font-bold">-{formatINR(b.advanceAmount)}</span>
+                      </div>
+                    ) : null}
+
+                    <div className="flex justify-between text-slate-700 pt-1.5">
+                      <span>Provident Fund (12%)</span>
+                      <span className="font-semibold">-{formatINR(b.pfAmount)}</span>
+                    </div>
+
+                    <div className="flex justify-between text-slate-700 pt-1.5">
+                      <span>Professional Tax &amp; TDS (5%)</span>
+                      <span className="font-semibold">-{formatINR(b.taxAmount)}</span>
+                    </div>
+
+                    <div className="flex justify-between font-bold text-slate-900 pt-2 border-t border-slate-200">
+                      <span>Total Wage Cuts</span>
+                      <span className="text-rose-600">-{formatINR(b.totalDeductions)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Equation Calculation Note */}
+              <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl flex items-center justify-between text-[11px] text-indigo-950 font-medium">
+                <span>
+                  Gross ({formatINR(b.grossSalary)}) − Total Cuts ({formatINR(b.totalDeductions)})
+                </span>
+                <span className="font-bold text-emerald-700 text-xs">
+                  = In-Hand Credited: {formatINR(b.netSalary)}
+                </span>
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = breakdownModalPayslip;
+                    setBreakdownModalPayslip(null);
+                    setViewPayslip(target);
+                  }}
+                  className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>View &amp; Print Official Payslip</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBreakdownModalPayslip(null)}
+                  className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* MODAL 3: Printable Official Payslip Modal */}

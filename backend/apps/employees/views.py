@@ -1,5 +1,6 @@
 import io
 import csv
+import logging
 from datetime import datetime
 from django.http import HttpResponse
 import openpyxl
@@ -18,6 +19,8 @@ from .serializers import (
     EmploymentHistorySerializer
 )
 from .services import EmployeeService
+
+logger = logging.getLogger(__name__)
 
 
 class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
@@ -68,6 +71,51 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         employee.status = Employee.Status.INACTIVE
         employee.save(update_fields=['status', 'updated_at'])
         return Response({'success': True, 'data': {'message': 'Employee deactivated successfully.'}})
+
+    def destroy(self, request, *args, **kwargs):
+        employee = self.get_object()
+        user = request.user
+        is_owner_or_admin = (
+            user.is_superuser or
+            user.is_staff or
+            user.business_memberships.filter(business=employee.business, is_owner=True).exists() or
+            user.user_roles.filter(role__code__in=['BUSINESS_OWNER', 'SUPER_ADMIN', 'HR_MANAGER']).exists()
+        )
+        if not is_owner_or_admin:
+            return Response(
+                {'success': False, 'error': {'message': 'Only the Business Owner or HR can remove employees.'}},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            employee_name = employee.full_name
+            linked_user = employee.user
+
+            if linked_user and not linked_user.is_superuser:
+                linked_user.is_active = False
+                linked_user.save(update_fields=['is_active'])
+
+            employee.delete()
+            return Response(
+                {'success': True, 'data': {'message': f'Employee {employee_name} has been removed successfully.'}},
+                status=status.HTTP_200_OK
+            )
+        except Exception as exc:
+            logger.exception("Failed to delete employee %s: %s", employee.id, exc)
+            return Response(
+                {'success': False, 'error': {'message': f'Unable to remove employee: {str(exc)}'}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['post'])
+    def terminate(self, request, pk=None):
+        employee = self.get_object()
+        employee.status = Employee.Status.TERMINATED
+        employee.save(update_fields=['status', 'updated_at'])
+        if employee.user and not employee.user.is_superuser:
+            employee.user.is_active = False
+            employee.user.save(update_fields=['is_active'])
+        return Response({'success': True, 'data': {'message': f'{employee.full_name} has been offboarded / terminated.'}})
 
     @action(detail=True, methods=['post'])
     def transfer(self, request, pk=None):

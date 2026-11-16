@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/client';
 import { usePermissions } from '../hooks/usePermissions';
+import { useNotification } from '../context/NotificationContext';
 import {
   Users,
   Search,
@@ -26,6 +27,7 @@ import {
   Briefcase,
   MapPin,
   Check,
+  Trash2,
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
@@ -56,6 +58,7 @@ const INITIAL_FORM = () => ({
 
 export const Employees = () => {
   const { canCreateEmployee, isOwner, isHR } = usePermissions();
+  const { toast, confirm } = useNotification();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -172,26 +175,32 @@ export const Employees = () => {
   // Status toggle (Activate / Deactivate)
   const handleToggleStatus = async (emp) => {
     if (!isOwner && !isHR) {
-      alert('Only Business Owners and HR Managers can modify employee status.');
+      toast.warning('Only Business Owners and HR Managers can modify employee status.');
       return;
     }
     const isActivating = emp.status !== 'ACTIVE';
     const action = isActivating ? 'activate' : 'deactivate';
-    const confirmMsg = `${isActivating ? 'Activate' : 'Deactivate'} ${emp.first_name} ${emp.last_name} (${emp.employee_code})?`;
-    if (!confirm(confirmMsg)) return;
+    const confirmed = await confirm({
+      title: `${isActivating ? 'Activate' : 'Deactivate'} Employee`,
+      message: `Are you sure you want to ${isActivating ? 'activate' : 'deactivate'} ${emp.first_name} ${emp.last_name} (${emp.employee_code})?`,
+      confirmText: isActivating ? 'Activate Employee' : 'Deactivate Employee',
+      type: isActivating ? 'primary' : 'warning',
+    });
+    if (!confirmed) return;
 
     try {
       await api.post(`/employees/${emp.id}/${action}/`);
+      toast.success(`${emp.first_name} ${emp.last_name} has been ${isActivating ? 'activated' : 'deactivated'}.`);
       fetchEmployees();
     } catch (err) {
-      alert(err.response?.data?.error?.message || `Failed to ${action} employee.`);
+      toast.error(err.response?.data?.error?.message || `Failed to ${action} employee.`);
     }
   };
 
   // Add Employee Submission
   const submitEmployee = async (mode) => {
     if (!formData.first_name.trim() || !formData.email.trim()) {
-      alert('First Name and Email are required.');
+      toast.warning('First Name and Email are required.');
       return;
     }
     try {
@@ -213,15 +222,16 @@ export const Employees = () => {
       if (mode === 'another') {
         setFormData(INITIAL_FORM());
         fetchEmployees();
-        alert('Employee onboarded! Ready to add another.');
+        toast.success('Employee onboarded! Ready to add another.');
       } else if (mode === 'draft') {
         setShowModal(false);
         setFormData(INITIAL_FORM());
         fetchEmployees();
-        alert('Employee saved as draft (Inactive).');
+        toast.info('Employee saved as draft (Inactive).');
       } else {
         setShowModal(false);
         setFormData(INITIAL_FORM());
+        toast.success(`Employee ${formData.first_name} onboarded successfully!`);
         if (created?.id) {
           navigate(`/employees/${created.id}`);
         } else {
@@ -239,7 +249,7 @@ export const Employees = () => {
               .join('\n')
           : null) ||
         'Failed to save employee';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -275,11 +285,32 @@ export const Employees = () => {
       await api.patch(`/employees/${editModalEmp.id}/`, payload);
       setEditModalEmp(null);
       fetchEmployees();
-      alert('Employee updated successfully!');
+      toast.success('Employee updated successfully!');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to update employee');
+      toast.error(err.response?.data?.error?.message || 'Failed to update employee');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteEmployee = async (emp) => {
+    if (!emp) return;
+    const empName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'this employee';
+    const confirmed = await confirm({
+      title: 'Remove Employee',
+      message: `Are you sure you want to permanently remove ${empName} from the company? This action cannot be undone and will delete all associated profile data.`,
+      confirmText: 'Remove Employee',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/employees/${emp.id}/`);
+      toast.success(`Employee ${empName} has been removed successfully.`);
+      fetchEmployees();
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to remove employee');
     }
   };
 
@@ -615,7 +646,7 @@ export const Employees = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[850px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Employee ID</th>
@@ -872,6 +903,23 @@ export const Employees = () => {
                                   </>
                                 )}
                               </button>
+
+                              {isOwner && (
+                                <>
+                                  <div className="border-t border-slate-100 my-1"></div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      handleDeleteEmployee(emp);
+                                    }}
+                                    className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-rose-600 hover:bg-rose-50 font-semibold"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                    <span>Remove Employee</span>
+                                  </button>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1175,21 +1223,38 @@ export const Employees = () => {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setEditModalEmp(null)}
-              className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold"
-            >
-              {submitting ? 'Saving...' : 'Save Changes'}
-            </button>
+          <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => {
+                  const emp = editModalEmp;
+                  setEditModalEmp(null);
+                  handleDeleteEmployee(emp);
+                }}
+                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="Permanently remove employee"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Remove Employee</span>
+              </button>
+            )}
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={() => setEditModalEmp(null)}
+                className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold"
+              >
+                {submitting ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

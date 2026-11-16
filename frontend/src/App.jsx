@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { PlatformLayout } from './components/layout/PlatformLayout';
 import { Login } from './pages/Login';
@@ -113,8 +114,9 @@ const RoleRoute = ({ children, allowedRoles, moduleName }) => {
 export const App = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+      <NotificationProvider>
+        <AuthProvider>
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route
             path="/select-business"
@@ -188,21 +190,15 @@ export const App = () => {
             <Route path="payroll" element={<Payroll />} />
             <Route path="advances" element={<Advances />} />
             <Route
-              path="expenses"
+              path="cashbook"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'AUDITOR']} moduleName="Business Expenses">
+                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'AUDITOR']} moduleName="Cashbook & Expenses">
                   <Expenses />
                 </RoleRoute>
               }
             />
-            <Route
-              path="cashbook"
-              element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'AUDITOR']} moduleName="Cashbook">
-                  <Cashbook />
-                </RoleRoute>
-              }
-            />
+            {/* Backward-compatibility redirect: /expenses -> /cashbook */}
+            <Route path="expenses" element={<Navigate to="/cashbook" replace />} />
             <Route
               path="field-management"
               element={
@@ -249,6 +245,7 @@ export const App = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
-    </BrowserRouter>
+    </NotificationProvider>
+  </BrowserRouter>
   );
 };

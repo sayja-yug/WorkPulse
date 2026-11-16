@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { usePermissions } from '../hooks/usePermissions';
+import { useNotification } from '../context/NotificationContext';
 import {
   ArrowLeft,
   User,
@@ -15,6 +16,7 @@ import {
   History,
   Settings as SettingsIcon,
   LayoutDashboard,
+  Trash2,
 } from 'lucide-react';
 import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
@@ -22,7 +24,9 @@ import { formatDate, formatINR, formatTime } from '../utils/formatters';
 
 export const EmployeeProfile = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { isOwner, isHR, canManagePayroll } = usePermissions();
+  const { toast, confirm } = useNotification();
 
   const [activeTab, setActiveTab] = useState('overview');
   const [employee, setEmployee] = useState(null);
@@ -103,13 +107,23 @@ export const EmployeeProfile = () => {
   }, [activeTab, id]);
 
   const handleToggleStatus = async () => {
-    const endpoint = employee.status === 'ACTIVE' ? 'deactivate' : 'activate';
-    if (!confirm(`Confirm ${endpoint} for ${employee.full_name || employee.first_name}?`)) return;
+    const isActivating = employee.status !== 'ACTIVE';
+    const endpoint = isActivating ? 'activate' : 'deactivate';
+    const empName = employee.full_name || employee.first_name;
+    const confirmed = await confirm({
+      title: `${isActivating ? 'Activate' : 'Deactivate'} Employee`,
+      message: `Are you sure you want to ${isActivating ? 'activate' : 'deactivate'} ${empName}?`,
+      confirmText: isActivating ? 'Activate' : 'Deactivate',
+      type: isActivating ? 'primary' : 'warning',
+    });
+    if (!confirmed) return;
+
     try {
       await api.post(`/employees/${id}/${endpoint}/`);
+      toast.success(`${empName} has been ${isActivating ? 'activated' : 'deactivated'}.`);
       fetchEmployee();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Status update failed');
+      toast.error(err.response?.data?.error?.message || 'Status update failed');
     }
   };
 
@@ -119,8 +133,29 @@ export const EmployeeProfile = () => {
       await api.patch(`/employees/${id}/`, editForm);
       setEditing(false);
       fetchEmployee();
+      toast.success('Employee updated successfully!');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to update employee');
+      toast.error(err.response?.data?.error?.message || 'Failed to update employee');
+    }
+  };
+
+  const handleDeleteEmployee = async () => {
+    const empName = employee.full_name || `${employee.first_name} ${employee.last_name}`;
+    const confirmed = await confirm({
+      title: 'Remove Employee',
+      message: `Are you sure you want to permanently remove ${empName} from the company? This action cannot be undone and will delete all associated profile data.`,
+      confirmText: 'Remove Employee',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/employees/${id}/`);
+      toast.success(`Employee ${empName} has been removed successfully.`);
+      navigate('/employees');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to remove employee');
     }
   };
 
@@ -179,10 +214,25 @@ export const EmployeeProfile = () => {
             </p>
           </div>
         </div>
+
+        {/* Profile Header Actions */}
+        <div className="flex items-center gap-2">
+          {(isOwner || isHR) && (
+            <button
+              type="button"
+              onClick={handleDeleteEmployee}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-colors shadow-2xs"
+              title="Permanently remove employee from company"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              <span>Remove Employee</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* 11-Tab Bar */}
-      <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-2">
+      {/* 11-Tab Bar (Horizontal scroll on mobile, flex on desktop) */}
+      <div className="flex items-center gap-1.5 border-b border-slate-200 pb-2 overflow-x-auto">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -392,11 +442,36 @@ export const EmployeeProfile = () => {
                 </div>
               </form>
             ) : (
-              <div className="flex flex-wrap gap-3">
-                <button onClick={() => setEditing(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Edit Employee Profile</button>
-                <button onClick={handleToggleStatus} className={`px-4 py-2 rounded-lg text-xs font-semibold ${employee.status === 'ACTIVE' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
-                  {employee.status === 'ACTIVE' ? 'Deactivate Employee' : 'Activate Employee'}
-                </button>
+              <div className="space-y-6 max-w-xl">
+                <div className="flex flex-wrap gap-3">
+                  <button onClick={() => setEditing(true)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs">Edit Employee Profile</button>
+                  <button onClick={handleToggleStatus} className={`px-4 py-2 rounded-lg text-xs font-semibold ${employee.status === 'ACTIVE' ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'}`}>
+                    {employee.status === 'ACTIVE' ? 'Deactivate Employee' : 'Activate Employee'}
+                  </button>
+                </div>
+
+                {/* Danger Zone: Permanent Employee Removal */}
+                {(isOwner || isHR) && (
+                  <div className="border border-rose-200 bg-rose-50/50 rounded-xl p-4 space-y-2">
+                    <h4 className="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <Trash2 className="w-4 h-4 text-rose-600" />
+                      <span>Danger Zone — Remove Employee</span>
+                    </h4>
+                    <p className="text-xs text-rose-700 leading-relaxed">
+                      Permanently remove this employee from your company workspace. This action removes their profile, shifts, and directory entries.
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleDeleteEmployee}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Permanently Remove Employee</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { usePermissions } from '../hooks/usePermissions';
+import { useNotification } from '../context/NotificationContext';
 import {
   CalendarCheck2,
   Clock,
@@ -15,6 +16,7 @@ import { formatDate, formatTime } from '../utils/formatters';
 
 export const Attendance = () => {
   const { isEmployee, isFieldEmployee } = usePermissions();
+  const { toast } = useNotification();
 
   const [records, setRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -88,8 +90,9 @@ export const Attendance = () => {
       });
       setIsCheckedIn(true);
       await fetchAttendance();
+      toast.success('Punched in successfully! Your work time is now active.');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Punch In failed');
+      toast.error(err.response?.data?.error?.message || 'Punch In failed');
     } finally {
       setPunching(false);
     }
@@ -104,8 +107,9 @@ export const Attendance = () => {
       });
       setIsCheckedIn(false);
       await fetchAttendance();
+      toast.info('Punched out successfully! Work session ended.');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Punch Out failed');
+      toast.error(err.response?.data?.error?.message || 'Punch Out failed');
     } finally {
       setPunching(false);
     }
@@ -119,8 +123,9 @@ export const Attendance = () => {
         action,
       });
       await fetchAttendance();
+      toast.success(`Employee marked as ${action === 'IN' ? 'Punched In (Active)' : 'Punched Out (Inactive)'}.`);
     } catch (err) {
-      alert(err.response?.data?.error?.message || `Punch ${action} failed`);
+      toast.error(err.response?.data?.error?.message || `Punch ${action} failed`);
     } finally {
       setPunchingId(null);
     }
@@ -268,7 +273,7 @@ export const Attendance = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
                     <th className="py-3 px-4">Date</th>
@@ -337,7 +342,7 @@ export const Attendance = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Date</th>

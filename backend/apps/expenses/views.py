@@ -24,6 +24,32 @@ class ExpenseViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     queryset = Expense.objects.select_related('category', 'created_by').all()
     filterset_fields = ['category', 'status', 'payment_mode', 'date']
 
+    def create(self, request, *args, **kwargs):
+        # Gracefully handle cash transactions posted to /api/v1/expenses/
+        if request.data.get('type') in ['CASH_IN', 'CASH_OUT']:
+            business = getattr(request, 'business', None)
+            if not business:
+                business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
+                if business_id:
+                    from apps.businesses.models import Business
+                    business = Business.objects.filter(id=business_id).first()
+                elif getattr(request.user, 'active_business', None):
+                    business = request.user.active_business
+
+            tx = CashbookService.record_transaction(
+                business=business,
+                tx_type=request.data.get('type'),
+                amount=request.data.get('amount'),
+                description=request.data.get('description', ''),
+                date=request.data.get('date'),
+                created_by=request.user,
+                payment_mode=request.data.get('payment_mode', 'Cash'),
+                reference=request.data.get('reference', '')
+            )
+            return Response({'success': True, 'data': CashTransactionSerializer(tx).data}, status=status.HTTP_201_CREATED)
+
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         business = getattr(self.request, 'business', None)
         serializer.save(business=business, created_by=self.request.user)

@@ -20,11 +20,12 @@ import {
   Terminal,
   ShieldCheck,
   UserCheck,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from '../../utils/constants';
 
-export const Sidebar = () => {
+export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
   const { user, activeRole, hasPermission } = useAuth();
 
   const allNavItems = [
@@ -78,13 +79,7 @@ export const Sidebar = () => {
       employeeName: 'Advances & Loans',
     },
     {
-      name: 'Expenses',
-      path: '/expenses',
-      icon: Receipt,
-      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'SUPER_ADMIN'],
-    },
-    {
-      name: 'Cashbook',
+      name: 'Cashbook & Expenses',
       path: '/cashbook',
       icon: Wallet,
       allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'SUPER_ADMIN'],
@@ -100,11 +95,6 @@ export const Sidebar = () => {
       path: '/reports',
       icon: BarChart3,
       allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN'],
-    },
-    {
-      name: 'Notifications',
-      path: '/notifications',
-      icon: Bell,
     },
     {
       name: 'Subscription',
@@ -133,16 +123,32 @@ export const Sidebar = () => {
   const roleColor = ROLE_BADGE_COLORS[activeRole] || 'bg-slate-700 text-slate-300 border-slate-600';
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0 border-r border-slate-800">
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col h-screen border-r border-slate-800 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:z-30 ${
+        isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+      }`}
+    >
       {/* Brand Header */}
-      <div className="h-16 px-6 flex items-center gap-3 border-b border-slate-800">
-        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">
-          W
+      <div className="h-16 px-5 flex items-center justify-between border-b border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">
+            W
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-white tracking-tight">WorkPulse</h1>
+            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Enterprise HRMS</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-base font-bold text-white tracking-tight">WorkPulse</h1>
-          <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Enterprise HRMS</p>
-        </div>
+
+        {/* Mobile close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+          aria-label="Close navigation"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Active Role Indicator */}
@@ -168,6 +174,7 @@ export const Sidebar = () => {
               key={item.path}
               to={item.path}
               end={item.path === '/'}
+              onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
                   isActive
@@ -185,6 +192,7 @@ export const Sidebar = () => {
         <div className="pt-3 mt-3 border-t border-slate-800">
           <NavLink
             to="/testing-panel"
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 isActive

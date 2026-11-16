@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import { useNotification } from '../context/NotificationContext';
 import api from '../api/client';
 import {
   Users,
@@ -36,6 +37,7 @@ export const Dashboard = () => {
     canCreateEmployee,
     canManagePayroll,
   } = usePermissions();
+  const { toast } = useNotification();
 
   const [stats, setStats] = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
@@ -73,8 +75,9 @@ export const Dashboard = () => {
         source: 'WEB',
       });
       await fetchAttendanceRecord();
+      toast.success('Punched in successfully! Have a productive day.');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Check In failed');
+      toast.error(err.response?.data?.error?.message || 'Check In failed');
     } finally {
       setPunchingAction(false);
     }
@@ -88,8 +91,9 @@ export const Dashboard = () => {
         longitude: 77.3649,
       });
       await fetchAttendanceRecord();
+      toast.info('Punched out successfully! Work session ended.');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Check Out failed');
+      toast.error(err.response?.data?.error?.message || 'Check Out failed');
     } finally {
       setPunchingAction(false);
     }
@@ -452,7 +456,7 @@ export const Dashboard = () => {
             </div>
           </Link>
 
-          <Link to="/expenses" className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-rose-400 transition-all flex items-center justify-between group">
+          <Link to="/cashbook" className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-rose-400 transition-all flex items-center justify-between group">
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase">Expense Summary (Month)</p>
               <p className="text-2xl font-bold text-slate-900 mt-1">

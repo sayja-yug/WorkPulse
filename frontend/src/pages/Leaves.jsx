@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { usePermissions } from '../hooks/usePermissions';
+import { useNotification } from '../context/NotificationContext';
 import {
   CalendarOff,
   Plus,
@@ -17,6 +18,7 @@ import { formatDate } from '../utils/formatters';
 
 export const Leaves = () => {
   const { isEmployee, canApproveLeaves } = usePermissions();
+  const { toast, prompt } = useNotification();
 
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,9 +60,9 @@ export const Leaves = () => {
         reason: '',
       });
       fetchLeaves();
-      alert('Leave application submitted successfully!');
+      toast.success('Leave application submitted successfully!');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to submit leave application');
+      toast.error(err.response?.data?.error?.message || 'Failed to submit leave application');
     }
   };
 
@@ -68,21 +70,27 @@ export const Leaves = () => {
     try {
       await api.post(`/leaves/${id}/approve/`);
       fetchLeaves();
-      alert('Leave approved!');
+      toast.success('Leave approved successfully!');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Approval failed');
+      toast.error(err.response?.data?.error?.message || 'Approval failed');
     }
   };
 
   const handleReject = async (id) => {
-    const reason = prompt('Enter rejection reason:');
+    const reason = await prompt({
+      title: 'Reject Leave Request',
+      message: 'Please provide a clear reason for rejecting this staff leave application:',
+      placeholder: 'e.g. Operational coverage requirement / team deadlines...',
+      confirmText: 'Reject Request',
+      cancelText: 'Cancel',
+    });
     if (!reason) return;
     try {
       await api.post(`/leaves/${id}/reject/`, { rejection_reason: reason });
       fetchLeaves();
-      alert('Leave rejected.');
+      toast.info('Leave request has been rejected.');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Rejection failed');
+      toast.error(err.response?.data?.error?.message || 'Rejection failed');
     }
   };
 
@@ -102,52 +110,97 @@ export const Leaves = () => {
           </p>
         </div>
 
-        {/* Apply Leave Button (Always available for employees & staff) */}
-        <button
-          onClick={() => setShowApplyModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Apply for Leave</span>
-        </button>
+        {/* Apply Leave Button (Only available for employees; Owners & HR are approvers) */}
+        {isEmployee && (
+          <button
+            onClick={() => setShowApplyModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Apply for Leave</span>
+          </button>
+        )}
       </div>
 
       {/* Leave Balances Strip */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Paid Leave (PL)</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">12 Days</p>
-            <p className="text-[11px] text-emerald-600 mt-0.5">Accrued monthly</p>
-          </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-            <Calendar className="w-6 h-6" />
-          </div>
-        </div>
+        {isEmployee ? (
+          <>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase">Paid Leave (PL)</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">12 Days</p>
+                <p className="text-[11px] text-emerald-600 mt-0.5">Accrued monthly</p>
+              </div>
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                <Calendar className="w-6 h-6" />
+              </div>
+            </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Casual / Sick Leave</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">6 Days</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Available for emergencies</p>
-          </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <Clock className="w-6 h-6" />
-          </div>
-        </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase">Casual / Sick Leave</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">6 Days</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Available for emergencies</p>
+              </div>
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                <Clock className="w-6 h-6" />
+              </div>
+            </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Pending Requests</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">
-              {leaves.filter((l) => l.status === 'PENDING').length}
-            </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Awaiting manager review</p>
-          </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-        </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase">Pending Requests</p>
+                <p className="text-2xl font-bold text-amber-600 mt-1">
+                  {leaves.filter((l) => l.status === 'PENDING').length}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Awaiting manager review</p>
+              </div>
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase">Total Applications</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{leaves.length}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Workforce time-off records</p>
+              </div>
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                <Calendar className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase">Approved Leaves</p>
+                <p className="text-2xl font-bold text-emerald-600 mt-1">
+                  {leaves.filter((l) => l.status === 'APPROVED').length}
+                </p>
+                <p className="text-[11px] text-emerald-600 mt-0.5">Active approved leaves</p>
+              </div>
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase">Pending Review</p>
+                <p className="text-2xl font-bold text-amber-600 mt-1">
+                  {leaves.filter((l) => l.status === 'PENDING').length}
+                </p>
+                <p className="text-[11px] text-amber-600 mt-0.5">Requires approval action</p>
+              </div>
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Leave Requests Table */}
@@ -167,7 +220,7 @@ export const Leaves = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Type</th>

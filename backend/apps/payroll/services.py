@@ -31,10 +31,28 @@ class PayrollService:
             policy.update(settings['payroll_policy'])
         return policy
 
-    @staticmethod
-    def generate_payslip_number(business, payroll_run, index):
+    @classmethod
+    def generate_unique_payslip_number(cls, business, payroll_run, employee, index):
         year_month = payroll_run.period_start.strftime('%Y%m')
-        return f'PS-{year_month}-{index:04d}'
+        biz_slug = getattr(business, 'slug', '') or 'WP'
+        biz_prefix = biz_slug.replace('-', '')[:4].upper()
+        emp_code = (getattr(employee, 'employee_code', '') or f'{index:04d}').replace('-', '')
+        run_hash = str(payroll_run.id).replace('-', '')[:4].upper()
+
+        candidate = f'PS-{biz_prefix}-{year_month}-{emp_code}-{run_hash}'
+        if not Payslip.objects.filter(payslip_number=candidate).exists():
+            return candidate
+
+        counter = 1
+        while Payslip.objects.filter(payslip_number=f'{candidate}-{counter}').exists():
+            counter += 1
+        return f'{candidate}-{counter}'
+
+    @classmethod
+    def generate_payslip_number(cls, business, payroll_run, index):
+        year_month = payroll_run.period_start.strftime('%Y%m')
+        run_hash = str(payroll_run.id).replace('-', '')[:4].upper()
+        return f'PS-{year_month}-{index:04d}-{run_hash}'
 
     @classmethod
     @transaction.atomic
@@ -295,20 +313,20 @@ class PayrollService:
                         adv.status = Advance.Status.DEDUCTING
                     adv.save(update_fields=['remaining_balance', 'status', 'updated_at'])
 
-        # Generate Payslips for each item
+        # Generate Payslips for each item with collision-proof unique numbers
         idx = 1
         for item in payroll_run.items.all():
             period_str = payroll_run.period_start.strftime('%B %Y')
-            ps_num = cls.generate_payslip_number(payroll_run.business, payroll_run, idx)
-            Payslip.objects.get_or_create(
-                payroll_item=item,
-                defaults={
-                    'employee': item.employee,
-                    'business': payroll_run.business,
-                    'payslip_number': ps_num,
-                    'period_display': period_str
-                }
-            )
+            existing_ps = Payslip.objects.filter(payroll_item=item).first()
+            if not existing_ps:
+                ps_num = cls.generate_unique_payslip_number(payroll_run.business, payroll_run, item.employee, idx)
+                Payslip.objects.create(
+                    payroll_item=item,
+                    employee=item.employee,
+                    business=payroll_run.business,
+                    payslip_number=ps_num,
+                    period_display=period_str
+                )
             idx += 1
 
         return payroll_run

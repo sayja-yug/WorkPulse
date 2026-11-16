@@ -18,7 +18,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(business=business)
         return qs
 
-    @action(detail=True, methods=['patch'])
+    @action(detail=True, methods=['patch', 'post'])
     def read(self, request, pk=None):
         notif = self.get_object()
         notif.is_read = True

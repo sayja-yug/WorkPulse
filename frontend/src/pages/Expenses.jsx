@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { usePermissions } from '../hooks/usePermissions';
+import { useNotification } from '../context/NotificationContext';
 import {
   Receipt,
   Plus,
@@ -18,15 +19,15 @@ import { formatINR, formatDate } from '../utils/formatters';
 
 export const Expenses = () => {
   const { canManageExpenses, isAuditor } = usePermissions();
+  const { toast } = useNotification();
 
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [summary, setSummary] = useState({ total_in: 0, total_out: 0, balance: 48500 });
+  const [summary, setSummary] = useState({ total_in: 0, total_out: 0, balance: 0 });
   const [formData, setFormData] = useState({
     type: 'CASH_OUT',
     amount: '',
-    category: 'OFFICE_SUPPLIES',
     description: '',
     payment_mode: 'CASH',
     date: new Date().toISOString().split('T')[0],
@@ -35,8 +36,11 @@ export const Expenses = () => {
   const fetchExpenses = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/expenses/');
-      const data = res.data.data;
+      const [txRes, balRes] = await Promise.all([
+        api.get('/expenses/transactions/'),
+        api.get('/expenses/balance/').catch(() => null),
+      ]);
+      const data = txRes.data?.data || txRes.data?.results || txRes.data || [];
       const list = Array.isArray(data) ? data : data.results || [];
       setTransactions(list);
 
@@ -47,7 +51,10 @@ export const Expenses = () => {
         if (t.type === 'CASH_IN') tin += Number(t.amount || 0);
         else tout += Number(t.amount || 0);
       });
-      setSummary({ total_in: tin, total_out: tout, balance: tin - tout + 48500 });
+      const currentBalance = balRes?.data?.data?.current_balance !== undefined
+        ? Number(balRes.data.data.current_balance)
+        : (list.length > 0 ? Number(list[0].balance_after || tin - tout) : tin - tout);
+      setSummary({ total_in: tin, total_out: tout, balance: currentBalance });
     } catch (err) {
       console.error('Failed to load expenses', err);
     } finally {
@@ -62,20 +69,19 @@ export const Expenses = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/expenses/', formData);
+      await api.post('/expenses/transactions/', formData);
       setShowModal(false);
       setFormData({
         type: 'CASH_OUT',
         amount: '',
-        category: 'OFFICE_SUPPLIES',
         description: '',
         payment_mode: 'CASH',
         date: new Date().toISOString().split('T')[0],
       });
       fetchExpenses();
-      alert('Transaction recorded in Cashbook!');
+      toast.success('Transaction recorded in Cashbook successfully!');
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Transaction recording failed');
+      toast.error(err.response?.data?.error?.message || err.response?.data?.detail || 'Transaction recording failed');
     }
   };
 
@@ -85,8 +91,8 @@ export const Expenses = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-indigo-600" />
-            <span>Business Expenses & Cashbook Ledger</span>
+            <Wallet className="w-5 h-5 text-indigo-600" />
+            <span>Cashbook & Business Expenses</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Real-time daily cash inflows, business expenditures, receipts, and petty cash ledger
@@ -165,7 +171,7 @@ export const Expenses = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[650px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Date</th>

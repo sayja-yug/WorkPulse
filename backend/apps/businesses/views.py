@@ -83,3 +83,62 @@ class BusinessViewSet(viewsets.ModelViewSet):
         business.save(update_fields=['is_active', 'updated_at'])
         return Response({'success': True, 'data': BusinessSerializer(business).data})
 
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny], url_path='public-list')
+    def public_list(self, request):
+        """Returns list of active registered companies for login company selector dropdown."""
+        businesses = Business.objects.filter(is_active=True).values('id', 'name', 'slug', 'city').order_by('name')
+        return Response({'success': True, 'data': list(businesses)})
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny], url_path='lookup-by-email')
+    def lookup_by_email(self, request):
+        """Finds the registered company for a given employee/user work email."""
+        email = request.data.get('email', '').strip().lower()
+        if not email:
+            return Response({'success': True, 'data': None})
+
+        from apps.accounts.models import User
+        from apps.employees.models import Employee
+
+        # Check existing user account
+        user = User.objects.filter(email__iexact=email).first()
+        if user:
+            # 1. Check memberships
+            membership = user.business_memberships.filter(is_active=True, business__is_active=True).select_related('business').first()
+            if membership:
+                return Response({
+                    'success': True,
+                    'data': {
+                        'id': str(membership.business.id),
+                        'name': membership.business.name,
+                        'slug': membership.business.slug,
+                        'city': membership.business.city
+                    }
+                })
+            # 2. Check employee profiles
+            emp = user.employee_profiles.filter(status='ACTIVE', business__is_active=True).select_related('business').first()
+            if emp:
+                return Response({
+                    'success': True,
+                    'data': {
+                        'id': str(emp.business.id),
+                        'name': emp.business.name,
+                        'slug': emp.business.slug,
+                        'city': emp.business.city
+                    }
+                })
+
+        # Check Employee table by email directly
+        emp = Employee.objects.filter(email__iexact=email, status='ACTIVE', business__is_active=True).select_related('business').first()
+        if emp:
+            return Response({
+                'success': True,
+                'data': {
+                    'id': str(emp.business.id),
+                    'name': emp.business.name,
+                    'slug': emp.business.slug,
+                    'city': emp.business.city
+                }
+            })
+
+        return Response({'success': True, 'data': None})
+

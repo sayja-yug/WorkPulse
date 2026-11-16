@@ -58,13 +58,21 @@ export const AuthProvider = ({ children }) => {
     fetchSession();
   }, []);
 
-  const login = async (email, password) => {
-    const res = await api.post('/auth/login/', { email, password });
+  const login = async (email, password, businessId = null) => {
+    const payloadData = { email, password };
+    if (businessId && businessId !== 'AUTO') {
+      payloadData.business_id = businessId;
+    }
+    const res = await api.post('/auth/login/', payloadData);
     const payload = res.data?.data || res.data;
     const access = payload?.access;
     const refresh = payload?.refresh;
     if (access) localStorage.setItem('access_token', access);
     if (refresh) localStorage.setItem('refresh_token', refresh);
+    if (payload?.active_business_id) {
+      localStorage.setItem('active_business_id', payload.active_business_id);
+      sessionStorage.setItem('business_confirmed', 'true');
+    }
     await fetchSession();
   };
 

@@ -175,7 +175,8 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Custom JWT token serializer that includes user info."""
+    """Custom JWT token serializer that validates company tenancy and attaches user info."""
+    business_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     @classmethod
     def get_token(cls, user):
@@ -190,9 +191,56 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        business_id = attrs.pop('business_id', None)
         data = super().validate(attrs)
-        # Include user info in response
-        data['user'] = UserSerializer(self.user).data
+        user = self.user
+
+        # Company-specific validation logic
+        if business_id and business_id != 'PLATFORM_ADMIN':
+            from apps.businesses.models import Business
+            selected_biz = Business.objects.filter(id=business_id, is_active=True).first()
+            if not selected_biz:
+                raise serializers.ValidationError({
+                    'detail': 'The selected organization is either invalid or inactive.'
+                })
+
+            has_membership = user.business_memberships.filter(business=selected_biz, is_active=True).exists()
+            has_employee = user.employee_profiles.filter(business=selected_biz, status='ACTIVE').exists()
+            has_role = user.user_roles.filter(business=selected_biz).exists()
+
+            # Super admins can log in to any tenant
+            if not (user.is_superuser or has_membership or has_employee or has_role):
+                raise serializers.ValidationError({
+                    'detail': f"Access Denied: Your account ({user.email}) is not registered with '{selected_biz.name}'. Employees can only log in to their registered organization."
+                })
+
+            user.active_business = selected_biz
+            user.save(update_fields=['active_business'])
+        elif business_id == 'PLATFORM_ADMIN':
+            is_platform = user.is_superuser or user.is_staff or user.user_roles.filter(
+                role__code__in=['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN']
+            ).exists()
+            if not is_platform:
+                raise serializers.ValidationError({
+                    'detail': 'Access Denied: This account does not possess platform governance privileges.'
+                })
+        else:
+            # If no business_id explicitly selected, automatically link to user's registered organization
+            if not user.is_superuser and not user.active_business:
+                first_biz = user.business_memberships.filter(is_active=True, business__is_active=True).first()
+                if first_biz:
+                    user.active_business = first_biz.business
+                    user.save(update_fields=['active_business'])
+                else:
+                    emp = user.employee_profiles.filter(status='ACTIVE', business__is_active=True).first()
+                    if emp:
+                        user.active_business = emp.business
+                        user.save(update_fields=['active_business'])
+
+        # Include user info and active business id in response
+        data['user'] = UserSerializer(user).data
+        if user.active_business_id:
+            data['active_business_id'] = str(user.active_business_id)
         return data
 
 

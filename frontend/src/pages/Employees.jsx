@@ -774,32 +774,30 @@ export const Employees = () => {
                       </Link>
                     </td>
 
-                    {/* 7. Status: Active on Punch In, Inactive on Punch Out */}
+                    {/* 7. Status: Active on Punch In, Inactive on Punch Out (Read-only Indicator) */}
                     <td className="py-3 px-4">
                       {(() => {
                         const isLiveActive = emp.duty_status ? emp.duty_status === 'ACTIVE' : emp.status === 'ACTIVE';
                         return (
-                          <button
-                            type="button"
-                            onClick={() => handleToggleStatus(emp)}
-                            className="group inline-flex items-center gap-1.5 cursor-pointer text-left"
-                            title={`Attendance Duty Status: ${isLiveActive ? 'ACTIVE (Clocked In)' : 'INACTIVE (Punched Out / Offline)'} — Click to toggle`}
+                          <div
+                            className="inline-flex items-center gap-1.5 cursor-default select-none text-left"
+                            title={`Duty Status: ${isLiveActive ? 'ACTIVE (Clocked In)' : 'INACTIVE (Off Duty / Punched Out)'}`}
                           >
                             <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide border transition-all ${
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide border ${
                                 isLiveActive
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 group-hover:bg-emerald-100'
-                                  : 'bg-slate-100 text-slate-600 border-slate-200 group-hover:bg-slate-200'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : 'bg-zinc-100 text-zinc-600 border-zinc-200'
                               }`}
                             >
                               <span
                                 className={`w-1.5 h-1.5 rounded-full ${
-                                  isLiveActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                                  isLiveActive ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'
                                 }`}
                               />
                               <span>{isLiveActive ? 'ACTIVE' : 'INACTIVE'}</span>
                             </span>
-                          </button>
+                          </div>
                         );
                       })()}
                     </td>

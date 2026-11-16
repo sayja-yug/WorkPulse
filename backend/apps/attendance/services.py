@@ -82,6 +82,12 @@ class AttendanceService:
             validation_notes=notes
         )
 
+        # Set employee duty/attendance status to ACTIVE upon Punch In
+        from apps.employees.models import Employee
+        if employee.status != Employee.Status.ACTIVE:
+            employee.status = Employee.Status.ACTIVE
+            employee.save(update_fields=['status', 'updated_at'])
+
         return record
 
     @classmethod
@@ -138,6 +144,11 @@ class AttendanceService:
             is_valid=is_valid,
             validation_notes=notes
         )
+
+        # Set employee duty/attendance status to INACTIVE upon Punch Out
+        from apps.employees.models import Employee
+        employee.status = Employee.Status.INACTIVE
+        employee.save(update_fields=['status', 'updated_at'])
 
         return record
 

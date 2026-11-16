@@ -53,6 +53,10 @@ class PayrollItemSerializer(serializers.ModelSerializer):
 class PayrollRunSerializer(serializers.ModelSerializer):
     items = PayrollItemSerializer(many=True, read_only=True)
     items_count = serializers.IntegerField(source='items.count', read_only=True)
+    is_disbursed = serializers.SerializerMethodField()
+
+    def get_is_disbursed(self, obj):
+        return obj.status == PayrollRun.Status.LOCKED and obj.pay_date is not None
 
     class Meta:
         model = PayrollRun
@@ -60,7 +64,7 @@ class PayrollRunSerializer(serializers.ModelSerializer):
             'id', 'business', 'name', 'period_start', 'period_end', 'pay_date',
             'status', 'total_gross', 'total_deductions', 'total_net',
             'processed_by', 'approved_by', 'locked_at', 'notes',
-            'items_count', 'items', 'created_at', 'updated_at'
+            'items_count', 'items', 'is_disbursed', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'business', 'created_at', 'updated_at']
 
@@ -68,9 +72,14 @@ class PayrollRunSerializer(serializers.ModelSerializer):
 class PayslipSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.full_name', read_only=True)
     employee_code = serializers.CharField(source='employee.employee_code', read_only=True)
+    department_name = serializers.CharField(source='employee.department.name', read_only=True)
+    designation_name = serializers.CharField(source='employee.designation.name', read_only=True)
     gross_salary = serializers.DecimalField(source='payroll_item.gross_salary', max_digits=12, decimal_places=2, read_only=True)
     total_deductions = serializers.DecimalField(source='payroll_item.total_deductions', max_digits=12, decimal_places=2, read_only=True)
     net_salary = serializers.DecimalField(source='payroll_item.net_salary', max_digits=12, decimal_places=2, read_only=True)
+    overtime_hours = serializers.DecimalField(source='payroll_item.overtime_hours', max_digits=5, decimal_places=2, read_only=True)
+    components = PayrollItemComponentSerializer(source='payroll_item.components', many=True, read_only=True)
+    period = serializers.CharField(source='period_display', read_only=True)
 
     class Meta:
         model = Payslip

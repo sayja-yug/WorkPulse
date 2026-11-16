@@ -223,7 +223,7 @@ export const App = () => {
             <Route
               path="roles"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'SUPER_ADMIN']} moduleName="Roles & Permissions">
+                <RoleRoute allowedRoles={['SUPER_ADMIN']} moduleName="Roles & Permissions">
                   <RolesPermissions />
                 </RoleRoute>
               }

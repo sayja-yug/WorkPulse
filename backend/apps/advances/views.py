@@ -49,21 +49,37 @@ class AdvanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             )
 
         from apps.employees.models import Employee
-        # Auto-resolve employee
-        employee = Employee.objects.filter(business=business, user=request.user).first()
-        if not employee:
-            employee = Employee.objects.filter(business=business, email__iexact=request.user.email).first()
+        # Check if an explicit employee is passed by Owner / Admin
+        employee_id = request.data.get('employee')
+        is_manager = request.user.is_superuser or request.user.user_roles.filter(
+            role__code__in=['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'SUPER_ADMIN']
+        ).exists()
+
+        if employee_id and is_manager:
+            employee = Employee.objects.filter(business=business, id=employee_id).first()
             if not employee:
-                import uuid
-                employee = Employee.objects.create(
-                    business=business,
-                    user=request.user,
-                    employee_code=f"EMP-{uuid.uuid4().hex[:4].upper()}",
-                    first_name=request.user.first_name or 'Employee',
-                    last_name=request.user.last_name or '',
-                    email=request.user.email,
-                    status=Employee.Status.ACTIVE
+                return Response(
+                    {'success': False, 'error': {'message': 'Selected employee was not found.'}},
+                    status=status.HTTP_404_NOT_FOUND
                 )
+            initial_status = request.data.get('status', Advance.Status.APPROVED)
+        else:
+            # Employee self-request
+            employee = Employee.objects.filter(business=business, user=request.user).first()
+            if not employee:
+                employee = Employee.objects.filter(business=business, email__iexact=request.user.email).first()
+                if not employee:
+                    import uuid
+                    employee = Employee.objects.create(
+                        business=business,
+                        user=request.user,
+                        employee_code=f"EMP-{uuid.uuid4().hex[:4].upper()}",
+                        first_name=request.user.first_name or 'Employee',
+                        last_name=request.user.last_name or '',
+                        email=request.user.email,
+                        status=Employee.Status.ACTIVE
+                    )
+            initial_status = Advance.Status.PENDING
 
         amount_raw = request.data.get('amount')
         if not amount_raw:
@@ -93,7 +109,9 @@ class AdvanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             remaining_balance=amount,
             monthly_deduction=monthly_deduction,
             reason=reason,
-            status=Advance.Status.PENDING
+            status=initial_status,
+            approved_by=request.user if initial_status != Advance.Status.PENDING else None,
+            approved_at=timezone.now() if initial_status != Advance.Status.PENDING else None
         )
 
         return Response({

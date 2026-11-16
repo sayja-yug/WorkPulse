@@ -107,12 +107,6 @@ export const Sidebar = () => {
       icon: Bell,
     },
     {
-      name: 'Roles & Permissions',
-      path: '/roles',
-      icon: Shield,
-      allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
-    },
-    {
       name: 'Subscription',
       path: '/subscription',
       icon: CreditCard,

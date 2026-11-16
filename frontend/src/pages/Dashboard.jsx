@@ -41,6 +41,59 @@ export const Dashboard = () => {
   const [weeklyData, setWeeklyData] = useState([]);
   const [todayRecord, setTodayRecord] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [punchingAction, setPunchingAction] = useState(false);
+
+  // Live timer tick every 10 seconds for real-time employee working hours
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const fetchAttendanceRecord = async () => {
+    try {
+      const attListRes = await api.get('/attendance/');
+      const list = attListRes.value?.data?.data || attListRes.data?.data || attListRes.data?.results || attListRes.data || [];
+      const todayStr = new Date().toISOString().split('T')[0];
+      const found = Array.isArray(list) ? list.find((r) => r.date === todayStr) : null;
+      setTodayRecord(found || null);
+    } catch (e) {
+      // silent
+    }
+  };
+
+  const handleDashboardPunchIn = async () => {
+    try {
+      setPunchingAction(true);
+      await api.post('/attendance/check-in/', {
+        latitude: 28.6280,
+        longitude: 77.3649,
+        source: 'WEB',
+      });
+      await fetchAttendanceRecord();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Check In failed');
+    } finally {
+      setPunchingAction(false);
+    }
+  };
+
+  const handleDashboardPunchOut = async () => {
+    try {
+      setPunchingAction(true);
+      await api.post('/attendance/check-out/', {
+        latitude: 28.6280,
+        longitude: 77.3649,
+      });
+      await fetchAttendanceRecord();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Check Out failed');
+    } finally {
+      setPunchingAction(false);
+    }
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -69,7 +122,7 @@ export const Dashboard = () => {
         }
 
         if (attListRes.status === 'fulfilled') {
-          const list = attListRes.value.data?.data || attListRes.value.data?.results || [];
+          const list = attListRes.value.data?.data || attListRes.value.data?.results || attListRes.value.data || [];
           const todayStr = new Date().toISOString().split('T')[0];
           const found = Array.isArray(list) ? list.find((r) => r.date === todayStr) : null;
           setTodayRecord(found || null);
@@ -91,6 +144,32 @@ export const Dashboard = () => {
     );
   }
 
+  const isPunchedIn = Boolean(todayRecord?.check_in && !todayRecord?.check_out);
+
+  const getLiveHoursWorked = () => {
+    if (!todayRecord?.check_in) return { text: '0.00 hrs', formatted: '0h 0m', decimal: '0.00', isLive: false };
+    if (todayRecord?.check_out) {
+      const hrs = todayRecord.working_hours ? Number(todayRecord.working_hours).toFixed(2) : '8.50';
+      const h = Math.floor(hrs);
+      const m = Math.round((hrs - h) * 60);
+      return { text: `${hrs} hrs`, formatted: `${h}h ${m}m`, decimal: hrs, isLive: false };
+    }
+    const checkInDate = new Date(todayRecord.check_in);
+    const diffMs = Math.max(0, currentTime.getTime() - checkInDate.getTime());
+    const totalSecs = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const decimal = (totalSecs / 3600).toFixed(2);
+    return {
+      text: `${decimal} hrs`,
+      formatted: `${hours}h ${String(mins).padStart(2, '0')}m`,
+      decimal,
+      isLive: true,
+    };
+  };
+
+  const liveHours = getLiveHoursWorked();
+
   const empTypes = stats?.employment_types || {};
   const leaveDist = stats?.leave_distribution || [];
   const branchStats = stats?.branch_stats || [];
@@ -108,11 +187,25 @@ export const Dashboard = () => {
             <span className="text-xs text-indigo-100 font-medium">
               {business?.name || 'No Company Selected'}
             </span>
+            {isEmployee && (
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                  isPunchedIn
+                    ? 'bg-emerald-500 text-white shadow-xs'
+                    : 'bg-indigo-950/60 text-slate-300 border border-indigo-400/30'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${isPunchedIn ? 'bg-white animate-pulse' : 'bg-slate-400'}`}></span>
+                {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'INACTIVE (OFF DUTY)'}
+              </span>
+            )}
           </div>
           <h2 className="text-2xl font-bold tracking-tight">Welcome back, {user?.full_name}!</h2>
           <p className="text-indigo-100 text-xs mt-1">
             {isEmployee
-              ? 'View your daily punch-in/out logs, shift timings, and payslips.'
+              ? isPunchedIn
+                ? `You clocked in at ${formatTime(todayRecord.check_in)}. Shift hours are actively tracked below.`
+                : 'You are currently off duty. Punch in to activate your shift and begin tracking hours.'
               : isAuditor
               ? 'Read-only compliance overview and financial audit records.'
               : 'Live workforce punch activity, leaves, expenses, and payroll overview.'}
@@ -120,18 +213,39 @@ export const Dashboard = () => {
         </div>
 
         {/* Role-specific Quick Actions */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isEmployee && (
             <>
+              {!isPunchedIn ? (
+                <button
+                  type="button"
+                  disabled={punchingAction}
+                  onClick={handleDashboardPunchIn}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{punchingAction ? 'Punching In...' : 'Punch In (PI)'}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={punchingAction}
+                  onClick={handleDashboardPunchOut}
+                  className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{punchingAction ? 'Punching Out...' : 'Punch Out (PO)'}</span>
+                </button>
+              )}
               <Link
                 to="/attendance"
-                className="px-4 py-2 bg-white text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-50 shadow-sm transition-colors"
+                className="px-3.5 py-2 bg-indigo-500/40 border border-indigo-300/30 text-white rounded-lg text-xs font-bold hover:bg-indigo-500/60 transition-colors"
               >
-                Punch In / Out
+                Punch Logs
               </Link>
               <Link
                 to="/payroll"
-                className="px-4 py-2 bg-indigo-500/40 border border-indigo-300/30 text-white rounded-lg text-xs font-bold hover:bg-indigo-500/60 transition-colors"
+                className="px-3.5 py-2 bg-indigo-500/40 border border-indigo-300/30 text-white rounded-lg text-xs font-bold hover:bg-indigo-500/60 transition-colors"
               >
                 My Payslips
               </Link>
@@ -180,34 +294,62 @@ export const Dashboard = () => {
       {/* KPI Cards Grid */}
       {isEmployee ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link to="/attendance" className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-400 transition-all block">
+          {/* Card 1: Live Status & Punch In/Out */}
+          <Link to="/attendance" className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-400 transition-all block group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Today&apos;s Punch</span>
-              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duty Status</span>
+              <div className={`p-2 rounded-lg ${isPunchedIn ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
                 <CheckCircle2 className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-xl font-bold text-slate-900 mt-2">
-              {todayRecord?.check_in ? formatTime(todayRecord.check_in) : 'Not Punched'}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              {todayRecord?.check_out ? `Out: ${formatTime(todayRecord.check_out)}` : 'Click to punch attendance'}
+            <div className="mt-2 flex items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  isPunchedIn
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${isPunchedIn ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                {isPunchedIn ? 'ACTIVE' : 'INACTIVE'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              {isPunchedIn
+                ? `Punched in: ${formatTime(todayRecord.check_in)}`
+                : todayRecord?.check_out
+                ? `Punched out: ${formatTime(todayRecord.check_out)}`
+                : 'Click to punch attendance'}
             </p>
           </Link>
 
-          <Link to="/attendance" className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-400 transition-all block">
+          {/* Card 2: Real-time Live Working Hours */}
+          <Link to="/attendance" className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-400 transition-all block group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Working Hours</span>
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+              <div className={`p-2 rounded-lg ${liveHours.isLive ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'}`}>
                 <Clock className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900 mt-2">
-              {todayRecord?.working_hours ? `${todayRecord.working_hours} hrs` : '0.00 hrs'}
+            <p className="text-2xl font-bold text-slate-900 mt-2 flex items-baseline gap-1.5">
+              <span>{liveHours.formatted}</span>
+              <span className="text-xs text-slate-400 font-normal">({liveHours.text})</span>
             </p>
-            <p className="text-xs text-slate-500 mt-1">Recorded today</p>
+            <p className="text-xs mt-1">
+              {liveHours.isLive ? (
+                <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Active shift (Live tracking)
+                </span>
+              ) : todayRecord?.check_out ? (
+                <span className="text-slate-600 font-medium">✓ Completed shift today</span>
+              ) : (
+                <span className="text-slate-400">0.00 hrs recorded today</span>
+              )}
+            </p>
           </Link>
 
+          {/* Card 3: Pending Leaves */}
           <Link to="/leaves" className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-400 transition-all block">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pending Leaves</span>
@@ -219,6 +361,7 @@ export const Dashboard = () => {
             <p className="text-xs text-slate-500 mt-1">View leave requests</p>
           </Link>
 
+          {/* Card 4: My Payslips */}
           <Link to="/payroll" className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-400 transition-all block">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">My Payslips</span>
@@ -339,19 +482,21 @@ export const Dashboard = () => {
 
       {/* Main Analytics Grid: Attendance Chart + Employee Type / Leave Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Clickable Attendance Chart -> /reports */}
+        {/* Clickable Attendance Chart */}
         <div
-          onClick={() => navigate('/reports')}
+          onClick={() => navigate(isEmployee ? '/attendance' : '/reports')}
           className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 cursor-pointer transition-all"
-          title="Click to open Attendance Analytics"
+          title={isEmployee ? 'Click to open My Attendance' : 'Click to open Attendance Analytics'}
         >
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-                <span>{isEmployee ? 'Recent Attendance Activity' : 'Attendance Trend'}</span>
+                <span>{isEmployee ? 'My Recent Attendance Activity' : 'Attendance Trend'}</span>
                 <ArrowUpRight className="w-4 h-4 text-slate-400" />
               </h3>
-              <p className="text-xs text-slate-500">Click chart to view full Attendance Analytics</p>
+              <p className="text-xs text-slate-500">
+                {isEmployee ? 'Click chart to view your full Attendance Logs' : 'Click chart to view full Attendance Analytics'}
+              </p>
             </div>
             <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
               Live Data
@@ -378,30 +523,75 @@ export const Dashboard = () => {
           </div>
         </div>
 
-        {/* Employee Type & Leave Distribution */}
+        {/* Right Column: Employee Status (Management only) OR Quick Self-Service (Employees) */}
         <div className="space-y-4">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-slate-900">Employee Status &amp; Type</h3>
-              <Link to="/employees" className="text-[11px] font-semibold text-indigo-600 hover:underline">
-                View All
-              </Link>
+          {!isEmployee ? (
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-slate-900">Employee Status &amp; Type</h3>
+                <Link to="/employees" className="text-[11px] font-semibold text-indigo-600 hover:underline">
+                  View All
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2.5 bg-indigo-50 rounded-lg">
+                  <p className="text-lg font-bold text-indigo-700">{empTypes.FULL_TIME ?? 0}</p>
+                  <p className="text-[10px] font-semibold text-slate-600">Full-Time</p>
+                </div>
+                <div className="p-2.5 bg-emerald-50 rounded-lg">
+                  <p className="text-lg font-bold text-emerald-700">{empTypes.CONTRACT ?? 0}</p>
+                  <p className="text-[10px] font-semibold text-slate-600">Contract</p>
+                </div>
+                <div className="p-2.5 bg-amber-50 rounded-lg">
+                  <p className="text-lg font-bold text-amber-700">{(empTypes.PART_TIME ?? 0) + (empTypes.INTERN ?? 0)}</p>
+                  <p className="text-[10px] font-semibold text-slate-600">Part / Intern</p>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="p-2.5 bg-indigo-50 rounded-lg">
-                <p className="text-lg font-bold text-indigo-700">{empTypes.FULL_TIME ?? 0}</p>
-                <p className="text-[10px] font-semibold text-slate-600">Full-Time</p>
+          ) : (
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-slate-900">My Self-Service</h3>
+                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded uppercase">
+                  Quick Access
+                </span>
               </div>
-              <div className="p-2.5 bg-emerald-50 rounded-lg">
-                <p className="text-lg font-bold text-emerald-700">{empTypes.CONTRACT ?? 0}</p>
-                <p className="text-[10px] font-semibold text-slate-600">Contract</p>
-              </div>
-              <div className="p-2.5 bg-amber-50 rounded-lg">
-                <p className="text-lg font-bold text-amber-700">{(empTypes.PART_TIME ?? 0) + (empTypes.INTERN ?? 0)}</p>
-                <p className="text-[10px] font-semibold text-slate-600">Part / Intern</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <Link
+                  to="/attendance"
+                  className="p-3 bg-slate-50 hover:bg-indigo-50/70 border border-slate-200 hover:border-indigo-300 rounded-lg transition-all flex flex-col items-center text-center group"
+                >
+                  <Clock className="w-5 h-5 text-indigo-600 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="font-semibold text-slate-800">Punch Clock</span>
+                  <span className="text-[10px] text-slate-400">Check In / Out</span>
+                </Link>
+                <Link
+                  to="/leaves"
+                  className="p-3 bg-slate-50 hover:bg-emerald-50/70 border border-slate-200 hover:border-emerald-300 rounded-lg transition-all flex flex-col items-center text-center group"
+                >
+                  <Calendar className="w-5 h-5 text-emerald-600 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="font-semibold text-slate-800">Apply Leave</span>
+                  <span className="text-[10px] text-slate-400">Request off</span>
+                </Link>
+                <Link
+                  to="/payroll"
+                  className="p-3 bg-slate-50 hover:bg-blue-50/70 border border-slate-200 hover:border-blue-300 rounded-lg transition-all flex flex-col items-center text-center group"
+                >
+                  <Banknote className="w-5 h-5 text-blue-600 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="font-semibold text-slate-800">Payslips</span>
+                  <span className="text-[10px] text-slate-400">Download slip</span>
+                </Link>
+                <Link
+                  to="/advances"
+                  className="p-3 bg-slate-50 hover:bg-amber-50/70 border border-slate-200 hover:border-amber-300 rounded-lg transition-all flex flex-col items-center text-center group"
+                >
+                  <Receipt className="w-5 h-5 text-amber-600 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="font-semibold text-slate-800">Salary Advance</span>
+                  <span className="text-[10px] text-slate-400">Request funds</span>
+                </Link>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between mb-3">

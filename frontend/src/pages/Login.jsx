@@ -216,17 +216,17 @@ export const Login = () => {
   };
 
   // Quick fill helper for testing
-  const handleQuickFill = (roleType) => {
+  const handleQuickFill = (roleType, companySlug = 'trinetra') => {
     setError('');
+    const targetCompany = companies.find((c) => c.slug === companySlug) || companies[0];
+
     if (roleType === 'OWNER') {
-      const trinetra = companies.find((c) => c.slug === 'trinetra') || companies[0];
-      if (trinetra) setSelectedCompanyId(trinetra.id);
-      setEmail('owner@trinetra.com');
+      if (targetCompany) setSelectedCompanyId(targetCompany.id);
+      setEmail(companySlug === 'apex-global' ? 'owner@apexglobal.com' : 'owner@trinetra.com');
       setPassword('WorkPulse@2026');
     } else if (roleType === 'EMPLOYEE') {
-      const trinetra = companies.find((c) => c.slug === 'trinetra') || companies[0];
-      if (trinetra) setSelectedCompanyId(trinetra.id);
-      setEmail('employee@trinetra.com');
+      if (targetCompany) setSelectedCompanyId(targetCompany.id);
+      setEmail(companySlug === 'apex-global' ? 'employee@apexglobal.com' : 'employee@trinetra.com');
       setPassword('WorkPulse@2026');
     } else if (roleType === 'SUPER_ADMIN') {
       setSelectedCompanyId('PLATFORM_ADMIN');
@@ -472,31 +472,40 @@ export const Login = () => {
               </form>
 
               {/* Demo quick credential helper */}
-              <div className="mt-4 pt-4 border-t border-slate-100">
+              <div className="mt-4 pt-3 border-t border-slate-100">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1.5">
                   Demo Quick-Fill Accounts:
                 </span>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5 mb-1.5">
                   <button
                     type="button"
-                    onClick={() => handleQuickFill('EMPLOYEE')}
-                    className="px-2 py-1 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 rounded text-[11px] font-semibold text-slate-600 transition-colors"
+                    onClick={() => handleQuickFill('EMPLOYEE', 'trinetra')}
+                    className="px-2 py-1 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 rounded text-[10px] font-semibold text-slate-600 transition-colors text-left truncate"
                   >
-                    Employee
+                    👤 Trinetra Employee
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickFill('OWNER')}
-                    className="px-2 py-1 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 rounded text-[11px] font-semibold text-slate-600 transition-colors"
+                    onClick={() => handleQuickFill('OWNER', 'trinetra')}
+                    className="px-2 py-1 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 rounded text-[10px] font-semibold text-slate-600 transition-colors text-left truncate"
                   >
-                    Business Owner
+                    👑 Trinetra Owner
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickFill('EMPLOYEE', 'apex-global')}
+                    className="px-2 py-1 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 rounded text-[10px] font-semibold text-slate-600 transition-colors text-left truncate"
+                  >
+                    🏢 Apex Global Emp
                   </button>
                   <button
                     type="button"
                     onClick={() => handleQuickFill('SUPER_ADMIN')}
-                    className="px-2 py-1 bg-slate-50 hover:bg-rose-50 hover:text-rose-700 border border-slate-200 rounded text-[11px] font-semibold text-slate-600 transition-colors"
+                    className="px-2 py-1 bg-slate-50 hover:bg-rose-50 hover:text-rose-700 border border-slate-200 rounded text-[10px] font-semibold text-slate-600 transition-colors text-left truncate"
                   >
-                    Super Admin
+                    🛡️ Super Admin
                   </button>
                 </div>
               </div>

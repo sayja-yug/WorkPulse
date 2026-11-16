@@ -54,8 +54,8 @@ class BusinessViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response({'success': True, 'data': serializer.data})
 
-    @action(detail=True, methods=['get', 'patch'], permission_classes=[permissions.IsAuthenticated, IsBusinessOwner])
-    def settings(self, request, pk=None):
+    @action(detail=True, methods=['get', 'patch'], permission_classes=[permissions.IsAuthenticated, IsBusinessOwner], url_path='settings')
+    def business_settings(self, request, pk=None):
         business = self.get_object()
         if request.method == 'GET':
             return Response({'success': True, 'data': business.settings})
@@ -83,13 +83,13 @@ class BusinessViewSet(viewsets.ModelViewSet):
         business.save(update_fields=['is_active', 'updated_at'])
         return Response({'success': True, 'data': BusinessSerializer(business).data})
 
-    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny], url_path='public-list')
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny], authentication_classes=[], url_path='public-list')
     def public_list(self, request):
         """Returns list of active registered companies for login company selector dropdown."""
         businesses = Business.objects.filter(is_active=True).values('id', 'name', 'slug', 'city').order_by('name')
         return Response({'success': True, 'data': list(businesses)})
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny], url_path='lookup-by-email')
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny], authentication_classes=[], url_path='lookup-by-email')
     def lookup_by_email(self, request):
         """Finds the registered company for a given employee/user work email."""
         email = request.data.get('email', '').strip().lower()

@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.mixins import TenantViewSetMixin
 from common.permissions import HasPermission
+from apps.notifications.services import notify_employee, notify_business_managers
 from .models import Employee, EmployeeDocument, EmploymentHistory
 from .serializers import (
     EmployeeSerializer,
@@ -57,12 +58,24 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             shift_id=self.request.data.get('shift_id'),
             send_invite=self.request.data.get('send_invite', True),
         )
+        if serializer.instance and business:
+            notify_business_managers(
+                business=business,
+                title="New Employee Added",
+                message=f"{serializer.instance.full_name} ({serializer.instance.employee_code}) was onboarded into the system.",
+                exclude_user=self.request.user
+            )
 
     @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):
         employee = self.get_object()
         employee.status = Employee.Status.ACTIVE
         employee.save(update_fields=['status', 'updated_at'])
+        notify_employee(
+            employee=employee,
+            title="Account Activated",
+            message="Your employee profile and access have been activated by management."
+        )
         return Response({'success': True, 'data': {'message': 'Employee activated successfully.'}})
 
     @action(detail=True, methods=['post'])
@@ -70,6 +83,11 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         employee = self.get_object()
         employee.status = Employee.Status.INACTIVE
         employee.save(update_fields=['status', 'updated_at'])
+        notify_employee(
+            employee=employee,
+            title="Account Deactivated",
+            message="Your employee account status has been changed to inactive by management."
+        )
         return Response({'success': True, 'data': {'message': 'Employee deactivated successfully.'}})
 
     def destroy(self, request, *args, **kwargs):
@@ -129,6 +147,14 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             new_dept_id=new_dept_id,
             changed_by=request.user,
             notes=notes
+        )
+        employee.refresh_from_db()
+        dept_name = employee.department.name if employee.department else 'General'
+        branch_name = employee.branch.name if employee.branch else 'Headquarters'
+        notify_employee(
+            employee=employee,
+            title="Department / Branch Transfer",
+            message=f"You have been transferred to Branch: {branch_name}, Department: {dept_name}."
         )
         return Response({'success': True, 'data': EmployeeSerializer(employee).data})
 

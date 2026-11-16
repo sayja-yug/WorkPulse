@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from common.mixins import TenantViewSetMixin
+from apps.notifications.services import notify_employee
+from apps.employees.models import Employee
 from .models import Shift, ShiftAssignment
 from .serializers import ShiftSerializer, ShiftAssignmentSerializer
 
@@ -57,6 +59,18 @@ class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
                 'assigned_by': request.user,
             }
         )
+
+        emp = Employee.objects.filter(id=employee_id).first()
+        if emp:
+            time_str = f"{shift.start_time.strftime('%I:%M %p')} - {shift.end_time.strftime('%I:%M %p')}"
+            notify_employee(
+                employee=emp,
+                title="Shift Assignment Updated",
+                message=f"You have been assigned to '{shift.name}' ({time_str}) starting {effective_from}.",
+                notif_type='ATTENDANCE',
+                data={'shift_id': str(shift.id), 'shift_name': shift.name}
+            )
+
         return Response({
             'success': True,
             'data': {'message': 'Employee assigned to shift successfully.'}

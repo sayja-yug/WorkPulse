@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, views
 from rest_framework.decorators import action
@@ -12,11 +13,11 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        business = getattr(self.request, 'business', None)
+        business = getattr(self.request, 'business', None) or getattr(user, 'active_business', None)
         qs = Notification.objects.filter(user=user)
         if business:
-            qs = qs.filter(business=business)
-        return qs
+            qs = qs.filter(Q(business=business) | Q(business__isnull=True))
+        return qs.order_by('-created_at')
 
     @action(detail=True, methods=['patch', 'post'])
     def read(self, request, pk=None):
@@ -29,10 +30,10 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['post'], url_path='mark-all-read')
     def mark_all_read(self, request):
         user = self.request.user
-        business = getattr(self.request, 'business', None)
+        business = getattr(self.request, 'business', None) or getattr(user, 'active_business', None)
         qs = Notification.objects.filter(user=user, is_read=False)
         if business:
-            qs = qs.filter(business=business)
+            qs = qs.filter(Q(business=business) | Q(business__isnull=True))
         updated = qs.update(is_read=True, read_at=timezone.now())
         return Response({'success': True, 'data': {'marked_read_count': updated}})
 

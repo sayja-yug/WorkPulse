@@ -4,6 +4,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.mixins import TenantViewSetMixin
+from apps.notifications.services import notify_employee, notify_business_managers
 from .models import Advance, Loan, LoanRepayment, Reimbursement
 from .serializers import (
     AdvanceSerializer,
@@ -114,6 +115,33 @@ class AdvanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             approved_at=timezone.now() if initial_status != Advance.Status.PENDING else None
         )
 
+        # Send Notifications
+        if employee_id and is_manager:
+            status_verb = "approved and recorded" if adv.status == Advance.Status.APPROVED else "entered"
+            notify_employee(
+                employee=employee,
+                title="Salary Advance Granted",
+                message=f"A salary advance of ₹{amount:,.2f} has been {status_verb} for you by management.",
+                notif_type='PAYROLL',
+                data={'advance_id': str(adv.id), 'amount': str(adv.amount), 'status': adv.status}
+            )
+        else:
+            notify_business_managers(
+                business=business,
+                title="New Advance Request",
+                message=f"{employee.full_name} has requested a salary advance of ₹{amount:,.2f}.",
+                notif_type='PAYROLL',
+                exclude_user=request.user,
+                data={'advance_id': str(adv.id), 'employee_id': str(employee.id), 'amount': str(adv.amount)}
+            )
+            notify_employee(
+                employee=employee,
+                title="Advance Request Submitted",
+                message=f"Your advance request for ₹{amount:,.2f} has been submitted to management for review.",
+                notif_type='PAYROLL',
+                data={'advance_id': str(adv.id), 'amount': str(adv.amount), 'status': adv.status}
+            )
+
         return Response({
             'success': True,
             'data': AdvanceSerializer(adv).data
@@ -126,6 +154,15 @@ class AdvanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         adv.approved_by = request.user
         adv.approved_at = timezone.now()
         adv.save(update_fields=['status', 'approved_by', 'approved_at', 'updated_at'])
+
+        notify_employee(
+            employee=adv.employee,
+            title="Salary Advance Approved",
+            message=f"Your salary advance request of ₹{adv.amount:,.2f} has been approved by management.",
+            notif_type='PAYROLL',
+            data={'advance_id': str(adv.id), 'amount': str(adv.amount), 'status': adv.status}
+        )
+
         return Response({'success': True, 'data': AdvanceSerializer(adv).data})
 
     @action(detail=True, methods=['patch', 'post'])
@@ -133,6 +170,15 @@ class AdvanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         adv = self.get_object()
         adv.status = Advance.Status.REJECTED
         adv.save(update_fields=['status', 'updated_at'])
+
+        notify_employee(
+            employee=adv.employee,
+            title="Salary Advance Declined",
+            message=f"Your salary advance request of ₹{adv.amount:,.2f} was declined by management.",
+            notif_type='PAYROLL',
+            data={'advance_id': str(adv.id), 'amount': str(adv.amount), 'status': adv.status}
+        )
+
         return Response({'success': True, 'data': AdvanceSerializer(adv).data})
 
     @action(detail=True, methods=['patch', 'post'])
@@ -141,6 +187,15 @@ class AdvanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         adv.status = Advance.Status.DISBURSED
         adv.paid_at = timezone.now()
         adv.save(update_fields=['status', 'paid_at', 'updated_at'])
+
+        notify_employee(
+            employee=adv.employee,
+            title="Salary Advance Disbursed",
+            message=f"Your salary advance of ₹{adv.amount:,.2f} has been paid and disbursed to your account.",
+            notif_type='PAYROLL',
+            data={'advance_id': str(adv.id), 'amount': str(adv.amount), 'status': adv.status}
+        )
+
         return Response({'success': True, 'data': AdvanceSerializer(adv).data})
 
 

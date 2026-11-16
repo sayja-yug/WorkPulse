@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.mixins import TenantViewSetMixin
+from apps.notifications.services import notify_employee, notify_business_managers
 from .models import LeaveType, LeaveBalance, LeaveRequest, LeaveTransaction
 from .serializers import (
     LeaveTypeSerializer,
@@ -126,6 +127,23 @@ class LeaveRequestViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             emergency_contact=emergency_contact
         )
 
+        # Notify business managers about new leave application
+        notify_business_managers(
+            business=business,
+            title="New Leave Request",
+            message=f"{employee.full_name} applied for {days} day(s) {leave_type.name} ({start_date} to {end_date}).",
+            notif_type='LEAVE',
+            exclude_user=request.user,
+            data={'leave_request_id': str(leave_req.id), 'employee_id': str(employee.id)}
+        )
+        notify_employee(
+            employee=employee,
+            title="Leave Application Submitted",
+            message=f"Your {leave_type.name} application for {days} day(s) has been submitted for approval.",
+            notif_type='LEAVE',
+            data={'leave_request_id': str(leave_req.id)}
+        )
+
         return Response({
             'success': True,
             'data': LeaveRequestSerializer(leave_req).data
@@ -136,6 +154,15 @@ class LeaveRequestViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         req = self.get_object()
         comments = request.data.get('comments', '')
         LeaveService.approve_leave(req, approver=request.user, comments=comments)
+
+        notify_employee(
+            employee=req.employee,
+            title="Leave Request Approved",
+            message=f"Your {req.leave_type.name} request ({req.start_date} to {req.end_date}) was approved by {request.user.full_name}." + (f" Note: {comments}" if comments else ""),
+            notif_type='LEAVE',
+            data={'leave_request_id': str(req.id), 'status': 'APPROVED'}
+        )
+
         return Response({'success': True, 'data': LeaveRequestSerializer(req).data})
 
     @action(detail=True, methods=['patch', 'post'])
@@ -143,6 +170,15 @@ class LeaveRequestViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         req = self.get_object()
         comments = request.data.get('comments', request.data.get('rejection_reason', ''))
         LeaveService.reject_leave(req, approver=request.user, comments=comments)
+
+        notify_employee(
+            employee=req.employee,
+            title="Leave Request Declined",
+            message=f"Your {req.leave_type.name} request ({req.start_date} to {req.end_date}) was declined by management." + (f" Reason: {comments}" if comments else ""),
+            notif_type='LEAVE',
+            data={'leave_request_id': str(req.id), 'status': 'REJECTED'}
+        )
+
         return Response({'success': True, 'data': LeaveRequestSerializer(req).data})
 
 

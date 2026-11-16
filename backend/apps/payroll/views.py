@@ -3,6 +3,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.mixins import TenantViewSetMixin
+from apps.notifications.services import notify_employee
 from .models import (
     SalaryComponent,
     SalaryTemplate,
@@ -117,6 +118,16 @@ class PayrollRunViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         payroll_run.pay_date = payment_date
         payroll_run.status = PayrollRun.Status.LOCKED
         payroll_run.save(update_fields=['pay_date', 'status', 'updated_at'])
+
+        # Notify all employees whose salary was disbursed
+        for item in payroll_run.items.select_related('employee'):
+            notify_employee(
+                employee=item.employee,
+                title="Salary Disbursed",
+                message=f"Your salary for {payroll_run.name} (Net: ₹{item.net_salary:,.2f}) has been disbursed via {payment_mode}.",
+                notif_type='PAYROLL',
+                data={'payroll_run_id': str(payroll_run.id), 'net_salary': str(item.net_salary)}
+            )
 
         return Response({
             'success': True,

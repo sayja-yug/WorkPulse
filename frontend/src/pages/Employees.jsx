@@ -161,7 +161,25 @@ export const Employees = () => {
 
   const getInactivity = (emp) => calculateEmployeeInactivity(emp, attendanceRecords);
 
-  const displayedEmployees = employees;
+  const displayedEmployees = employees.filter((emp) => {
+    const inact = getInactivity(emp);
+    if (statusFilter === 'INACTIVE_3_DAYS') {
+      return inact.isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED';
+    }
+    if (statusFilter === 'ACTIVE') {
+      return !inact.isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED';
+    }
+    if (statusFilter === 'TERMINATED') {
+      return emp.status === 'TERMINATED';
+    }
+    if (statusFilter === 'RESIGNED') {
+      return emp.status === 'RESIGNED';
+    }
+    if (statusFilter === 'ON_NOTICE') {
+      return emp.status === 'ON_NOTICE';
+    }
+    return true;
+  });
 
   const inactiveEmployees = employees.filter(
     (emp) => getInactivity(emp).isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED'

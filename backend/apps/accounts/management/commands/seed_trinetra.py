@@ -304,16 +304,28 @@ class Command(BaseCommand):
                 effective_from=datetime.date(2026, 1, 1)
             )
 
-        # 7. Seed Attendance Records for the Past 6 Days (excluding today so live punches start fresh)
-        self.stdout.write(self.style.NOTICE('Seeding Trinetra historical attendance records...'))
+        # 7. Seed Attendance Records: Top active employees (TRIN-0001 to TRIN-0005) have recent punches (Active),
+        # while remaining staff (TRIN-0006 to TRIN-0025) have no punches in last 3 days (demonstrating Inactivity alert).
+        self.stdout.write(self.style.NOTICE('Seeding Trinetra historical attendance records with active and inactive cohorts...'))
         today = timezone.now().date()
+
+        # Clean up any recent artificial punches (last 3 days) for inactive cohort
+        AttendanceRecord.objects.filter(
+            business=business,
+            date__gte=today - datetime.timedelta(days=3)
+        ).exclude(
+            employee__employee_code__in=['TRIN-0001', 'TRIN-0002', 'TRIN-0003', 'TRIN-0004', 'TRIN-0005']
+        ).delete()
+
         for offset in range(1, 7):
             att_date = today - datetime.timedelta(days=offset)
-            for emp in created_employees:
-                status = AttendanceRecord.Status.PRESENT
-                if offset == 0 and emp.employee_code.endswith('5'):
-                    status = AttendanceRecord.Status.ABSENT
+            for idx, emp in enumerate(created_employees):
+                # Only the top 5 employees have punches within the last 3 days
+                is_consistently_active = idx < 5 or emp.employee_code in ('TRIN-0001', 'TRIN-0002', 'TRIN-0003', 'TRIN-0004', 'TRIN-0005')
+                if offset in (1, 2, 3) and not is_consistently_active:
+                    continue  # Unpunched for past 3 days -> flagged as INACTIVE (3+ days no punch)
 
+                status = AttendanceRecord.Status.PRESENT
                 check_in_time = timezone.make_aware(datetime.datetime.combine(att_date, datetime.time(9, 25)))
                 check_out_time = timezone.make_aware(datetime.datetime.combine(att_date, datetime.time(18, 35)))
 
@@ -324,9 +336,9 @@ class Command(BaseCommand):
                     defaults={
                         'shift': shift_gen,
                         'status': status,
-                        'check_in': check_in_time if status == AttendanceRecord.Status.PRESENT else None,
-                        'check_out': check_out_time if status == AttendanceRecord.Status.PRESENT else None,
-                        'working_hours': Decimal('8.50') if status == AttendanceRecord.Status.PRESENT else Decimal('0.00'),
+                        'check_in': check_in_time,
+                        'check_out': check_out_time,
+                        'working_hours': Decimal('8.50'),
                         'source': AttendanceRecord.Source.SELF
                     }
                 )

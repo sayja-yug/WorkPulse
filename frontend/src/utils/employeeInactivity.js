@@ -25,6 +25,21 @@ export const calculateEmployeeInactivity = (emp, attendanceRecords = []) => {
     };
   }
 
+  // 2. If backend already computed unpunched_days from the database
+  if (emp.unpunched_days !== undefined && emp.unpunched_days !== null) {
+    const days = Number(emp.unpunched_days);
+    if (!isNaN(days) && days >= 3) {
+      return {
+        isInactive: true,
+        days,
+        label: `Inactive (No punch for ${days} days)`,
+        badgeText: `Inactive (${days} days no punch)`,
+        shortLabel: `${days}d no punch`,
+        lastPunchDate: emp.last_punch_date || null,
+      };
+    }
+  }
+
   const todayStr = new Date().toLocaleDateString('en-CA');
   const today = new Date(todayStr + 'T00:00:00');
 

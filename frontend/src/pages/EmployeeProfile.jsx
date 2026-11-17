@@ -9,6 +9,7 @@ import {
   Briefcase,
   CalendarCheck2,
   Clock,
+  Calendar,
   CalendarOff,
   Banknote,
   HandCoins,
@@ -21,6 +22,7 @@ import {
 import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
 import { formatDate, formatINR, formatTime } from '../utils/formatters';
+import { calculateWorkHoursSummary } from '../utils/workHours';
 
 export const EmployeeProfile = () => {
   const { id } = useParams();
@@ -55,6 +57,15 @@ export const EmployeeProfile = () => {
         address: emp.address || '',
         city: emp.city || '',
       });
+
+      // Preload attendance so weekly & monthly hours are immediately available on overview tab
+      try {
+        const attRes = await api.get('/attendance/', { params: { employee: id } });
+        const attData = attRes.data?.data || attRes.data?.results || attRes.data || [];
+        setAttendance(Array.isArray(attData) ? attData : []);
+      } catch {
+        // silent
+      }
     } catch (err) {
       console.error('Failed to load employee profile', err);
     } finally {
@@ -252,30 +263,69 @@ export const EmployeeProfile = () => {
         {tabLoading ? (
           <Loader message="Loading tab data..." />
         ) : activeTab === 'overview' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-            <div className="p-4 bg-slate-50 rounded-xl">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Email</p>
-              <p className="font-semibold text-slate-900 mt-1">{employee.email || '-'}</p>
+          <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Email</p>
+                <p className="font-semibold text-slate-900 mt-1">{employee.email || '-'}</p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Phone</p>
+                <p className="font-semibold text-slate-900 mt-1">{employee.phone || '-'}</p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Joining Date</p>
+                <p className="font-semibold text-slate-900 mt-1">{formatDate(employee.joining_date)}</p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Branch</p>
+                <p className="font-semibold text-slate-900 mt-1">{employee.branch_name || '-'}</p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Department</p>
+                <p className="font-semibold text-slate-900 mt-1">{employee.department_name || '-'}</p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Employment Type</p>
+                <p className="font-semibold text-slate-900 mt-1">{employee.employment_type}</p>
+              </div>
             </div>
-            <div className="p-4 bg-slate-50 rounded-xl">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Phone</p>
-              <p className="font-semibold text-slate-900 mt-1">{employee.phone || '-'}</p>
-            </div>
-            <div className="p-4 bg-slate-50 rounded-xl">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Joining Date</p>
-              <p className="font-semibold text-slate-900 mt-1">{formatDate(employee.joining_date)}</p>
-            </div>
-            <div className="p-4 bg-slate-50 rounded-xl">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Branch</p>
-              <p className="font-semibold text-slate-900 mt-1">{employee.branch_name || '-'}</p>
-            </div>
-            <div className="p-4 bg-slate-50 rounded-xl">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Department</p>
-              <p className="font-semibold text-slate-900 mt-1">{employee.department_name || '-'}</p>
-            </div>
-            <div className="p-4 bg-slate-50 rounded-xl">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Employment Type</p>
-              <p className="font-semibold text-slate-900 mt-1">{employee.employment_type}</p>
+
+            {/* Cumulative Shift, Weekly & Monthly Hours Summary */}
+            <div className="mt-5 pt-4 border-t border-zinc-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-zinc-900" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-950">Work Hours &amp; Shift Summary</h4>
+                </div>
+                <div className="flex items-center gap-1.5 text-2xs font-mono text-zinc-500">
+                  <span className="px-2 py-0.5 bg-zinc-100 rounded-md font-bold text-zinc-800">Week: {calculateWorkHoursSummary(attendance).weekLabel}</span>
+                  <span className="px-2 py-0.5 bg-zinc-100 rounded-md font-bold text-zinc-800">Month: {calculateWorkHoursSummary(attendance).monthLabel}</span>
+                </div>
+              </div>
+
+              {(() => {
+                const summary = calculateWorkHoursSummary(attendance);
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Today&apos;s Hours</span>
+                      <p className="text-xl font-mono font-bold text-zinc-950 mt-1">{summary.todayFormatted}</p>
+                      <span className="text-[11px] text-zinc-500">{summary.todayText}</span>
+                    </div>
+                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Total Weekly Hours</span>
+                      <p className="text-xl font-mono font-bold text-zinc-950 mt-1">{summary.weeklyFormatted}</p>
+                      <span className="text-[11px] text-zinc-500">{summary.weeklyText} &bull; Monday to Sunday</span>
+                    </div>
+                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Total Monthly Hours</span>
+                      <p className="text-xl font-mono font-bold text-zinc-950 mt-1">{summary.monthlyFormatted}</p>
+                      <span className="text-[11px] text-zinc-500">{summary.monthlyText} &bull; {summary.monthLabel}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         ) : activeTab === 'personal' ? (
@@ -301,9 +351,46 @@ export const EmployeeProfile = () => {
             const todayStr = new Date().toLocaleDateString('en-CA');
             const todayRec = attendance.find((a) => a.date === todayStr);
             const isPunchedInToday = !!(todayRec && todayRec.check_in && !todayRec.check_out);
+            const summary = calculateWorkHoursSummary(attendance, todayRec);
 
             return (
               <div className="space-y-4">
+                {/* 3-Metric Cumulative Working Hours Header Strip */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Today&apos;s Hours</span>
+                      <span className={`w-2 h-2 rounded-full ${isPunchedInToday ? 'bg-zinc-950 animate-pulse' : 'bg-zinc-400'}`} />
+                    </div>
+                    <p className="text-2xl font-mono font-black text-zinc-950 mt-1">
+                      {summary.todayFormatted}
+                    </p>
+                    <span className="text-xs text-zinc-500 mt-0.5 block">{summary.todayText}</span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Total Weekly Hours</span>
+                      <Calendar className="w-4 h-4 text-zinc-500" />
+                    </div>
+                    <p className="text-2xl font-mono font-black text-zinc-950 mt-1">
+                      {summary.weeklyFormatted}
+                    </p>
+                    <span className="text-xs text-zinc-500 mt-0.5 block">{summary.weeklyText} &bull; {summary.weekLabel}</span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Total Monthly Hours</span>
+                      <Clock className="w-4 h-4 text-zinc-500" />
+                    </div>
+                    <p className="text-2xl font-mono font-black text-zinc-950 mt-1">
+                      {summary.monthlyFormatted}
+                    </p>
+                    <span className="text-xs text-zinc-500 mt-0.5 block">{summary.monthlyText} &bull; {summary.monthLabel}</span>
+                  </div>
+                </div>
+
                 {(isOwner || isHR) && (
                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
                     <div>

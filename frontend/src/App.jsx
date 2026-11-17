@@ -174,7 +174,7 @@ export const App = () => {
             <Route
               path="employees/:id"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN']} moduleName="Employee Profile">
+                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN', 'EMPLOYEE']} moduleName="Employee Profile">
                   <EmployeeProfile />
                 </RoleRoute>
               }

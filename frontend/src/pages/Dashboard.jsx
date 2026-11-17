@@ -24,6 +24,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { formatINR, formatTime } from '../utils/formatters';
 import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
+import { calculateWorkHoursSummary } from '../utils/workHours';
 
 export const Dashboard = () => {
   const { user, business, activeRole } = useAuth();
@@ -42,6 +43,7 @@ export const Dashboard = () => {
 
   const [stats, setStats] = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [todayRecord, setTodayRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -59,11 +61,11 @@ export const Dashboard = () => {
     try {
       const attListRes = await api.get('/attendance/');
       const list = attListRes.value?.data?.data || attListRes.data?.data || attListRes.data?.results || attListRes.data || [];
+      const safeList = Array.isArray(list) ? list : [];
+      setAttendanceRecords(safeList);
       const localToday = new Date().toLocaleDateString('en-CA');
       const utcToday = new Date().toISOString().split('T')[0];
-      const found = Array.isArray(list)
-        ? list.find((r) => r.date === localToday || r.date === utcToday)
-        : null;
+      const found = safeList.find((r) => r.date === localToday || r.date === utcToday);
       setTodayRecord(found || null);
     } catch {
       // silent
@@ -193,14 +195,14 @@ export const Dashboard = () => {
   };
 
   const computeRealtimeHours = () => {
-    if (!todayRecord) return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false };
+    if (!todayRecord) return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false, hours: 0 };
 
     // Active live shift (Checked in but not checked out yet)
     if (todayRecord.check_in && !todayRecord.check_out) {
       const inDate = parseCheckInDate(todayRecord.check_in);
 
       if (!inDate || isNaN(inDate.getTime())) {
-        return { formatted: '0.00 hrs', text: 'Active shift', isLive: true };
+        return { formatted: '0.00 hrs', text: 'Active shift', isLive: true, hours: 0 };
       }
 
       const diffMs = Math.max(0, currentTime.getTime() - inDate.getTime());
@@ -213,6 +215,7 @@ export const Dashboard = () => {
         formatted: `${safeHours.toFixed(2)} hrs`,
         text: `${hrs}h ${mins}m active`,
         isLive: true,
+        hours: safeHours,
       };
     }
 
@@ -226,15 +229,21 @@ export const Dashboard = () => {
           formatted: `${num.toFixed(2)} hrs`,
           text: `${hrs}h ${mins}m completed`,
           isLive: false,
+          hours: num,
         };
       }
     }
 
-    return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false };
+    return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false, hours: 0 };
   };
 
   const isPunchedIn = Boolean(todayRecord && todayRecord.check_in && !todayRecord.check_out);
   const liveHours = computeRealtimeHours();
+  const workHoursSummary = calculateWorkHoursSummary(
+    attendanceRecords,
+    todayRecord,
+    isPunchedIn ? liveHours.hours : null
+  );
 
   if (loading) {
     return <Loader message="Loading workspace operations..." size="lg" />;
@@ -387,29 +396,43 @@ export const Dashboard = () => {
           </Link>
 
           {/* Card 2: Real-time Live Working Hours */}
-          <Link to="/attendance" className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
+          <Link to="/attendance" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-500  uppercase tracking-wider">Working Hours</span>
-              <div className="p-2 rounded-lg bg-zinc-100  text-zinc-900  border border-zinc-200/80 ">
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Today&apos;s Hours</span>
+              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80">
                 <Clock className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-zinc-950  mt-2 flex items-baseline gap-1.5">
+            <p className="text-2xl font-bold text-zinc-950 mt-2 flex items-baseline gap-1.5">
               <span>{liveHours.formatted}</span>
               <span className="text-xs text-zinc-400 font-normal">({liveHours.text})</span>
             </p>
             <p className="text-xs mt-1">
               {liveHours.isLive ? (
-                <span className="text-zinc-900  font-semibold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-900  animate-pulse"></span>
+                <span className="text-zinc-900 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-900 animate-pulse"></span>
                   Active shift (Live tracking)
                 </span>
               ) : todayRecord?.check_out ? (
-                <span className="text-zinc-600  font-medium">✓ Completed shift today</span>
+                <span className="text-zinc-600 font-medium">✓ Completed shift today</span>
               ) : (
                 <span className="text-zinc-400">0.00 hrs recorded today</span>
               )}
             </p>
+
+            {/* Weekly & Monthly Sub-Breakdown Strip */}
+            <div className="mt-3 pt-3 border-t border-zinc-100 grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-zinc-50 p-2 rounded-lg border border-zinc-200/60">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">This Week</span>
+                <span className="font-mono font-bold text-zinc-950 mt-0.5 block">{workHoursSummary.weeklyFormatted}</span>
+                <span className="text-[10px] text-zinc-400 font-medium">{workHoursSummary.weeklyText}</span>
+              </div>
+              <div className="bg-zinc-50 p-2 rounded-lg border border-zinc-200/60">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">This Month</span>
+                <span className="font-mono font-bold text-zinc-950 mt-0.5 block">{workHoursSummary.monthlyFormatted}</span>
+                <span className="text-[10px] text-zinc-400 font-medium">{workHoursSummary.monthlyText}</span>
+              </div>
+            </div>
           </Link>
 
           {/* Card 3: Pending Leaves */}
@@ -540,6 +563,75 @@ export const Dashboard = () => {
               <TrendingUp className="w-6 h-6" />
             </div>
           </Link>
+        </div>
+      )}
+
+      {/* 3. Dedicated Cumulative Work Hours Strip (Today, Weekly, Monthly) for Employee */}
+      {isEmployee && (
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-subtle p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-100 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-950 border border-zinc-200">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-950">Work Hours &amp; Shift Summary</h3>
+                <p className="text-xs text-zinc-500">Real-time attendance &amp; accumulated hours for this pay period</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-2xs text-zinc-500">
+              <span className="px-2.5 py-1 bg-zinc-100 rounded-full font-mono font-bold text-zinc-800">
+                Week: {workHoursSummary.weekLabel}
+              </span>
+              <span className="px-2.5 py-1 bg-zinc-100 rounded-full font-mono font-bold text-zinc-800">
+                Month: {workHoursSummary.monthLabel}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            {/* 1. Today's Shift */}
+            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Today&apos;s Hours</span>
+                <span className={`w-2 h-2 rounded-full ${isPunchedIn ? 'bg-zinc-950 animate-pulse' : 'bg-zinc-400'}`} />
+              </div>
+              <p className="text-2xl font-mono font-black text-zinc-950 mt-2">
+                {liveHours.formatted}
+              </p>
+              <p className="text-xs text-zinc-500 mt-1">
+                {liveHours.isLive ? `${liveHours.text} (Clocked in)` : liveHours.text}
+              </p>
+            </div>
+
+            {/* 2. Total Weekly Hours */}
+            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Total Weekly Hours</span>
+                <Calendar className="w-4 h-4 text-zinc-500" />
+              </div>
+              <p className="text-2xl font-mono font-black text-zinc-950 mt-2">
+                {workHoursSummary.weeklyFormatted}
+              </p>
+              <p className="text-xs text-zinc-500 mt-1">
+                {workHoursSummary.weeklyText} &bull; Monday to Sunday
+              </p>
+            </div>
+
+            {/* 3. Total Monthly Hours */}
+            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Total Monthly Hours</span>
+                <Clock className="w-4 h-4 text-zinc-500" />
+              </div>
+              <p className="text-2xl font-mono font-black text-zinc-950 mt-2">
+                {workHoursSummary.monthlyFormatted}
+              </p>
+              <p className="text-xs text-zinc-500 mt-1">
+                {workHoursSummary.monthlyText} &bull; {workHoursSummary.monthLabel}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

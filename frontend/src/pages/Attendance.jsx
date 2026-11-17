@@ -6,6 +6,7 @@ import { useNotification } from '../context/NotificationContext';
 import {
   CalendarCheck2,
   Clock,
+  Calendar,
   MapPin,
   LogIn,
   LogOut,
@@ -27,6 +28,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import { formatDate, formatTime } from '../utils/formatters';
+import { calculateWorkHoursSummary } from '../utils/workHours';
 
 export const Attendance = () => {
   const { isEmployee, isFieldEmployee } = usePermissions();
@@ -321,7 +323,49 @@ export const Attendance = () => {
         </div>
       )}
 
-      {/* 3. Self Punch In / Punch Out Banner */}
+      {/* 3. Employee Cumulative Work Hours Summary */}
+      {isEmployee && (() => {
+        const todayRec = records.find((r) => r.date === todayStr);
+        const summary = calculateWorkHoursSummary(records, todayRec);
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Today&apos;s Hours</span>
+                <span className={`w-2 h-2 rounded-full ${isCheckedIn ? 'bg-zinc-950 animate-pulse' : 'bg-zinc-400'}`} />
+              </div>
+              <p className="text-2xl font-mono font-black text-zinc-950 mt-1.5">
+                {summary.todayFormatted}
+              </p>
+              <span className="text-xs text-zinc-500 mt-0.5 block">{summary.todayText}</span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Total Weekly Hours</span>
+                <Calendar className="w-4 h-4 text-zinc-500" />
+              </div>
+              <p className="text-2xl font-mono font-black text-zinc-950 mt-1.5">
+                {summary.weeklyFormatted}
+              </p>
+              <span className="text-xs text-zinc-500 mt-0.5 block">{summary.weeklyText} &bull; {summary.weekLabel}</span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Total Monthly Hours</span>
+                <Clock className="w-4 h-4 text-zinc-500" />
+              </div>
+              <p className="text-2xl font-mono font-black text-zinc-950 mt-1.5">
+                {summary.monthlyFormatted}
+              </p>
+              <span className="text-xs text-zinc-500 mt-0.5 block">{summary.monthlyText} &bull; {summary.monthLabel}</span>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 4. Self Punch In / Punch Out Banner */}
       <div className="bg-white rounded-2xl border border-zinc-200 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 border ${

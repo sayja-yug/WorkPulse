@@ -190,41 +190,41 @@ export const Advances = () => {
       {/* KPI Cards (for Owners & Managers) */}
       {!isEmployee && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">
+              <span className="text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
                 Pending Requests
               </span>
-              <p className="text-2xl font-bold text-amber-600 mt-1">{pendingRequests.length}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Awaiting your approval</p>
+              <p className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 mt-1">{pendingRequests.length}</p>
+              <p className="text-[11px] text-zinc-400 mt-0.5">Awaiting your approval</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100">
               <Clock className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">
+              <span className="text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
                 Active Advances
               </span>
-              <p className="text-2xl font-bold text-indigo-600 mt-1">{activeAdvances.length}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Approved &amp; Disbursed</p>
+              <p className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 mt-1">{activeAdvances.length}</p>
+              <p className="text-[11px] text-zinc-400 mt-0.5">Approved &amp; Disbursed</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100">
               <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">
+              <span className="text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
                 Advance Volume
               </span>
-              <p className="text-2xl font-bold text-emerald-600 mt-1">{formatINR(totalDisbursedAmount)}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Under monthly payroll deduction</p>
+              <p className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 mt-1">{formatINR(totalDisbursedAmount)}</p>
+              <p className="text-[11px] text-zinc-400 mt-0.5">Under monthly payroll deduction</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100">
               <Banknote className="w-5 h-5" />
             </div>
           </div>
@@ -232,18 +232,18 @@ export const Advances = () => {
       )}
 
       {/* Advance Records Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-850/50 flex items-center justify-between">
+          <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-100 uppercase tracking-wider">
             {isEmployee ? 'My Advance Records' : 'Staff Salary Advance Requests & Disbursements'}
           </h3>
-          <span className="text-[11px] font-semibold text-slate-500">{advances.length} Records</span>
+          <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">{advances.length} Records</span>
         </div>
 
         {loading ? (
           <Loader message="Loading salary advances..." />
         ) : advances.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs">
+          <div className="p-12 text-center text-zinc-500 dark:text-zinc-400 text-xs">
             {isEmployee
               ? 'You have not submitted any salary advance requests.'
               : 'No salary advance applications submitted yet. Employees can request advances or you can issue one using the button above.'}
@@ -252,7 +252,7 @@ export const Advances = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
+                <tr className="bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Request Date</th>
                   {!isEmployee && <th className="py-3 px-4">Employee</th>}
                   <th className="py-3 px-4">Amount</th>
@@ -262,34 +262,34 @@ export const Advances = () => {
                   {canApproveAdvances && <th className="py-3 px-4 text-right">Owner / Admin Actions</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {advances.map((adv) => (
-                  <tr key={adv.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-slate-900">
+                  <tr key={adv.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+                    <td className="py-3.5 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
                       {formatDate(adv.requested_at || adv.created_at)}
                     </td>
 
                     {!isEmployee && (
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900">{adv.employee_name || 'Staff Member'}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{adv.employee_code || '-'}</div>
+                        <div className="font-bold text-zinc-900 dark:text-zinc-100">{adv.employee_name || 'Staff Member'}</div>
+                        <div className="text-[10px] text-zinc-400 font-mono">{adv.employee_code || '-'}</div>
                       </td>
                     )}
 
-                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                    <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-zinc-100">
                       {formatINR(adv.amount)}
                       {adv.monthly_deduction && (
-                        <div className="text-[10px] text-slate-400 font-normal">
+                        <div className="text-[10px] text-zinc-400 font-normal">
                           {formatINR(adv.monthly_deduction)}/mo
                         </div>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 text-slate-600">
+                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400">
                       {adv.repayment_months || 1} month(s)
                     </td>
 
-                    <td className="py-3.5 px-4 text-slate-600 max-w-xs truncate">
+                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400 max-w-xs truncate">
                       {adv.reason || 'Salary advance'}
                     </td>
 
@@ -297,10 +297,10 @@ export const Advances = () => {
                       <Badge
                         variant={
                           adv.status === 'APPROVED' || adv.status === 'DISBURSED'
-                            ? 'success'
+                            ? 'default'
                             : adv.status === 'REJECTED'
-                            ? 'danger'
-                            : 'warning'
+                            ? 'outline'
+                            : 'neutral'
                         }
                       >
                         {adv.status}
@@ -314,13 +314,13 @@ export const Advances = () => {
                           <div className="inline-flex items-center gap-1.5">
                             <button
                               onClick={() => handleApprove(adv.id)}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold shadow-sm transition-colors"
+                              className="px-2.5 py-1 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                             >
                               Approve
                             </button>
                             <button
                               onClick={() => handleReject(adv.id)}
-                              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-xs font-semibold transition-colors"
+                              className="px-2.5 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 rounded text-xs font-semibold transition-colors cursor-pointer"
                             >
                               Reject
                             </button>
@@ -328,16 +328,16 @@ export const Advances = () => {
                         ) : adv.status === 'APPROVED' ? (
                           <button
                             onClick={() => handleDisburse(adv.id)}
-                            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold shadow-sm transition-colors"
+                            className="px-2.5 py-1 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                           >
                             Disburse Funds
                           </button>
                         ) : adv.status === 'DISBURSED' ? (
-                          <span className="text-[11px] text-emerald-700 font-medium">
+                          <span className="text-[11px] text-zinc-800 dark:text-zinc-200 font-medium">
                             ✓ In Payroll Recovery
                           </span>
                         ) : (
-                          <span className="text-[11px] text-slate-400 italic">No action needed</span>
+                          <span className="text-[11px] text-zinc-400 italic">No action needed</span>
                         )}
                       </td>
                     )}
@@ -355,18 +355,18 @@ export const Advances = () => {
         onClose={() => setShowModal(false)}
         title={isEmployee ? 'Request Salary Advance' : 'Issue Salary Advance to Employee'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {/* If Owner / Admin: Select Employee */}
           {!isEmployee && (
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                 Select Recipient Employee *
               </label>
               <select
                 required
                 value={formData.employee}
                 onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none bg-white font-medium focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
               >
                 <option value="" disabled>
                   -- Choose Employee --
@@ -381,7 +381,7 @@ export const Advances = () => {
           )}
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
               Advance Amount (₹) *
             </label>
             <input
@@ -393,21 +393,21 @@ export const Advances = () => {
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               placeholder="e.g. 15000"
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
             />
             {isEmployee && (
-              <p className="text-[11px] text-slate-400 mt-1">Maximum eligible: 50% of monthly gross salary</p>
+              <p className="text-[10px] text-zinc-400 mt-1">Maximum eligible: 50% of monthly gross salary</p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
               Repayment Schedule (EMIs) *
             </label>
             <select
               value={formData.repayment_months}
               onChange={(e) => setFormData({ ...formData, repayment_months: e.target.value })}
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none bg-white font-medium"
+              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
             >
               <option value="1">1 Month (Deduct 100% from next payslip)</option>
               <option value="2">2 Months (Equal split across 2 payslips)</option>
@@ -417,7 +417,7 @@ export const Advances = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
               {isEmployee ? 'Reason for Advance *' : 'Disbursement Notes / Reason *'}
             </label>
             <textarea
@@ -426,24 +426,22 @@ export const Advances = () => {
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               placeholder={isEmployee ? 'State reason for salary advance...' : 'Disbursement purpose or internal notes...'}
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-4 py-2 text-xs font-semibold text-white rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
-                isEmployee ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+              className="px-4 py-2 text-xs font-bold text-white bg-zinc-950 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               <span>{isEmployee ? 'Submit Advance Request' : 'Issue Advance to Employee'}</span>
               <ArrowRight className="w-3.5 h-3.5" />

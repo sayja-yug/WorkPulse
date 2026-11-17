@@ -119,17 +119,17 @@ export const Subscription = () => {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs text-indigo-100 pt-1">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-300 pt-1">
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-indigo-300" />
+                <Calendar className="w-4 h-4 text-zinc-400" />
                 <span>Cycle: <strong>{currentSub?.billing_cycle || 'ANNUAL'}</strong></span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-indigo-300" />
+                <Users className="w-4 h-4 text-zinc-400" />
                 <span>Limit: <strong>{purchasedPlan.max_employees === -1 ? 'Unlimited' : `${purchasedPlan.max_employees} Staff`}</strong></span>
               </div>
               <div className="flex items-center gap-1.5">
-                <GitBranch className="w-4 h-4 text-indigo-300" />
+                <GitBranch className="w-4 h-4 text-zinc-400" />
                 <span>Branches: <strong>{purchasedPlan.max_branches === -1 ? 'Unlimited' : `${purchasedPlan.max_branches} Sites`}</strong></span>
               </div>
             </div>
@@ -137,15 +137,15 @@ export const Subscription = () => {
 
           {/* Right Status Card */}
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-left md:text-right min-w-[220px] space-y-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-200">License Status</p>
-            <p className="text-lg font-black text-emerald-300 flex items-center md:justify-end gap-1.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-300">License Status</p>
+            <p className="text-lg font-black text-white flex items-center md:justify-end gap-1.5">
+              <CheckCircle2 className="w-5 h-5 text-white" />
               <span>{currentSub?.status || 'ACTIVE'}</span>
             </p>
-            <p className="text-[11px] text-indigo-200">
+            <p className="text-[11px] text-zinc-300">
               Valid until: <strong>{formatDate(currentSub?.current_period_end || '2027-10-31')}</strong>
             </p>
-            <p className="text-[10px] text-indigo-300 border-t border-white/10 pt-2">
+            <p className="text-[10px] text-zinc-400 border-t border-white/10 pt-2">
               Registered Owner: {user?.full_name || 'Vikram Aditya'}
             </p>
           </div>
@@ -156,11 +156,11 @@ export const Subscription = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
+            <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
               <span>Company Purchased Plan</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
               Active plan entitlements and features currently unlocked for {companyName}
             </p>
           </div>
@@ -168,60 +168,60 @@ export const Subscription = () => {
           <button
             type="button"
             onClick={() => setShowAllPlans(!showAllPlans)}
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+            className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 hover:underline transition-colors cursor-pointer"
           >
             {showAllPlans ? 'Hide Other Plans' : 'Compare Other Tiers →'}
           </button>
         </div>
 
         {/* Highlighted Purchased Plan Card */}
-        <div className="bg-white rounded-xl border-2 border-indigo-600 ring-4 ring-indigo-50 p-6 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl border-2 border-zinc-950 dark:border-zinc-100 p-6 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                <span className="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950">
                   {purchasedPlan.code} TIER
                 </span>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700">
                   ✓ Active for {companyName}
                 </span>
               </div>
-              <h4 className="text-xl font-bold text-slate-900 mt-2">{purchasedPlan.name}</h4>
-              <p className="text-xs text-slate-500 mt-0.5">{purchasedPlan.description}</p>
+              <h4 className="text-xl font-bold text-zinc-950 dark:text-zinc-50 mt-2">{purchasedPlan.name}</h4>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{purchasedPlan.description}</p>
             </div>
             <div className="text-left md:text-right">
-              <span className="text-2xl font-black text-indigo-600">
+              <span className="text-2xl font-black text-zinc-950 dark:text-zinc-50">
                 {formatINR(currentSub?.billing_cycle === 'ANNUAL' ? (purchasedPlan.annual_price || 24990) : (purchasedPlan.monthly_price || 2499))}
               </span>
-              <span className="text-xs text-slate-400 font-normal"> / {currentSub?.billing_cycle === 'ANNUAL' ? 'year' : 'month'}</span>
-              <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Paid &amp; In Good Standing</p>
+              <span className="text-xs text-zinc-400 font-normal"> / {currentSub?.billing_cycle === 'ANNUAL' ? 'year' : 'month'}</span>
+              <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-semibold mt-0.5">Paid &amp; In Good Standing</p>
             </div>
           </div>
 
           {/* Included Features Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-4 text-xs">
-            <div className="flex items-center gap-2 text-slate-700">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
               <span>Full India Statutory Payroll (PF, TDS, Advances)</span>
             </div>
-            <div className="flex items-center gap-2 text-slate-700">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
               <span>Multi-Site Geofenced Attendance &amp; Selfie Punches</span>
             </div>
-            <div className="flex items-center gap-2 text-slate-700">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
               <span>Configurable Overtime Multipliers &amp; Shortfall Cuts</span>
             </div>
-            <div className="flex items-center gap-2 text-slate-700">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
               <span>Up to {purchasedPlan.max_employees} Staff Members Allowed</span>
             </div>
-            <div className="flex items-center gap-2 text-slate-700">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
               <span>Up to {purchasedPlan.max_branches} Company Branches Included</span>
             </div>
-            <div className="flex items-center gap-2 text-slate-700">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
               <span>Cashbook Ledgers &amp; Expense Audit Trails</span>
             </div>
           </div>
@@ -230,19 +230,19 @@ export const Subscription = () => {
         {/* Optional Other Plans toggle */}
         {showAllPlans && (
           <div className="pt-2 space-y-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Other Platform Tiers</p>
+            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Other Platform Tiers</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {plans
                 .filter((p) => p.code !== purchasedPlan.code)
                 .map((p) => (
-                  <div key={p.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-3">
+                  <div key={p.id} className="bg-zinc-50 dark:bg-zinc-850 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-700 uppercase">{p.name}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600">{p.code}</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase">{p.name}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">{p.code}</span>
                     </div>
-                    <p className="text-lg font-bold text-slate-900">{formatINR(p.monthly_price)}<span className="text-xs text-slate-400 font-normal">/mo</span></p>
-                    <p className="text-[11px] text-slate-500">{p.description}</p>
-                    <div className="text-[11px] text-slate-600 border-t border-slate-200 pt-2 space-y-0.5">
+                    <p className="text-lg font-bold text-zinc-950 dark:text-zinc-50">{formatINR(p.monthly_price)}<span className="text-xs text-zinc-400 font-normal">/mo</span></p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">{p.description}</p>
+                    <div className="text-[11px] text-zinc-600 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 pt-2 space-y-0.5">
                       <p>Employees: <strong>{p.max_employees === -1 ? 'Unlimited' : p.max_employees}</strong></p>
                       <p>Branches: <strong>{p.max_branches === -1 ? 'Unlimited' : p.max_branches}</strong></p>
                     </div>
@@ -254,29 +254,29 @@ export const Subscription = () => {
       </div>
 
       {/* Invoices Section */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-850/50 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+            <FileText className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+            <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-100 uppercase tracking-wider">
               Billing Invoices for {companyName}
             </h3>
           </div>
-          <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded">
+          <span className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-2.5 py-0.5 rounded">
             {invoices.length} Official Tax Invoices
           </span>
         </div>
 
         {invoices.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-500 space-y-1">
-            <FileText className="w-6 h-6 text-slate-300 mx-auto" />
-            <p className="font-semibold text-slate-700">No invoices generated yet for this period.</p>
+          <div className="p-8 text-center text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
+            <FileText className="w-6 h-6 text-zinc-300 dark:text-zinc-600 mx-auto" />
+            <p className="font-semibold text-zinc-700 dark:text-zinc-300">No invoices generated yet for this period.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
+                <tr className="bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-semibold uppercase text-[11px]">
                   <th className="py-3 px-4">Invoice #</th>
                   <th className="py-3 px-4">Billed To Company</th>
                   <th className="py-3 px-4">Description</th>
@@ -286,21 +286,21 @@ export const Subscription = () => {
                   <th className="py-3 px-4 text-right">Receipt</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{inv.invoice_number}</td>
-                    <td className="py-3.5 px-4 font-medium text-slate-800">{inv.business_name || companyName}</td>
-                    <td className="py-3.5 px-4 text-slate-600">{inv.notes || `${planName} License`}</td>
-                    <td className="py-3.5 px-4 text-slate-600">{formatDate(inv.issued_date || inv.paid_at || inv.created_at)}</td>
-                    <td className="py-3.5 px-4 font-bold text-slate-900 text-sm">{formatINR(inv.total || inv.amount)}</td>
+                  <tr key={inv.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-zinc-900 dark:text-zinc-100">{inv.invoice_number}</td>
+                    <td className="py-3.5 px-4 font-medium text-zinc-800 dark:text-zinc-200">{inv.business_name || companyName}</td>
+                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400">{inv.notes || `${planName} License`}</td>
+                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400">{formatDate(inv.issued_date || inv.paid_at || inv.created_at)}</td>
+                    <td className="py-3.5 px-4 font-bold text-zinc-950 dark:text-zinc-50 text-sm">{formatINR(inv.total || inv.amount)}</td>
                     <td className="py-3.5 px-4">
-                      <Badge variant={inv.status === 'PAID' ? 'success' : 'warning'}>{inv.status}</Badge>
+                      <Badge variant={inv.status === 'PAID' ? 'default' : 'neutral'}>{inv.status}</Badge>
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <button
                         onClick={() => window.print()}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold transition-colors"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 rounded text-xs font-semibold transition-colors cursor-pointer"
                         title="Print / Save Receipt"
                       >
                         <Printer className="w-3.5 h-3.5" />

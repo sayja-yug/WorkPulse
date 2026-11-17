@@ -163,8 +163,8 @@ export const EmployeeProfile = () => {
   if (!employee) {
     return (
       <div className="p-8 text-center">
-        <p className="text-sm text-slate-600">Employee not found.</p>
-        <Link to="/employees" className="text-xs text-indigo-600 font-semibold mt-2 inline-block">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Employee not found.</p>
+        <Link to="/employees" className="text-xs text-zinc-900 dark:text-zinc-100 hover:underline font-semibold mt-2 inline-block">
           &larr; Back to Employee List
         </Link>
       </div>
@@ -322,7 +322,7 @@ export const EmployeeProfile = () => {
                             const res = await api.get('/attendance/', { params: { employee: id } });
                             setAttendance(res.data?.data || res.data?.results || []);
                           }}
-                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm"
+                          className="px-3.5 py-1.5 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs"
                         >
                           Punch In (PI)
                         </button>
@@ -334,7 +334,7 @@ export const EmployeeProfile = () => {
                             const res = await api.get('/attendance/', { params: { employee: id } });
                             setAttendance(res.data?.data || res.data?.results || []);
                           }}
-                          className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-sm"
+                          className="px-3.5 py-1.5 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-lg text-xs font-bold shadow-xs"
                         >
                           Punch Out (PO)
                         </button>
@@ -343,11 +343,11 @@ export const EmployeeProfile = () => {
                   </div>
                 )}
                 {attendance.length === 0 ? (
-                  <p className="text-xs text-slate-500">No attendance punch logs for this employee yet.</p>
+                  <p className="text-xs text-zinc-500">No attendance punch logs for this employee yet.</p>
                 ) : (
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="border-b text-slate-500 uppercase text-[11px]">
+                      <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 uppercase text-[11px]">
                         <th className="py-2">Date</th>
                         <th className="py-2">Punch In</th>
                         <th className="py-2">Punch Out</th>
@@ -355,14 +355,14 @@ export const EmployeeProfile = () => {
                         <th className="py-2">Punch Logs</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y">
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                       {attendance.map((a) => (
                         <tr key={a.id}>
-                          <td className="py-2.5 font-semibold">{formatDate(a.date)}</td>
-                          <td className="py-2.5 font-mono">{formatTime(a.check_in)}</td>
-                          <td className="py-2.5 font-mono">{formatTime(a.check_out)}</td>
-                          <td className="py-2.5">{a.working_hours || '-'}</td>
-                          <td className="py-2.5 font-mono text-[11px] text-slate-500">
+                          <td className="py-2.5 font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(a.date)}</td>
+                          <td className="py-2.5 font-mono text-zinc-700 dark:text-zinc-300">{formatTime(a.check_in)}</td>
+                          <td className="py-2.5 font-mono text-zinc-700 dark:text-zinc-300">{formatTime(a.check_out)}</td>
+                          <td className="py-2.5 text-zinc-700 dark:text-zinc-300">{a.working_hours || '-'}</td>
+                          <td className="py-2.5 font-mono text-[11px] text-zinc-500">
                             {Array.isArray(a.punches) && a.punches.length > 0
                               ? a.punches.map((p) => `${p.punch_type === 'CHECK_IN' ? 'PI' : 'PO'}: ${formatTime(p.timestamp)}`).join(' • ')
                               : `${a.check_in ? `PI: ${formatTime(a.check_in)}` : ''}${a.check_out ? ` • PO: ${formatTime(a.check_out)}` : ''}` || '-'}
@@ -376,52 +376,52 @@ export const EmployeeProfile = () => {
             );
           })()
         ) : activeTab === 'shifts' ? (
-          shifts.length === 0 ? <p className="text-xs text-slate-500">No shift assignments recorded.</p> : (
+          shifts.length === 0 ? <p className="text-xs text-zinc-500">No shift assignments recorded.</p> : (
             <div className="space-y-2 text-xs">{shifts.map((s) => (
-              <div key={s.id} className="p-3 bg-slate-50 rounded-lg flex justify-between">
-                <span className="font-semibold">{s.shift_name || 'Assigned Shift'}</span>
-                <span className="text-slate-500">Effective: {formatDate(s.effective_from)}</span>
+              <div key={s.id} className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg flex justify-between border border-zinc-200 dark:border-zinc-700">
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100">{s.shift_name || 'Assigned Shift'}</span>
+                <span className="text-zinc-500">Effective: {formatDate(s.effective_from)}</span>
               </div>
             ))}</div>
           )
         ) : activeTab === 'leave' ? (
-          leaves.length === 0 ? <p className="text-xs text-slate-500">No leave requests found.</p> : (
+          leaves.length === 0 ? <p className="text-xs text-zinc-500">No leave requests found.</p> : (
             <div className="space-y-2 text-xs">{leaves.map((l) => (
-              <div key={l.id} className="p-3 bg-slate-50 rounded-lg flex justify-between">
-                <span><strong>{l.leave_type_name || 'Leave'}</strong> ({formatDate(l.start_date)} - {formatDate(l.end_date)})</span>
-                <Badge variant={l.status === 'APPROVED' ? 'success' : 'warning'}>{l.status}</Badge>
+              <div key={l.id} className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg flex justify-between border border-zinc-200 dark:border-zinc-700">
+                <span><strong className="text-zinc-900 dark:text-zinc-100">{l.leave_type_name || 'Leave'}</strong> ({formatDate(l.start_date)} - {formatDate(l.end_date)})</span>
+                <Badge variant={l.status === 'APPROVED' ? 'default' : 'neutral'}>{l.status}</Badge>
               </div>
             ))}</div>
           )
         ) : activeTab === 'salary' ? (
-          payslips.length === 0 ? <p className="text-xs text-slate-500">No payslips generated yet.</p> : (
+          payslips.length === 0 ? <p className="text-xs text-zinc-500">No payslips generated yet.</p> : (
             <div className="space-y-2 text-xs">{payslips.map((p) => (
-              <div key={p.id} className="p-3 bg-slate-50 rounded-lg flex justify-between">
-                <span className="font-semibold">{p.period_display || p.payslip_number}</span>
-                <span className="font-bold text-emerald-700">{formatINR(p.net_salary || 0)}</span>
+              <div key={p.id} className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg flex justify-between border border-zinc-200 dark:border-zinc-700">
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100">{p.period_display || p.payslip_number}</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">{formatINR(p.net_salary || 0)}</span>
               </div>
             ))}</div>
           )
         ) : activeTab === 'advances' ? (
-          advances.length === 0 ? <p className="text-xs text-slate-500">No salary advances or loans.</p> : (
+          advances.length === 0 ? <p className="text-xs text-zinc-500">No salary advances or loans.</p> : (
             <div className="space-y-2 text-xs">{advances.map((adv) => (
-              <div key={adv.id} className="p-3 bg-slate-50 rounded-lg flex justify-between">
-                <span>{adv.reason || 'Advance'} — {formatINR(adv.amount)}</span>
-                <Badge variant="info">{adv.status}</Badge>
+              <div key={adv.id} className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg flex justify-between border border-zinc-200 dark:border-zinc-700">
+                <span className="text-zinc-900 dark:text-zinc-100">{adv.reason || 'Advance'} — {formatINR(adv.amount)}</span>
+                <Badge variant="neutral">{adv.status}</Badge>
               </div>
             ))}</div>
           )
         ) : activeTab === 'documents' ? (
           <div className="grid grid-cols-2 gap-4 text-xs">
-            <div className="p-3 bg-slate-50 rounded-lg"><p className="text-[10px] font-bold text-slate-400 uppercase">PAN Number</p><p className="font-mono font-semibold mt-1">{employee.pan_number || 'Not provided'}</p></div>
-            <div className="p-3 bg-slate-50 rounded-lg"><p className="text-[10px] font-bold text-slate-400 uppercase">Aadhaar Number</p><p className="font-mono font-semibold mt-1">{employee.aadhaar_number || 'Not provided'}</p></div>
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700"><p className="text-[10px] font-bold text-zinc-400 uppercase">PAN Number</p><p className="font-mono font-semibold mt-1 text-zinc-900 dark:text-zinc-100">{employee.pan_number || 'Not provided'}</p></div>
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700"><p className="text-[10px] font-bold text-zinc-400 uppercase">Aadhaar Number</p><p className="font-mono font-semibold mt-1 text-zinc-900 dark:text-zinc-100">{employee.aadhaar_number || 'Not provided'}</p></div>
           </div>
         ) : activeTab === 'history' ? (
-          history.length === 0 ? <p className="text-xs text-slate-500">No employment history entries.</p> : (
+          history.length === 0 ? <p className="text-xs text-zinc-500">No employment history entries.</p> : (
             <div className="space-y-2 text-xs">{history.map((h) => (
-              <div key={h.id} className="p-3 bg-slate-50 rounded-lg flex justify-between">
-                <div><p className="font-bold text-slate-900">{h.change_type}</p><p className="text-slate-500">{h.notes}</p></div>
-                <span className="text-slate-400">{formatDate(h.effective_date)}</span>
+              <div key={h.id} className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg flex justify-between border border-zinc-200 dark:border-zinc-700">
+                <div><p className="font-bold text-zinc-900 dark:text-zinc-100">{h.change_type}</p><p className="text-zinc-500">{h.notes}</p></div>
+                <span className="text-zinc-400">{formatDate(h.effective_date)}</span>
               </div>
             ))}</div>
           )
@@ -431,21 +431,21 @@ export const EmployeeProfile = () => {
             {editing ? (
               <form onSubmit={handleSaveEdit} className="space-y-3 max-w-md">
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-xs font-semibold mb-1">First Name</label><input type="text" value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="w-full px-3 py-1.5 text-xs border rounded-lg" /></div>
-                  <div><label className="block text-xs font-semibold mb-1">Last Name</label><input type="text" value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} className="w-full px-3 py-1.5 text-xs border rounded-lg" /></div>
+                  <div><label className="block text-xs font-semibold mb-1 text-zinc-800 dark:text-zinc-200">First Name</label><input type="text" value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100" /></div>
+                  <div><label className="block text-xs font-semibold mb-1 text-zinc-800 dark:text-zinc-200">Last Name</label><input type="text" value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100" /></div>
                 </div>
-                <div><label className="block text-xs font-semibold mb-1">Phone</label><input type="text" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="w-full px-3 py-1.5 text-xs border rounded-lg" /></div>
-                <div><label className="block text-xs font-semibold mb-1">City</label><input type="text" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} className="w-full px-3 py-1.5 text-xs border rounded-lg" /></div>
+                <div><label className="block text-xs font-semibold mb-1 text-zinc-800 dark:text-zinc-200">Phone</label><input type="text" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100" /></div>
+                <div><label className="block text-xs font-semibold mb-1 text-zinc-800 dark:text-zinc-200">City</label><input type="text" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100" /></div>
                 <div className="flex gap-2">
-                  <button type="submit" className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Save Changes</button>
-                  <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-semibold">Cancel</button>
+                  <button type="submit" className="px-4 py-1.5 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg text-xs font-bold">Save Changes</button>
+                  <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-semibold">Cancel</button>
                 </div>
               </form>
             ) : (
               <div className="space-y-6 max-w-xl">
                 <div className="flex flex-wrap gap-3">
-                  <button onClick={() => setEditing(true)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs">Edit Employee Profile</button>
-                  <button onClick={handleToggleStatus} className={`px-4 py-2 rounded-lg text-xs font-semibold ${employee.status === 'ACTIVE' ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'}`}>
+                  <button onClick={() => setEditing(true)} className="px-4 py-2 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs">Edit Employee Profile</button>
+                  <button onClick={handleToggleStatus} className={`px-4 py-2 rounded-lg text-xs font-semibold border ${employee.status === 'ACTIVE' ? 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700' : 'bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950'}`}>
                     {employee.status === 'ACTIVE' ? 'Deactivate Employee' : 'Activate Employee'}
                   </button>
                 </div>

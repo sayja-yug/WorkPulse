@@ -90,11 +90,11 @@ export const Expenses = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-indigo-600" />
-            <span>Cashbook & Business Expenses</span>
+          <h2 className="text-xl font-bold text-zinc-950 dark:text-zinc-50 tracking-tight flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
+            <span>Cashbook &amp; Business Expenses</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
             Real-time daily cash inflows, business expenditures, receipts, and petty cash ledger
           </p>
         </div>
@@ -103,7 +103,7 @@ export const Expenses = () => {
         {canManageExpenses && (
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Record Cash Entry</span>
@@ -111,8 +111,8 @@ export const Expenses = () => {
         )}
 
         {isAuditor && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 border border-zinc-300 text-zinc-800 rounded-lg text-xs font-semibold">
-            <Shield className="w-4 h-4 text-zinc-700" />
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-semibold">
+            <Shield className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
             <span>Auditor Compliance (Read-Only)</span>
           </div>
         )}
@@ -120,60 +120,60 @@ export const Expenses = () => {
 
       {/* Cash Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-2xs flex items-center justify-between">
+        <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Current Cash Balance</p>
-            <p className="text-2xl font-bold text-zinc-950 mt-1">{formatINR(summary.balance)}</p>
+            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Current Cash Balance</p>
+            <p className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 mt-1">{formatINR(summary.balance)}</p>
             <p className="text-[11px] text-zinc-400 mt-0.5">Available in petty cash safe</p>
           </div>
-          <div className="p-3 bg-zinc-100 text-zinc-900 rounded-xl border border-zinc-200">
+          <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl border border-zinc-200 dark:border-zinc-700">
             <Wallet className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Cash In (Inflow)</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{formatINR(summary.total_in)}</p>
-            <p className="text-[11px] text-emerald-600 mt-0.5">Deposits & sales receipts</p>
+            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Total Cash In (Inflow)</p>
+            <p className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 mt-1">{formatINR(summary.total_in)}</p>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Deposits &amp; sales receipts</p>
           </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+          <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl border border-zinc-200 dark:border-zinc-700">
             <ArrowDownLeft className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Cash Out (Expenses)</p>
-            <p className="text-2xl font-bold text-rose-600 mt-1">{formatINR(summary.total_out)}</p>
-            <p className="text-[11px] text-rose-600 mt-0.5">Disbursements & purchases</p>
+            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Total Cash Out (Expenses)</p>
+            <p className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 mt-1">{formatINR(summary.total_out)}</p>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Disbursements &amp; purchases</p>
           </div>
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
+          <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl border border-zinc-200 dark:border-zinc-700">
             <ArrowUpRight className="w-6 h-6" />
           </div>
         </div>
       </div>
 
       {/* Transactions Ledger */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-850/50 flex items-center justify-between">
+          <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-100 uppercase tracking-wider">
             Daily Cashbook Audit Trail
           </h3>
-          <span className="text-[11px] text-slate-500">{transactions.length} Transactions</span>
+          <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">{transactions.length} Transactions</span>
         </div>
 
         {loading ? (
           <Loader message="Loading cashbook transactions..." />
         ) : transactions.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs">
+          <div className="p-12 text-center text-zinc-500 dark:text-zinc-400 text-xs">
             No entries recorded in cashbook for this period.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[650px] text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
+                <tr className="bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Date</th>
                   <th className="py-3 px-4">Type</th>
                   <th className="py-3 px-4">Description</th>
@@ -182,42 +182,36 @@ export const Expenses = () => {
                   <th className="py-3 px-4 text-right">Balance After</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {transactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-slate-900">
+                  <tr key={t.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+                    <td className="py-3.5 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
                       {formatDate(t.date || t.created_at)}
                     </td>
                     <td className="py-3.5 px-4">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
-                          t.type === 'CASH_IN'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700"
                       >
                         {t.type === 'CASH_IN' ? (
-                          <ArrowDownLeft className="w-3 h-3" />
+                          <ArrowDownLeft className="w-3 h-3 text-zinc-700 dark:text-zinc-300" />
                         ) : (
-                          <ArrowUpRight className="w-3 h-3" />
+                          <ArrowUpRight className="w-3 h-3 text-zinc-700 dark:text-zinc-300" />
                         )}
                         {t.type}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-slate-700 font-medium">
+                    <td className="py-3.5 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
                       {t.description || 'Petty cash disbursement'}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">
+                    <td className="py-3.5 px-4 text-zinc-500 dark:text-zinc-400 font-mono text-[11px]">
                       {t.payment_mode || 'CASH'}
                     </td>
                     <td
-                      className={`py-3.5 px-4 font-bold ${
-                        t.type === 'CASH_IN' ? 'text-emerald-600' : 'text-rose-600'
-                      }`}
+                      className="py-3.5 px-4 font-bold text-zinc-950 dark:text-zinc-50"
                     >
                       {t.type === 'CASH_IN' ? '+' : '-'} {formatINR(t.amount)}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono text-slate-900 font-semibold">
+                    <td className="py-3.5 px-4 text-right font-mono text-zinc-900 dark:text-zinc-100 font-semibold">
                       {formatINR(t.balance_after || summary.balance)}
                     </td>
                   </tr>
@@ -230,21 +224,21 @@ export const Expenses = () => {
 
       {/* Record Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Record Cashbook Entry">
-        <form onSubmit={handleCreate} className="space-y-4">
+        <form onSubmit={handleCreate} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Entry Type</label>
+              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Entry Type</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none bg-white"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
               >
                 <option value="CASH_OUT">Cash Out (Expense)</option>
                 <option value="CASH_IN">Cash In (Deposit / Revenue)</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Amount (₹)</label>
+              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Amount (₹)</label>
               <input
                 type="number"
                 required
@@ -253,30 +247,30 @@ export const Expenses = () => {
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="e.g. 2500"
-                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Description / Narration</label>
+            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Description / Narration</label>
             <input
               type="text"
               required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="e.g. Office tea, client refreshments, courier charges"
-              className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none"
+              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Mode</label>
+              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Payment Mode</label>
               <select
                 value={formData.payment_mode}
                 onChange={(e) => setFormData({ ...formData, payment_mode: e.target.value })}
-                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none bg-white"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
               >
                 <option value="CASH">Cash</option>
                 <option value="UPI">UPI / GPay / PhonePe</option>
@@ -285,28 +279,28 @@ export const Expenses = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
+              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Date</label>
               <input
                 type="date"
                 required
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
               />
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors"
+              className="px-4 py-1.5 text-xs font-bold bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg shadow-xs transition-colors cursor-pointer"
             >
               Save Entry
             </button>

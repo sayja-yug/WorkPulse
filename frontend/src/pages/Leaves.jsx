@@ -126,76 +126,76 @@ export const Leaves = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {isEmployee ? (
           <>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase">Paid Leave (PL)</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">12 Days</p>
-                <p className="text-[11px] text-emerald-600 mt-0.5">Accrued monthly</p>
+                <p className="text-xs font-semibold text-zinc-500 uppercase">Paid Leave (PL)</p>
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1">12 Days</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Accrued monthly</p>
               </div>
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+              <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl">
                 <Calendar className="w-6 h-6" />
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase">Casual / Sick Leave</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">6 Days</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Available for emergencies</p>
+                <p className="text-xs font-semibold text-zinc-500 uppercase">Casual / Sick Leave</p>
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1">6 Days</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Available for emergencies</p>
               </div>
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+              <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl">
                 <Clock className="w-6 h-6" />
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase">Pending Requests</p>
-                <p className="text-2xl font-bold text-amber-600 mt-1">
+                <p className="text-xs font-semibold text-zinc-500 uppercase">Pending Requests</p>
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1">
                   {leaves.filter((l) => l.status === 'PENDING').length}
                 </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Awaiting manager review</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Awaiting manager review</p>
               </div>
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+              <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl">
                 <AlertCircle className="w-6 h-6" />
               </div>
             </div>
           </>
         ) : (
           <>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase">Total Applications</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">{leaves.length}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Workforce time-off records</p>
+                <p className="text-xs font-semibold text-zinc-500 uppercase">Total Applications</p>
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1">{leaves.length}</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Workforce time-off records</p>
               </div>
-              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+              <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl">
                 <Calendar className="w-6 h-6" />
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase">Approved Leaves</p>
-                <p className="text-2xl font-bold text-emerald-600 mt-1">
+                <p className="text-xs font-semibold text-zinc-500 uppercase">Approved Leaves</p>
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1">
                   {leaves.filter((l) => l.status === 'APPROVED').length}
                 </p>
-                <p className="text-[11px] text-emerald-600 mt-0.5">Active approved leaves</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Active approved leaves</p>
               </div>
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+              <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase">Pending Review</p>
-                <p className="text-2xl font-bold text-amber-600 mt-1">
+                <p className="text-xs font-semibold text-zinc-500 uppercase">Pending Review</p>
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1">
                   {leaves.filter((l) => l.status === 'PENDING').length}
                 </p>
-                <p className="text-[11px] text-amber-600 mt-0.5">Requires approval action</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Requires approval action</p>
               </div>
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+              <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl">
                 <AlertCircle className="w-6 h-6" />
               </div>
             </div>
@@ -268,19 +268,19 @@ export const Leaves = () => {
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => handleApprove(l.id)}
-                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
+                              className="px-2.5 py-1 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded text-xs font-bold transition-colors"
                             >
                               Approve
                             </button>
                             <button
                               onClick={() => handleReject(l.id)}
-                              className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded text-xs font-semibold transition-colors"
+                              className="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded text-xs font-semibold transition-colors"
                             >
                               Reject
                             </button>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-slate-400 font-mono">Completed</span>
+                          <span className="text-[11px] text-zinc-400 font-mono">Completed</span>
                         )}
                       </td>
                     )}
@@ -296,11 +296,11 @@ export const Leaves = () => {
       <Modal isOpen={showApplyModal} onClose={() => setShowApplyModal(false)} title="Apply for Time Off">
         <form onSubmit={handleApply} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Leave Type</label>
+            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Leave Type</label>
             <select
               value={formData.leave_type}
               onChange={(e) => setFormData({ ...formData, leave_type: e.target.value })}
-              className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none bg-white"
+              className="w-full px-3 py-1.5 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
             >
               <option value="PAID">Paid Annual Leave (PL)</option>
               <option value="CASUAL">Casual Leave (CL)</option>
@@ -311,50 +311,50 @@ export const Leaves = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Start Date</label>
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Start Date</label>
               <input
                 type="date"
                 required
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none"
+                className="w-full px-3 py-1.5 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">End Date</label>
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">End Date</label>
               <input
                 type="date"
                 required
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none"
+                className="w-full px-3 py-1.5 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Reason for Leave</label>
+            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Reason for Leave</label>
             <textarea
               required
               rows={3}
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               placeholder="State reason for absence..."
-              className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none"
+              className="w-full px-3 py-1.5 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setShowApplyModal(false)}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors"
+              className="px-4 py-1.5 text-xs font-bold bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg shadow-xs transition-colors"
             >
               Submit Application
             </button>

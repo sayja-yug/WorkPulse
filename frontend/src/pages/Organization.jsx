@@ -1,81 +1,89 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api/client';
-import { useAuth } from '../context/AuthContext';
 import {
   Building2,
   MapPin,
-  Layers,
-  Award,
-  Plus,
-  CalendarDays,
-  CalendarOff,
-  Edit3,
-  Eye,
   Users,
-  Power,
-  Search,
+  Briefcase,
+  Calendar,
+  Sparkles,
+  Plus,
+  Edit3,
+  Clock,
+  ShieldCheck,
+  Check,
+  Mail,
+  Phone,
+  Globe,
+  ArrowRight,
 } from 'lucide-react';
-import { Loader } from '../components/ui/Loader';
-import { Modal } from '../components/ui/Modal';
-import { Badge } from '../components/ui/Badge';
+import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../utils/formatters';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Button,
+  Input,
+  Select,
+  Badge,
+  Loader,
+  Modal,
+} from '../components/ui';
 
-const ALL_WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const ALL_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export const Organization = () => {
   const { business } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'branches' | 'departments' | 'designations' | 'working-days' | 'holidays'
+  const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(true);
 
+  // Data states
   const [bizDetail, setBizDetail] = useState(null);
   const [branches, setBranches] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [holidays, setHolidays] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [deptSearch, setDeptSearch] = useState('');
+  const [workingDays, setWorkingDays] = useState(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
 
-  // Business Edit Modal
+  // Modals & form states
   const [showBizEdit, setShowBizEdit] = useState(false);
   const [bizForm, setBizForm] = useState({ name: '', email: '', phone: '', address: '', city: '', state: '', country: 'India' });
 
-  // Branch Create / Edit / Detail / Employees
   const [showBranchModal, setShowBranchModal] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
-  const [branchForm, setBranchForm] = useState({ name: '', code: '', address: '', city: '', state: '', geofence_radius: 300 });
+  const [branchForm, setBranchForm] = useState({ name: '', code: '', address: '', city: '', state: '', geofence_radius: 200 });
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [branchEmployees, setBranchEmployees] = useState([]);
   const [showBranchEmployees, setShowBranchEmployees] = useState(false);
 
-  // Department Create / Edit / Users
   const [showDeptModal, setShowDeptModal] = useState(false);
   const [editingDept, setEditingDept] = useState(null);
   const [deptForm, setDeptForm] = useState({ name: '', code: '' });
   const [deptUsersModal, setDeptUsersModal] = useState(null);
   const [deptUsers, setDeptUsers] = useState([]);
 
-  // Designation Create
   const [showDesigModal, setShowDesigModal] = useState(false);
   const [desigForm, setDesigForm] = useState({ name: '', level: 1 });
 
-  // Working Days Configure Modal
-  const [showWorkingDaysModal, setShowWorkingDaysModal] = useState(false);
-  const [workingDays, setWorkingDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
-
-  // Holiday Create Modal
   const [showHolidayModal, setShowHolidayModal] = useState(false);
-  const [holidayForm, setHolidayForm] = useState({ name: '', date: new Date().toISOString().split('T')[0], type: 'PUBLIC' });
+  const [holidayForm, setHolidayForm] = useState({ name: '', date: '', type: 'PUBLIC' });
 
+  const [showWorkingDaysModal, setShowWorkingDaysModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Fetch all org data
   const fetchAll = async () => {
     try {
       setLoading(true);
       const calls = [
         api.get('/branches/'),
-        api.get('/branches/departments/'),
-        api.get('/branches/designations/'),
-        api.get('/attendance/holidays/'),
+        api.get('/departments/'),
+        api.get('/designations/'),
+        api.get('/holidays/'),
       ];
       if (business?.id) {
         calls.push(api.get(`/businesses/${business.id}/`));
@@ -148,21 +156,20 @@ export const Organization = () => {
   // 2. Branch Actions
   const openAddBranch = () => {
     setEditingBranch(null);
-    setBranchForm({ name: '', code: '', address: '', city: '', state: '', geofence_radius: 300 });
+    setBranchForm({ name: '', code: '', address: '', city: '', state: '', geofence_radius: 200 });
     setShowBranchModal(true);
   };
 
-  const openEditBranch = (br) => {
-    setEditingBranch(br);
+  const openEditBranch = (b) => {
+    setEditingBranch(b);
     setBranchForm({
-      name: br.name || '',
-      code: br.code || '',
-      address: br.address || '',
-      city: br.city || '',
-      state: br.state || '',
-      geofence_radius: br.geofence_radius || 300,
+      name: b.name || '',
+      code: b.code || '',
+      address: b.address || '',
+      city: b.city || '',
+      state: b.state || '',
+      geofence_radius: b.geofence_radius || 200,
     });
-    setSelectedBranch(null);
     setShowBranchModal(true);
   };
 
@@ -184,25 +191,26 @@ export const Organization = () => {
     }
   };
 
-  const handleDeactivateBranch = async (br) => {
-    if (!confirm(`Are you sure you want to ${br.is_active !== false ? 'deactivate' : 'activate'} branch "${br.name}"?`)) {
-      return;
-    }
+  const handleDeactivateBranch = async (b) => {
+    const action = b.is_active !== false ? 'deactivate' : 'activate';
+    if (!window.confirm(`Are you sure you want to ${action} branch "${b.name}"?`)) return;
     try {
-      await api.patch(`/branches/${br.id}/`, { is_active: br.is_active === false });
+      await api.patch(`/branches/${b.id}/`, { is_active: b.is_active === false });
       await fetchAll();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to update branch status');
+      alert(err.response?.data?.error?.message || `Failed to ${action} branch`);
     }
   };
 
-  const handleViewBranchEmployees = async (br) => {
-    setShowBranchEmployees(true);
+  const handleViewBranchEmployees = async (branch) => {
     try {
-      const res = await api.get('/employees/', { params: { branch: br.id } });
-      const list = res.data?.data || res.data?.results || [];
+      setSelectedBranch(branch);
+      setShowBranchEmployees(true);
+      const res = await api.get(`/employees/?branch=${branch.id}`);
+      const list = res.data?.data || res.data?.results || res.data || [];
       setBranchEmployees(Array.isArray(list) ? list : []);
-    } catch {
+    } catch (err) {
+      console.warn('Could not load branch employees', err);
       setBranchEmployees([]);
     }
   };
@@ -214,9 +222,9 @@ export const Organization = () => {
     setShowDeptModal(true);
   };
 
-  const openEditDept = (dept) => {
-    setEditingDept(dept);
-    setDeptForm({ name: dept.name || '', code: dept.code || '' });
+  const openEditDept = (d) => {
+    setEditingDept(d);
+    setDeptForm({ name: d.name || '', code: d.code || '' });
     setShowDeptModal(true);
   };
 
@@ -225,9 +233,9 @@ export const Organization = () => {
     try {
       setSubmitting(true);
       if (editingDept) {
-        await api.patch(`/branches/departments/${editingDept.id}/`, deptForm);
+        await api.patch(`/departments/${editingDept.id}/`, deptForm);
       } else {
-        await api.post('/branches/departments/', deptForm);
+        await api.post('/departments/', deptForm);
       }
       setShowDeptModal(false);
       await fetchAll();
@@ -239,42 +247,47 @@ export const Organization = () => {
   };
 
   const handleViewDeptUsers = async (dept) => {
-    setDeptUsersModal(dept);
     try {
-      const res = await api.get('/employees/', { params: { department: dept.id } });
-      const list = res.data?.data || res.data?.results || [];
+      setDeptUsersModal(dept);
+      const res = await api.get(`/employees/?department=${dept.id}`);
+      const list = res.data?.data || res.data?.results || res.data || [];
       setDeptUsers(Array.isArray(list) ? list : []);
-    } catch {
+    } catch (err) {
+      console.warn('Could not load dept users', err);
       setDeptUsers([]);
     }
   };
 
-  // 4. Designation Create
+  // 4. Designation Actions
   const handleSaveDesig = async (e) => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await api.post('/branches/designations/', desigForm);
+      await api.post('/designations/', desigForm);
       setShowDesigModal(false);
       setDesigForm({ name: '', level: 1 });
       await fetchAll();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to create designation');
+      alert(err.response?.data?.error?.message || 'Failed to add designation');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // 5. Working Days Configure
+  // 5. Working Days Actions
   const toggleDay = (day) => {
-    setWorkingDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+    setWorkingDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
   };
 
   const handleSaveWorkingDays = async (e) => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await api.patch(`/businesses/${(bizDetail || business).id}/`, { working_days: workingDays });
+      await api.patch(`/businesses/${(bizDetail || business).id}/`, {
+        working_days: workingDays,
+      });
       setShowWorkingDaysModal(false);
       await fetchAll();
     } catch (err) {
@@ -284,14 +297,14 @@ export const Organization = () => {
     }
   };
 
-  // 6. Holiday Create
+  // 6. Holiday Actions
   const handleSaveHoliday = async (e) => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await api.post('/attendance/holidays/', holidayForm);
+      await api.post('/holidays/', holidayForm);
       setShowHolidayModal(false);
-      setHolidayForm({ name: '', date: new Date().toISOString().split('T')[0], type: 'PUBLIC' });
+      setHolidayForm({ name: '', date: '', type: 'PUBLIC' });
       await fetchAll();
     } catch (err) {
       alert(err.response?.data?.error?.message || 'Failed to add holiday');
@@ -302,45 +315,97 @@ export const Organization = () => {
 
   const tabs = [
     { id: 'profile', label: 'Business Profile', icon: Building2 },
-    { id: 'branches', label: 'Branches', icon: MapPin },
-    { id: 'departments', label: 'Departments', icon: Layers },
-    { id: 'designations', label: 'Designations', icon: Award },
-    { id: 'working-days', label: 'Working Days', icon: CalendarDays },
-    { id: 'holidays', label: 'Holidays', icon: CalendarOff },
+    { id: 'branches', label: 'Branches', icon: MapPin, count: branches.length },
+    { id: 'departments', label: 'Departments', icon: Users, count: departments.length },
+    { id: 'designations', label: 'Designations', icon: Briefcase, count: designations.length },
+    { id: 'working_days', label: 'Working Days', icon: Calendar },
+    { id: 'holidays', label: 'Holidays', icon: Sparkles, count: holidays.length },
   ];
 
-  const filteredDepts = departments.filter((d) =>
-    d.name?.toLowerCase().includes(deptSearch.toLowerCase())
-  );
+  const currentBizName = bizDetail?.name || business?.name || 'Company Profile';
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-zinc-900" />
-            <span>Organization Management</span>
-          </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            {(bizDetail || business)?.name || 'Business'} &mdash; Profile, branches, departments, designations, working days &amp; holidays
-          </p>
+      {/* 1. Professional Organization Hero Header */}
+      <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+          <div className="flex items-start sm:items-center gap-4 min-w-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-zinc-950 text-white flex items-center justify-center font-black text-2xl shadow-sm shrink-0">
+              {currentBizName ? currentBizName[0].toUpperCase() : 'C'}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight truncate">
+                  {currentBizName}
+                </h1>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-800 border border-zinc-200 uppercase tracking-wide shrink-0">
+                  <ShieldCheck className="w-3 h-3 text-zinc-700" />
+                  Verified Organization
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 mt-1 flex flex-wrap items-center gap-2 font-mono">
+                <span>Tenant ID: <strong className="text-zinc-800 font-bold">{bizDetail?.slug || 'company-slug'}</strong></span>
+                <span className="hidden sm:inline text-zinc-300">&bull;</span>
+                <span className="font-sans">HQ: <strong className="text-zinc-800 font-semibold">{bizDetail?.city || 'Noida'}, {bizDetail?.state || 'India'}</strong></span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={Edit3}
+              onClick={openEditBusiness}
+            >
+              Edit Profile
+            </Button>
+          </div>
+        </div>
+
+        {/* Quick Enterprise Metrics Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-zinc-100">
+          <div className="px-3.5 py-2.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Locations</span>
+            <span className="text-sm font-black text-zinc-950 mt-0.5 block">{branches.length} Branches</span>
+          </div>
+          <div className="px-3.5 py-2.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Departments</span>
+            <span className="text-sm font-black text-zinc-950 mt-0.5 block">{departments.length} Divisions</span>
+          </div>
+          <div className="px-3.5 py-2.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Job Titles</span>
+            <span className="text-sm font-black text-zinc-950 mt-0.5 block">{designations.length} Designations</span>
+          </div>
+          <div className="px-3.5 py-2.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Operating Schedule</span>
+            <span className="text-sm font-black text-zinc-950 mt-0.5 block">{workingDays.length} Working Days</span>
+          </div>
         </div>
       </div>
 
-      {/* 6 Sub-Section Tabs */}
-      <div className="flex flex-wrap gap-1.5 border-b border-zinc-200 pb-2">
+      {/* 2. Structured Tab Bar */}
+      <div className="flex items-center gap-1 border-b border-zinc-200 overflow-x-auto no-scrollbar pb-px">
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === tab.id
-                ? 'bg-zinc-950 text-white font-bold shadow-xs'
-                : 'text-zinc-600 hover:bg-zinc-100'
+                ? 'border-zinc-950 text-zinc-950'
+                : 'border-transparent text-zinc-500 hover:text-zinc-900 hover:border-zinc-300'
             }`}
           >
-            <tab.icon className="w-3.5 h-3.5" />
+            <tab.icon className="w-4 h-4" />
             <span>{tab.label}</span>
+            {tab.count !== undefined && (
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                activeTab === tab.id ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-600'
+              }`}>
+                {tab.count}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -348,375 +413,595 @@ export const Organization = () => {
       {loading ? (
         <Loader message="Loading organization details..." />
       ) : activeTab === 'profile' ? (
-        /* 1. Business Profile */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">{bizDetail?.name}</h3>
-              <p className="text-xs text-slate-500 font-mono">{bizDetail?.slug}</p>
-            </div>
-            <button
-              onClick={openEditBusiness}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit</span>
-            </button>
+        /* ---------------------------------------------------- */
+        /* TAB 1: BUSINESS PROFILE (Structured 2-Column Layout) */
+        /* ---------------------------------------------------- */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Column 1 & 2: Primary Corporate Legal & Contact Info */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader className="justify-between">
+                <div>
+                  <CardTitle>Corporate Identity &amp; Contact Details</CardTitle>
+                  <CardDescription>Official registered business profile and contact information</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  leftIcon={Edit3}
+                  onClick={openEditBusiness}
+                >
+                  Edit
+                </Button>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Legal Business Name</span>
+                    <p className="text-sm font-bold text-zinc-950 mt-1">{bizDetail?.name || '-'}</p>
+                  </div>
+
+                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">System Slug / Identifier</span>
+                    <p className="text-sm font-mono font-bold text-zinc-900 mt-1">{bizDetail?.slug || '-'}</p>
+                  </div>
+
+                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Mail className="w-3 h-3 text-zinc-500" />
+                      Official Email Address
+                    </span>
+                    <p className="text-sm font-bold text-zinc-950 mt-1 break-all">{bizDetail?.email || '-'}</p>
+                  </div>
+
+                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Phone className="w-3 h-3 text-zinc-500" />
+                      Primary Contact Phone
+                    </span>
+                    <p className="text-sm font-bold text-zinc-950 mt-1">{bizDetail?.phone || '-'}</p>
+                  </div>
+
+                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Globe className="w-3 h-3 text-zinc-500" />
+                      Currency &amp; Timezone
+                    </span>
+                    <p className="text-sm font-bold text-zinc-950 mt-1">
+                      {bizDetail?.currency || 'INR'} &bull; {bizDetail?.timezone || 'Asia/Kolkata'}
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Country</span>
+                    <p className="text-sm font-bold text-zinc-950 mt-1">{bizDetail?.country || 'India'}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <MapPin className="w-3 h-3 text-zinc-500" />
+                    Registered Corporate Address
+                  </span>
+                  <p className="text-sm font-bold text-zinc-950 mt-1.5 leading-relaxed">
+                    {[bizDetail?.address, bizDetail?.city, bizDetail?.state, bizDetail?.country].filter(Boolean).join(', ') || 'No address configured yet.'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-            <div className="p-3 bg-slate-50 rounded-lg">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Email</p>
-              <p className="font-semibold text-slate-800 mt-1">{bizDetail?.email || '-'}</p>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-lg">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Phone</p>
-              <p className="font-semibold text-slate-800 mt-1">{bizDetail?.phone || '-'}</p>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-lg">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Currency &amp; Timezone</p>
-              <p className="font-semibold text-slate-800 mt-1">{bizDetail?.currency || 'INR'} • {bizDetail?.timezone || 'Asia/Kolkata'}</p>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-lg sm:col-span-2 lg:col-span-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Registered Address</p>
-              <p className="font-semibold text-slate-800 mt-1">
-                {[bizDetail?.address, bizDetail?.city, bizDetail?.state, bizDetail?.country].filter(Boolean).join(', ') || '-'}
-              </p>
-            </div>
+
+          {/* Column 3: Organizational Directory Snapshot */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Operating Branches ({branches.length})</CardTitle>
+                <CardDescription>Configured facility locations</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2.5">
+                {branches.slice(0, 4).map((b) => (
+                  <div key={b.id} className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-zinc-900">{b.name}</p>
+                      <p className="text-[11px] text-zinc-500">{b.city ? `${b.city}, ${b.state || ''}` : b.code}</p>
+                    </div>
+                    <Badge variant={b.is_active !== false ? 'inverted' : 'outline'} size="xs">
+                      {b.code}
+                    </Badge>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('branches')}
+                  className="w-full text-center py-2 text-xs font-bold text-zinc-900 hover:underline flex items-center justify-center gap-1 mt-2 cursor-pointer"
+                >
+                  <span>View All {branches.length} Branches</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Standard Work Schedule</CardTitle>
+                <CardDescription>Weekly operational active days</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-1.5">
+                  {ALL_WEEKDAYS.map((day) => {
+                    const active = workingDays.includes(day);
+                    return (
+                      <span
+                        key={day}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${
+                          active
+                            ? 'bg-zinc-950 text-white border-zinc-950'
+                            : 'bg-zinc-100 text-zinc-400 border-zinc-200'
+                        }`}
+                      >
+                        {day.slice(0, 3)}
+                      </span>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('working_days')}
+                  className="text-xs font-bold text-zinc-900 hover:underline flex items-center gap-1 mt-4 cursor-pointer"
+                >
+                  <span>Manage Work Days &rarr;</span>
+                </button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       ) : activeTab === 'branches' ? (
-        /* 2. Branches */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Branches ({branches.length})</h3>
-            <button
+        /* ---------------------------------------------------- */
+        /* TAB 2: BRANCHES                                      */
+        /* ---------------------------------------------------- */
+        <Card>
+          <CardHeader className="justify-between">
+            <div>
+              <CardTitle>Company Branches ({branches.length})</CardTitle>
+              <CardDescription>Manage your company locations, codes, and geofence tracking radii</CardDescription>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={Plus}
               onClick={openAddBranch}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Branch</span>
-            </button>
-          </div>
+              Add Branch
+            </Button>
+          </CardHeader>
+
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[650px] text-left text-xs border-collapse">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
+                <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-bold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Branch Name</th>
-                  <th className="py-3 px-4">Code</th>
+                  <th className="py-3 px-4">Branch Code</th>
                   <th className="py-3 px-4">Location</th>
-                  <th className="py-3 px-4">Geofence</th>
+                  <th className="py-3 px-4">Geofence Radius</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-200">
                 {branches.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-50">
-                    <td className="py-3 px-4">
+                  <tr key={b.id} className="hover:bg-zinc-50/80 transition-colors">
+                    <td className="py-3.5 px-4 font-bold text-zinc-900">
                       <button
+                        type="button"
                         onClick={() => { setSelectedBranch(b); setShowBranchEmployees(false); }}
-                        className="font-semibold text-indigo-700 hover:underline text-left"
+                        className="hover:underline text-left cursor-pointer"
                       >
                         {b.name}
                       </button>
                     </td>
-                    <td className="py-3 px-4 font-mono text-slate-600">{b.code}</td>
-                    <td className="py-3 px-4 text-slate-600">{b.city ? `${b.city}, ${b.state || ''}` : '-'}</td>
-                    <td className="py-3 px-4 font-mono text-slate-700">{b.geofence_radius || 200}m</td>
-                    <td className="py-3 px-4">
-                      <Badge variant={b.is_active !== false ? 'success' : 'danger'}>
+                    <td className="py-3.5 px-4 font-mono font-bold text-zinc-700">{b.code}</td>
+                    <td className="py-3.5 px-4 text-zinc-600">{b.city ? `${b.city}, ${b.state || ''}` : '-'}</td>
+                    <td className="py-3.5 px-4 font-mono font-bold text-zinc-800">{b.geofence_radius || 200}m</td>
+                    <td className="py-3.5 px-4">
+                      <Badge variant={b.is_active !== false ? 'inverted' : 'outline'}>
                         {b.is_active !== false ? 'ACTIVE' : 'INACTIVE'}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
-                      <button
+                    <td className="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
+                      <Button
+                        size="xs"
+                        variant="secondary"
                         onClick={() => { setSelectedBranch(b); setShowBranchEmployees(false); }}
-                        className="text-indigo-600 hover:text-indigo-800 font-semibold text-xs px-2 py-1 rounded hover:bg-indigo-50"
                       >
-                        View
-                      </button>
-                      <button
+                        Details
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="outline"
                         onClick={() => handleDeactivateBranch(b)}
-                        className="text-rose-600 hover:text-rose-800 font-semibold text-xs px-2 py-1 rounded hover:bg-rose-50"
                       >
                         {b.is_active !== false ? 'Deactivate' : 'Activate'}
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       ) : activeTab === 'departments' ? (
-        /* 3. Departments */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Search departments..."
-                value={deptSearch}
-                onChange={(e) => setDeptSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
-              />
+        /* ---------------------------------------------------- */
+        /* TAB 3: DEPARTMENTS                                   */
+        /* ---------------------------------------------------- */
+        <Card>
+          <CardHeader className="justify-between">
+            <div>
+              <CardTitle>Departments &amp; Divisions ({departments.length})</CardTitle>
+              <CardDescription>Departmental division codes and employee groupings</CardDescription>
             </div>
-            <button
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={Plus}
               onClick={openAddDept}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold self-start sm:self-auto"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Department</span>
-            </button>
-          </div>
+              Add Department
+            </Button>
+          </CardHeader>
+
           <div className="overflow-x-auto">
             <table className="w-full min-w-[500px] text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
+                <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-bold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Department Name</th>
-                  <th className="py-3 px-4">Code</th>
+                  <th className="py-3 px-4">Department Code</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredDepts.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50">
-                    <td className="py-3 px-4 font-semibold text-slate-900">{d.name}</td>
-                    <td className="py-3 px-4 font-mono text-slate-600">{d.code || '-'}</td>
-                    <td className="py-3 px-4 text-right space-x-2">
-                      <button
-                        onClick={() => handleViewDeptUsers(d)}
-                        className="text-indigo-600 hover:underline font-semibold text-xs"
-                      >
-                        View assigned users
-                      </button>
-                      <button
-                        onClick={() => openEditDept(d)}
-                        className="text-slate-700 hover:text-indigo-700 font-semibold text-xs px-2 py-1 rounded hover:bg-slate-100"
-                      >
+              <tbody className="divide-y divide-zinc-200">
+                {departments.map((d) => (
+                  <tr key={d.id} className="hover:bg-zinc-50/80 transition-colors">
+                    <td className="py-3.5 px-4 font-bold text-zinc-900">{d.name}</td>
+                    <td className="py-3.5 px-4 font-mono font-bold text-zinc-600">{d.code}</td>
+                    <td className="py-3.5 px-4 text-right space-x-2">
+                      <Button size="xs" variant="secondary" onClick={() => handleViewDeptUsers(d)}>
+                        Users
+                      </Button>
+                      <Button size="xs" variant="outline" onClick={() => openEditDept(d)}>
                         Edit
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       ) : activeTab === 'designations' ? (
-        /* 4. Designations */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Designations ({designations.length})</h3>
-            <button
+        /* ---------------------------------------------------- */
+        /* TAB 4: DESIGNATIONS                                  */
+        /* ---------------------------------------------------- */
+        <Card>
+          <CardHeader className="justify-between">
+            <div>
+              <CardTitle>Designations &amp; Roles ({designations.length})</CardTitle>
+              <CardDescription>Hierarchy levels, seniority bands, and job titles</CardDescription>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={Plus}
               onClick={() => setShowDesigModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Designation</span>
-            </button>
-          </div>
+              Add Designation
+            </Button>
+          </CardHeader>
+
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[450px] text-left text-xs border-collapse">
+            <table className="w-full min-w-[500px] text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                  <th className="py-3 px-4">Designation Title</th>
-                  <th className="py-3 px-4">Hierarchy Level</th>
+                <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-bold uppercase text-[11px] tracking-wider">
+                  <th className="py-3 px-4">Designation Name</th>
+                  <th className="py-3 px-4">Seniority Level</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {designations.map((g) => (
-                  <tr key={g.id} className="hover:bg-slate-50">
-                    <td className="py-3 px-4 font-semibold text-slate-900">{g.name}</td>
-                    <td className="py-3 px-4 font-mono text-slate-600">Level {g.level ?? 1}</td>
+              <tbody className="divide-y divide-zinc-200">
+                {designations.map((desig) => (
+                  <tr key={desig.id} className="hover:bg-zinc-50/80 transition-colors">
+                    <td className="py-3.5 px-4 font-bold text-zinc-900">{desig.name}</td>
+                    <td className="py-3.5 px-4">
+                      <Badge variant="default" size="xs">
+                        Level {desig.level || 1}
+                      </Badge>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      ) : activeTab === 'working-days' ? (
-        /* 5. Working Days */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
-          <div className="flex items-center justify-between">
+        </Card>
+      ) : activeTab === 'working_days' ? (
+        /* ---------------------------------------------------- */
+        /* TAB 5: WORKING DAYS                                  */
+        /* ---------------------------------------------------- */
+        <Card>
+          <CardHeader className="justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Configured Working Days</h3>
-              <p className="text-xs text-slate-500">Weekly schedule used for attendance and payroll proration</p>
+              <CardTitle>Company Operating Schedule</CardTitle>
+              <CardDescription>Standard configured active working days for workforce shifts</CardDescription>
             </div>
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() => setShowWorkingDaysModal(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold"
             >
-              Configure
-            </button>
-          </div>
-          <div className="grid grid-cols-7 gap-2 pt-2">
-            {ALL_WEEKDAYS.map((day) => {
-              const active = workingDays.includes(day);
-              return (
-                <div
-                  key={day}
-                  className={`p-3 rounded-xl border text-center ${
-                    active ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-400'
-                  }`}
-                >
-                  <p className="text-xs font-bold">{day}</p>
-                  <p className="text-[10px] mt-1">{active ? 'Working' : 'Off'}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+              Configure Schedule
+            </Button>
+          </CardHeader>
+
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-2">
+              {ALL_WEEKDAYS.map((day) => {
+                const active = workingDays.includes(day);
+                return (
+                  <div
+                    key={day}
+                    className={`p-4 rounded-xl border text-center transition-all ${
+                      active
+                        ? 'bg-zinc-950 text-white border-zinc-950 shadow-xs'
+                        : 'bg-zinc-50 text-zinc-500 border-zinc-200'
+                    }`}
+                  >
+                    <p className="text-xs font-bold">{day}</p>
+                    <p className={`text-[11px] mt-1 font-semibold ${active ? 'text-zinc-200' : 'text-zinc-400'}`}>
+                      {active ? 'Working Day' : 'Weekly Off'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       ) : (
-        /* 6. Holidays */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Company Holidays ({holidays.length})</h3>
-            <button
+        /* ---------------------------------------------------- */
+        /* TAB 6: HOLIDAYS                                      */
+        /* ---------------------------------------------------- */
+        <Card>
+          <CardHeader className="justify-between">
+            <div>
+              <CardTitle>Company Holidays Calendar ({holidays.length})</CardTitle>
+              <CardDescription>Scheduled public, national, and company holidays</CardDescription>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={Plus}
               onClick={() => setShowHolidayModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Holiday</span>
-            </button>
-          </div>
+              Add Holiday
+            </Button>
+          </CardHeader>
+
           {holidays.length === 0 ? (
-            <div className="p-10 text-center text-xs text-slate-500">No holidays added yet. Click Add Holiday to create one.</div>
+            <div className="p-12 text-center text-xs text-zinc-500">
+              No holidays added yet. Click &ldquo;Add Holiday&rdquo; to create your first company holiday.
+            </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[450px] text-left text-xs border-collapse">
+              <table className="w-full min-w-[500px] text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
+                  <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-bold uppercase text-[11px] tracking-wider">
                     <th className="py-3 px-4">Holiday Name</th>
                     <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4">Type</th>
+                    <th className="py-3 px-4">Holiday Type</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-zinc-200">
                   {holidays.map((h) => (
-                    <tr key={h.id} className="hover:bg-slate-50">
-                      <td className="py-3 px-4 font-semibold text-slate-900">{h.name}</td>
-                      <td className="py-3 px-4 text-slate-600">{formatDate(h.date)}</td>
-                      <td className="py-3 px-4"><Badge variant="info">{h.type || 'PUBLIC'}</Badge></td>
+                    <tr key={h.id} className="hover:bg-zinc-50/80 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-zinc-900">{h.name}</td>
+                      <td className="py-3.5 px-4 text-zinc-700 font-mono font-medium">{formatDate(h.date)}</td>
+                      <td className="py-3.5 px-4">
+                        <Badge variant={h.type === 'PUBLIC' ? 'inverted' : 'default'} size="xs">
+                          {h.type || 'PUBLIC'}
+                        </Badge>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
-      {/* Edit Business Modal */}
-      <Modal isOpen={showBizEdit} onClose={() => setShowBizEdit(false)} title="Edit Business Profile">
-        <form onSubmit={handleSaveBusiness} className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Business Name *</label>
-            <input type="text" required value={bizForm.name} onChange={(e) => setBizForm({ ...bizForm, name: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
+      {/* ---------------------------------------------------- */}
+      {/* MODALS: Clean, Standardized Components               */}
+      {/* ---------------------------------------------------- */}
+
+      {/* Modal 1: Edit Business Profile */}
+      <Modal
+        isOpen={showBizEdit}
+        onClose={() => setShowBizEdit(false)}
+        title="Edit Business Profile"
+        subtitle="Update corporate name, contact information, and registered headquarters address"
+      >
+        <form onSubmit={handleSaveBusiness} className="space-y-4">
+          <Input
+            label="Legal Business Name"
+            required
+            value={bizForm.name}
+            onChange={(e) => setBizForm({ ...bizForm, name: e.target.value })}
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Corporate Email"
+              type="email"
+              value={bizForm.email}
+              onChange={(e) => setBizForm({ ...bizForm, email: e.target.value })}
+            />
+            <Input
+              label="Primary Phone"
+              type="tel"
+              value={bizForm.phone}
+              onChange={(e) => setBizForm({ ...bizForm, phone: e.target.value })}
+            />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Email</label>
-              <input type="email" value={bizForm.email} onChange={(e) => setBizForm({ ...bizForm, email: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Phone</label>
-              <input type="tel" value={bizForm.phone} onChange={(e) => setBizForm({ ...bizForm, phone: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-            </div>
+
+          <Input
+            label="Registered Physical Address"
+            value={bizForm.address}
+            onChange={(e) => setBizForm({ ...bizForm, address: e.target.value })}
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="City"
+              value={bizForm.city}
+              onChange={(e) => setBizForm({ ...bizForm, city: e.target.value })}
+            />
+            <Input
+              label="State / Province"
+              value={bizForm.state}
+              onChange={(e) => setBizForm({ ...bizForm, state: e.target.value })}
+            />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Address</label>
-            <input type="text" value={bizForm.address} onChange={(e) => setBizForm({ ...bizForm, address: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">City</label>
-              <input type="text" value={bizForm.city} onChange={(e) => setBizForm({ ...bizForm, city: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">State</label>
-              <input type="text" value={bizForm.state} onChange={(e) => setBizForm({ ...bizForm, state: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-            </div>
-          </div>
-          <div className="pt-3 flex justify-end gap-2">
-            <button type="button" onClick={() => setShowBizEdit(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{submitting ? 'Saving...' : 'Save Changes'}</button>
+
+          <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBizEdit(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={submitting}
+            >
+              Save Changes
+            </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Add / Edit Branch Modal */}
-      <Modal isOpen={showBranchModal} onClose={() => setShowBranchModal(false)} title={editingBranch ? 'Edit Branch' : 'Add Branch'}>
-        <form onSubmit={handleSaveBranch} className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Branch Name *</label>
-            <input type="text" required value={branchForm.name} onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
+      {/* Modal 2: Add / Edit Branch */}
+      <Modal
+        isOpen={showBranchModal}
+        onClose={() => setShowBranchModal(false)}
+        title={editingBranch ? 'Edit Branch' : 'Add Branch'}
+        subtitle="Configure location code, address, and geofence tracking radius"
+      >
+        <form onSubmit={handleSaveBranch} className="space-y-4">
+          <Input
+            label="Branch Name"
+            required
+            placeholder="e.g. Noida Tech Campus"
+            value={branchForm.name}
+            onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })}
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Branch Code"
+              required
+              placeholder="BR-01"
+              value={branchForm.code}
+              onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value.toUpperCase() })}
+            />
+            <Input
+              label="Geofence Radius (Meters)"
+              type="number"
+              value={branchForm.geofence_radius}
+              onChange={(e) => setBranchForm({ ...branchForm, geofence_radius: Number(e.target.value) })}
+            />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Branch Code *</label>
-              <input type="text" required value={branchForm.code} onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })} placeholder="BR-02" className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Geofence (m)</label>
-              <input type="number" value={branchForm.geofence_radius} onChange={(e) => setBranchForm({ ...branchForm, geofence_radius: Number(e.target.value) })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-            </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="City"
+              value={branchForm.city}
+              onChange={(e) => setBranchForm({ ...branchForm, city: e.target.value })}
+            />
+            <Input
+              label="State"
+              value={branchForm.state}
+              onChange={(e) => setBranchForm({ ...branchForm, state: e.target.value })}
+            />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">City</label>
-              <input type="text" value={branchForm.city} onChange={(e) => setBranchForm({ ...branchForm, city: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">State</label>
-              <input type="text" value={branchForm.state} onChange={(e) => setBranchForm({ ...branchForm, state: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-            </div>
-          </div>
-          <div className="pt-3 flex justify-end gap-2">
-            <button type="button" onClick={() => setShowBranchModal(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{submitting ? 'Saving...' : 'Save Branch'}</button>
+
+          <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBranchModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={submitting}
+            >
+              Save Branch
+            </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Branch Detail Modal (Edit, Employees, Attendance/Settings links) */}
-      <Modal isOpen={!!selectedBranch} onClose={() => setSelectedBranch(null)} title={`Branch Details — ${selectedBranch?.name || ''}`}>
+      {/* Modal 3: Branch Details Inspector */}
+      <Modal
+        isOpen={Boolean(selectedBranch)}
+        onClose={() => setSelectedBranch(null)}
+        title={`Branch Details — ${selectedBranch?.name || ''}`}
+      >
         {selectedBranch && (
           <div className="space-y-4 text-xs">
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-2.5 bg-slate-50 rounded-lg">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Code</p>
-                <p className="font-mono font-semibold text-slate-900 mt-0.5">{selectedBranch.code}</p>
+              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase">Code</span>
+                <p className="font-mono font-bold text-zinc-950 mt-1">{selectedBranch.code}</p>
               </div>
-              <div className="p-2.5 bg-slate-50 rounded-lg">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Geofence Radius</p>
-                <p className="font-semibold text-slate-900 mt-0.5">{selectedBranch.geofence_radius || 200}m</p>
+              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase">Geofence Radius</span>
+                <p className="font-bold text-zinc-950 mt-1">{selectedBranch.geofence_radius || 200}m</p>
               </div>
-              <div className="p-2.5 bg-slate-50 rounded-lg col-span-2">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Location</p>
-                <p className="font-semibold text-slate-900 mt-0.5">{[selectedBranch.address, selectedBranch.city, selectedBranch.state].filter(Boolean).join(', ') || '-'}</p>
+              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 col-span-2">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase">Location Address</span>
+                <p className="font-bold text-zinc-950 mt-1">
+                  {[selectedBranch.address, selectedBranch.city, selectedBranch.state].filter(Boolean).join(', ') || '-'}
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-              <button onClick={() => openEditBranch(selectedBranch)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Edit</button>
-              <button onClick={() => handleViewBranchEmployees(selectedBranch)} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold">Employees</button>
-              <Link to="/attendance" className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold">Attendance</Link>
-              <Link to="/settings" className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold">Settings</Link>
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-zinc-100">
+              <Button size="xs" variant="primary" onClick={() => openEditBranch(selectedBranch)}>
+                Edit Branch
+              </Button>
+              <Button size="xs" variant="secondary" onClick={() => handleViewBranchEmployees(selectedBranch)}>
+                View Employees
+              </Button>
+              <Link to="/attendance" className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-lg font-bold text-xs">
+                Attendance
+              </Link>
             </div>
 
             {showBranchEmployees && (
-              <div className="pt-3 border-t border-slate-100">
-                <p className="font-bold text-slate-800 mb-2">Branch Employee List ({branchEmployees.length})</p>
+              <div className="pt-3 border-t border-zinc-100">
+                <p className="font-bold text-zinc-900 mb-2">Branch Employee List ({branchEmployees.length})</p>
                 {branchEmployees.length === 0 ? (
-                  <p className="text-slate-500">No employees assigned to this branch.</p>
+                  <p className="text-zinc-500">No employees assigned to this branch.</p>
                 ) : (
-                  <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg">
+                  <div className="max-h-48 overflow-y-auto divide-y divide-zinc-200 border border-zinc-200 rounded-xl">
                     {branchEmployees.map((emp) => (
-                      <div key={emp.id} className="p-2 flex justify-between">
-                        <span className="font-medium text-slate-800">{emp.full_name || `${emp.first_name} ${emp.last_name}`}</span>
-                        <span className="font-mono text-slate-500">{emp.employee_code}</span>
+                      <div key={emp.id} className="p-2.5 flex justify-between items-center text-xs">
+                        <span className="font-bold text-zinc-900">{emp.full_name || `${emp.first_name} ${emp.last_name}`}</span>
+                        <span className="font-mono text-zinc-500 font-semibold">{emp.employee_code}</span>
                       </div>
                     ))}
                   </div>
@@ -727,35 +1012,54 @@ export const Organization = () => {
         )}
       </Modal>
 
-      {/* Add / Edit Department Modal */}
-      <Modal isOpen={showDeptModal} onClose={() => setShowDeptModal(false)} title={editingDept ? 'Edit Department' : 'Add Department'}>
-        <form onSubmit={handleSaveDept} className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Department Name *</label>
-            <input type="text" required value={deptForm.name} onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Code *</label>
-            <input type="text" required value={deptForm.code} onChange={(e) => setDeptForm({ ...deptForm, code: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-          </div>
-          <div className="pt-3 flex justify-end gap-2">
-            <button type="button" onClick={() => setShowDeptModal(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{submitting ? 'Saving...' : 'Save Department'}</button>
+      {/* Modal 4: Add / Edit Department */}
+      <Modal
+        isOpen={showDeptModal}
+        onClose={() => setShowDeptModal(false)}
+        title={editingDept ? 'Edit Department' : 'Add Department'}
+      >
+        <form onSubmit={handleSaveDept} className="space-y-4">
+          <Input
+            label="Department Name"
+            required
+            placeholder="e.g. Engineering & Technology"
+            value={deptForm.name}
+            onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
+          />
+          <Input
+            label="Department Code"
+            required
+            placeholder="ENG"
+            value={deptForm.code}
+            onChange={(e) => setDeptForm({ ...deptForm, code: e.target.value.toUpperCase() })}
+          />
+
+          <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-2.5">
+            <Button variant="outline" size="sm" onClick={() => setShowDeptModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="sm" isLoading={submitting}>
+              Save Department
+            </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Department Assigned Users Modal */}
-      <Modal isOpen={!!deptUsersModal} onClose={() => setDeptUsersModal(null)} title={`Assigned Users — ${deptUsersModal?.name || ''}`}>
+      {/* Modal 5: Department Assigned Users */}
+      <Modal
+        isOpen={Boolean(deptUsersModal)}
+        onClose={() => setDeptUsersModal(null)}
+        title={`Assigned Users — ${deptUsersModal?.name || ''}`}
+      >
         <div className="text-xs">
           {deptUsers.length === 0 ? (
-            <p className="text-slate-500">No users assigned to this department.</p>
+            <p className="text-zinc-500">No users assigned to this department.</p>
           ) : (
-            <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg">
+            <div className="max-h-60 overflow-y-auto divide-y divide-zinc-200 border border-zinc-200 rounded-xl">
               {deptUsers.map((u) => (
-                <div key={u.id} className="p-2.5 flex justify-between">
-                  <span className="font-semibold text-slate-900">{u.full_name || `${u.first_name} ${u.last_name}`}</span>
-                  <span className="text-slate-500">{u.email}</span>
+                <div key={u.id} className="p-3 flex justify-between items-center">
+                  <span className="font-bold text-zinc-900">{u.full_name || `${u.first_name} ${u.last_name}`}</span>
+                  <span className="text-zinc-500 font-medium">{u.email}</span>
                 </div>
               ))}
             </div>
@@ -763,28 +1067,48 @@ export const Organization = () => {
         </div>
       </Modal>
 
-      {/* Add Designation Modal */}
-      <Modal isOpen={showDesigModal} onClose={() => setShowDesigModal(false)} title="Add Designation">
-        <form onSubmit={handleSaveDesig} className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Designation Name *</label>
-            <input type="text" required value={desigForm.name} onChange={(e) => setDesigForm({ ...desigForm, name: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Level</label>
-            <input type="number" min={1} max={10} value={desigForm.level} onChange={(e) => setDesigForm({ ...desigForm, level: Number(e.target.value) })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-          </div>
-          <div className="pt-3 flex justify-end gap-2">
-            <button type="button" onClick={() => setShowDesigModal(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{submitting ? 'Saving...' : 'Save Designation'}</button>
+      {/* Modal 6: Add Designation */}
+      <Modal
+        isOpen={showDesigModal}
+        onClose={() => setShowDesigModal(false)}
+        title="Add Designation"
+      >
+        <form onSubmit={handleSaveDesig} className="space-y-4">
+          <Input
+            label="Designation Name"
+            required
+            placeholder="e.g. Senior Full-Stack Engineer"
+            value={desigForm.name}
+            onChange={(e) => setDesigForm({ ...desigForm, name: e.target.value })}
+          />
+          <Input
+            label="Seniority Level (1-10)"
+            type="number"
+            min={1}
+            max={10}
+            value={desigForm.level}
+            onChange={(e) => setDesigForm({ ...desigForm, level: Number(e.target.value) })}
+          />
+
+          <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-2.5">
+            <Button variant="outline" size="sm" onClick={() => setShowDesigModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="sm" isLoading={submitting}>
+              Save Designation
+            </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Configure Working Days Modal */}
-      <Modal isOpen={showWorkingDaysModal} onClose={() => setShowWorkingDaysModal(false)} title="Configure Working Days">
+      {/* Modal 7: Configure Working Days */}
+      <Modal
+        isOpen={showWorkingDaysModal}
+        onClose={() => setShowWorkingDaysModal(false)}
+        title="Configure Working Days"
+      >
         <form onSubmit={handleSaveWorkingDays} className="space-y-4">
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {ALL_WEEKDAYS.map((day) => {
               const selected = workingDays.includes(day);
               return (
@@ -792,8 +1116,10 @@ export const Organization = () => {
                   type="button"
                   key={day}
                   onClick={() => toggleDay(day)}
-                  className={`py-2 rounded-lg text-xs font-bold border ${
-                    selected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                    selected
+                      ? 'bg-zinc-950 text-white border-zinc-950 shadow-xs'
+                      : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100'
                   }`}
                 >
                   {day}
@@ -801,40 +1127,64 @@ export const Organization = () => {
               );
             })}
           </div>
-          <div className="pt-3 flex justify-end gap-2">
-            <button type="button" onClick={() => setShowWorkingDaysModal(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{submitting ? 'Saving...' : 'Save Working Days'}</button>
+
+          <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-2.5">
+            <Button variant="outline" size="sm" onClick={() => setShowWorkingDaysModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="sm" isLoading={submitting}>
+              Save Working Days
+            </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Add Holiday Modal */}
-      <Modal isOpen={showHolidayModal} onClose={() => setShowHolidayModal(false)} title="Add Company Holiday">
-        <form onSubmit={handleSaveHoliday} className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Holiday Name *</label>
-            <input type="text" required value={holidayForm.name} onChange={(e) => setHolidayForm({ ...holidayForm, name: e.target.value })} placeholder="e.g. Republic Day" className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Date *</label>
-              <input type="date" required value={holidayForm.date} onChange={(e) => setHolidayForm({ ...holidayForm, date: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Type</label>
-              <select value={holidayForm.type} onChange={(e) => setHolidayForm({ ...holidayForm, type: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white">
-                <option value="PUBLIC">Public Holiday</option>
-                <option value="OPTIONAL">Optional Holiday</option>
-                <option value="COMPANY">Company Holiday</option>
-              </select>
-            </div>
-          </div>
-          <div className="pt-3 flex justify-end gap-2">
-            <button type="button" onClick={() => setShowHolidayModal(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{submitting ? 'Saving...' : 'Save Holiday'}</button>
+      {/* Modal 8: Add Holiday */}
+      <Modal
+        isOpen={showHolidayModal}
+        onClose={() => setShowHolidayModal(false)}
+        title="Add Company Holiday"
+      >
+        <form onSubmit={handleSaveHoliday} className="space-y-4">
+          <Input
+            label="Holiday Name"
+            required
+            placeholder="e.g. Republic Day"
+            value={holidayForm.name}
+            onChange={(e) => setHolidayForm({ ...holidayForm, name: e.target.value })}
+          />
+
+          <Input
+            label="Holiday Date"
+            type="date"
+            required
+            value={holidayForm.date}
+            onChange={(e) => setHolidayForm({ ...holidayForm, date: e.target.value })}
+          />
+
+          <Select
+            label="Holiday Type"
+            value={holidayForm.type}
+            onChange={(e) => setHolidayForm({ ...holidayForm, type: e.target.value })}
+            options={[
+              { value: 'PUBLIC', label: 'Public Holiday' },
+              { value: 'OPTIONAL', label: 'Optional Holiday' },
+              { value: 'COMPANY', label: 'Company Holiday' },
+            ]}
+          />
+
+          <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-2.5">
+            <Button variant="outline" size="sm" onClick={() => setShowHolidayModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="sm" isLoading={submitting}>
+              Save Holiday
+            </Button>
           </div>
         </form>
       </Modal>
     </div>
   );
 };
+
+export default Organization;

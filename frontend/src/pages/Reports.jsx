@@ -40,14 +40,14 @@ export const Reports = () => {
         <div className="flex gap-2">
           <button
             onClick={() => alert('Exporting complete Excel workforce & payroll register...')}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-800 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-zinc-700" />
+            <FileSpreadsheet className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
             <span>Export Excel</span>
           </button>
           <button
             onClick={() => alert('Generating compliance audit PDF summary...')}
-            className="flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Export PDF</span>
@@ -61,35 +61,37 @@ export const Reports = () => {
         <>
           {/* Metrics Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Total Headcount</span>
-              <p className="text-3xl font-extrabold text-slate-900">{report?.total_employees || 22}</p>
-              <p className="text-xs text-slate-500">Across 3 branches & 5 departments</p>
+            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-2">
+              <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Total Headcount</span>
+              <p className="text-3xl font-extrabold text-zinc-950 dark:text-zinc-50">{report?.total_employees || 22}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Across 3 branches &amp; 5 departments</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Monthly Payroll Disbursal</span>
-              <p className="text-3xl font-extrabold text-emerald-600">
+            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-2">
+              <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Monthly Payroll Disbursal</span>
+              <p className="text-3xl font-extrabold text-zinc-950 dark:text-zinc-50">
                 {formatINR(report?.financials?.monthly_payroll_total || 1145000)}
               </p>
-              <p className="text-xs text-slate-500">Net salary disbursed for active cycle</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Net salary disbursed for active cycle</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Current Month Expenses</span>
-              <p className="text-3xl font-extrabold text-indigo-600">
+            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-2">
+              <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Current Month Expenses</span>
+              <p className="text-3xl font-extrabold text-zinc-950 dark:text-zinc-50">
                 {formatINR(report?.financials?.monthly_expenses_total || 14500)}
               </p>
-              <p className="text-xs text-slate-500">Recorded across petty cash vouchers</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Recorded across petty cash vouchers</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <ShieldCheck className="w-6 h-6 text-emerald-600" />
+              <div className="p-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900">Compliance & Regulatory Audit Pass</h4>
-                <p className="text-xs text-slate-500">
+                <h4 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">Compliance &amp; Regulatory Audit Pass</h4>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   All numbers displayed across this dashboard originate from verified PostgreSQL relational queries.
                 </p>
               </div>

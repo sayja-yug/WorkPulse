@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -114,8 +115,9 @@ const RoleRoute = ({ children, allowedRoles, moduleName }) => {
 export const App = () => {
   return (
     <BrowserRouter>
-      <NotificationProvider>
-        <AuthProvider>
+      <ThemeProvider>
+        <NotificationProvider>
+          <AuthProvider>
           <Routes>
           <Route path="/login" element={<Login />} />
           <Route
@@ -246,6 +248,7 @@ export const App = () => {
         </Routes>
       </AuthProvider>
     </NotificationProvider>
-  </BrowserRouter>
+  </ThemeProvider>
+</BrowserRouter>
   );
 };

@@ -102,9 +102,9 @@ export const NotificationProvider = ({ children }) => {
     });
   }, []);
 
-  const handlePromptClose = (submitted) => {
+  const handlePromptClose = (confirmed) => {
     if (promptResolveRef.current) {
-      promptResolveRef.current(submitted ? promptValue : null);
+      promptResolveRef.current(confirmed ? promptValue : null);
       promptResolveRef.current = null;
     }
     setPromptDialog(null);
@@ -137,14 +137,26 @@ export const NotificationProvider = ({ children }) => {
     setAlertDialog(null);
   };
 
-  // Window bridge so any legacy or third-party call gets caught smoothly
+  // ESC closes dialogs
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (confirmDialog) handleConfirmClose(false);
+        if (promptDialog) handlePromptClose(false);
+        if (alertDialog) handleAlertClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [confirmDialog, promptDialog, alertDialog]);
+
+  // Window bridge for native alert replacement
   useEffect(() => {
     window.workpulseToast = toast;
     window.workpulseConfirm = confirm;
     window.workpulsePrompt = prompt;
     window.workpulseAlert = alertModal;
 
-    // Graceful native alert replacement to avoid "localhost:5173 says"
     const originalAlert = window.alert;
     window.alert = (msg) => {
       if (typeof msg === 'string') {
@@ -180,7 +192,7 @@ export const NotificationProvider = ({ children }) => {
     >
       {children}
 
-      {/* Floating Modern Toasts Container */}
+      {/* Floating Modern Monochrome Toasts Container */}
       <div className="fixed top-4 right-4 left-4 sm:left-auto sm:top-5 sm:right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-auto sm:w-full pointer-events-none">
         {toasts.map((t) => {
           const isSuccess = t.type === 'success';
@@ -190,35 +202,44 @@ export const NotificationProvider = ({ children }) => {
           return (
             <div
               key={t.id}
-              className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-xl border backdrop-blur-md transition-all duration-300 animate-in slide-in-from-top-3 fade-in ${
-                isSuccess
-                  ? 'bg-emerald-950/90 text-emerald-100 border-emerald-800/80 shadow-emerald-950/30'
-                  : isError
-                  ? 'bg-rose-950/90 text-rose-100 border-rose-800/80 shadow-rose-950/30'
-                  : isWarning
-                  ? 'bg-amber-950/90 text-amber-100 border-amber-800/80 shadow-amber-950/30'
-                  : 'bg-slate-900/90 text-slate-100 border-slate-700/80 shadow-slate-950/30'
-              }`}
+              className="pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-elevated border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-900 dark:text-zinc-100 backdrop-blur-md transition-all duration-200 animate-in slide-in-from-top-3 fade-in"
             >
               <div className="shrink-0 mt-0.5">
-                {isSuccess && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-                {isError && <AlertCircle className="w-5 h-5 text-rose-400" />}
-                {isWarning && <AlertTriangle className="w-5 h-5 text-amber-400" />}
-                {!isSuccess && !isError && !isWarning && <Info className="w-5 h-5 text-indigo-400" />}
+                {isSuccess && (
+                  <div className="w-5 h-5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </div>
+                )}
+                {isError && (
+                  <div className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                  </div>
+                )}
+                {isWarning && (
+                  <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                  </div>
+                )}
+                {!isSuccess && !isError && !isWarning && (
+                  <div className="w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
+                    <Info className="w-3.5 h-3.5" />
+                  </div>
+                )}
               </div>
 
               <div className="flex-1 min-w-0">
                 {t.title && (
-                  <h4 className="text-xs font-bold tracking-wide uppercase opacity-90 mb-0.5">
+                  <h4 className="text-xs font-bold tracking-tight uppercase text-zinc-950 dark:text-white mb-0.5">
                     {t.title}
                   </h4>
                 )}
-                <p className="text-xs font-medium leading-relaxed break-words">{t.message}</p>
+                <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300 leading-relaxed break-words">{t.message}</p>
               </div>
 
               <button
                 onClick={() => removeToast(t.id)}
-                className="shrink-0 p-1 text-slate-400 hover:text-white rounded-md transition-colors"
+                className="shrink-0 p-1 text-zinc-400 hover:text-zinc-950 dark:hover:text-white rounded-md transition-colors cursor-pointer"
+                aria-label="Dismiss toast"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -229,55 +250,43 @@ export const NotificationProvider = ({ children }) => {
 
       {/* Modern Confirmation Dialog Modal */}
       {confirmDialog && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-modal border border-zinc-200 dark:border-zinc-800 max-w-md w-full p-6 animate-in zoom-in-95 duration-150">
             <div className="flex items-start gap-4">
               <div
-                className={`p-3 rounded-2xl shrink-0 ${
-                  confirmDialog.type === 'danger'
-                    ? 'bg-rose-50 text-rose-600'
-                    : confirmDialog.type === 'warning'
-                    ? 'bg-amber-50 text-amber-600'
-                    : 'bg-zinc-100 text-zinc-900'
-                }`}
+                className="p-3 rounded-xl shrink-0 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700"
               >
                 {confirmDialog.type === 'danger' ? (
-                  <Trash2 className="w-6 h-6" />
+                  <Trash2 className="w-5 h-5" />
                 ) : confirmDialog.type === 'warning' ? (
-                  <AlertTriangle className="w-6 h-6" />
+                  <AlertTriangle className="w-5 h-5" />
                 ) : (
-                  <HelpCircle className="w-6 h-6" />
+                  <HelpCircle className="w-5 h-5" />
                 )}
               </div>
 
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-zinc-950 tracking-tight">
+                <h3 className="text-sm sm:text-base font-bold text-zinc-950 dark:text-white tracking-tight">
                   {confirmDialog.title}
                 </h3>
-                <p className="text-xs text-zinc-600 mt-2 leading-relaxed">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
                   {confirmDialog.message}
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
+            <div className="mt-6 flex items-center justify-end gap-2.5 pt-4 border-t border-zinc-100 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={() => handleConfirmClose(false)}
-                className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-200 rounded-xl transition-colors cursor-pointer"
+                className="px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors cursor-pointer"
               >
                 {confirmDialog.cancelText}
               </button>
               <button
                 type="button"
                 onClick={() => handleConfirmClose(true)}
-                className={`px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-colors cursor-pointer ${
-                  confirmDialog.type === 'danger'
-                    ? 'bg-rose-600 hover:bg-rose-700'
-                    : confirmDialog.type === 'warning'
-                    ? 'bg-amber-600 hover:bg-amber-700'
-                    : 'bg-zinc-950 hover:bg-black'
-                }`}
+                className="px-4 py-2 text-xs font-bold bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-950 rounded-lg shadow-2xs transition-colors cursor-pointer"
               >
                 {confirmDialog.confirmText}
               </button>
@@ -288,18 +297,18 @@ export const NotificationProvider = ({ children }) => {
 
       {/* Modern Prompt Input Dialog Modal */}
       {promptDialog && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handlePromptClose(true);
             }}
-            className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 animate-in zoom-in-95 duration-150"
+            className="bg-white dark:bg-zinc-900 rounded-2xl shadow-modal border border-zinc-200 dark:border-zinc-800 max-w-md w-full p-6 animate-in zoom-in-95 duration-150"
           >
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">
+            <h3 className="text-sm sm:text-base font-bold text-zinc-950 dark:text-white tracking-tight">
               {promptDialog.title}
             </h3>
-            <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
               {promptDialog.message}
             </p>
 
@@ -310,22 +319,22 @@ export const NotificationProvider = ({ children }) => {
                 value={promptValue}
                 onChange={(e) => setPromptValue(e.target.value)}
                 placeholder={promptDialog.placeholder}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 text-base sm:text-xs border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white"
                 autoFocus
               />
             </div>
 
-            <div className="mt-5 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="mt-5 flex items-center justify-end gap-2.5 pt-4 border-t border-zinc-100 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={() => handlePromptClose(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                className="px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors cursor-pointer"
               >
                 {promptDialog.cancelText}
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-bold text-white dark:text-zinc-950 bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 rounded-lg shadow-2xs transition-colors cursor-pointer"
               >
                 {promptDialog.confirmText}
               </button>
@@ -336,22 +345,22 @@ export const NotificationProvider = ({ children }) => {
 
       {/* Modern Alert Modal */}
       {alertDialog && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full p-6 text-center animate-in zoom-in-95 duration-150">
-            <div className="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-indigo-50 text-indigo-600">
-              <Info className="w-6 h-6" />
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-modal border border-zinc-200 dark:border-zinc-800 max-w-sm w-full p-6 text-center animate-in zoom-in-95 duration-150">
+            <div className="mx-auto w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700">
+              <Info className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">
+            <h3 className="text-sm sm:text-base font-bold text-zinc-950 dark:text-white tracking-tight">
               {alertDialog.title}
             </h3>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
               {alertDialog.message}
             </p>
-            <div className="mt-6 pt-4 border-t border-slate-100">
+            <div className="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={handleAlertClose}
-                className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+                className="w-full py-2 px-4 bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-2xs transition-colors cursor-pointer"
               >
                 {alertDialog.buttonText}
               </button>
@@ -370,4 +379,7 @@ export const useNotification = () => {
   }
   return context;
 };
+
+export const useNotifications = useNotification;
+export default NotificationContext;
 

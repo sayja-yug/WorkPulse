@@ -479,12 +479,12 @@ export const Employees = () => {
         </div>
       </div>
 
-      {/* Search & 4 Core Filters (Image 2) */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+      {/* Search & 4 Core Filters */}
+      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* 1. Search Employee */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5 pointer-events-none" />
             <input
               type="text"
               placeholder="Search employee, ID, phone..."
@@ -493,13 +493,13 @@ export const Employees = () => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none"
+              className="w-full pl-9 pr-8 py-2 text-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
               >
                 ✕
               </button>
@@ -513,7 +513,7 @@ export const Employees = () => {
               setBranchFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600"
+            className="px-3 py-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
           >
             <option value="">Filter by Branch (All)</option>
             {branches.map((b) => (
@@ -530,7 +530,7 @@ export const Employees = () => {
               setDeptFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600"
+            className="px-3 py-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
           >
             <option value="">Filter by Department (All)</option>
             {departments.map((d) => (
@@ -547,7 +547,7 @@ export const Employees = () => {
               setDesigFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600"
+            className="px-3 py-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
           >
             <option value="">Filter by Designation (All)</option>
             {designations.map((g) => (
@@ -564,7 +564,7 @@ export const Employees = () => {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600"
+            className="px-3 py-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
           >
             <option value="">Filter by Status (All)</option>
             <option value="ACTIVE">Active</option>
@@ -576,40 +576,40 @@ export const Employees = () => {
 
         {/* Active Filter Indicators */}
         {hasActiveFilters && (
-          <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-slate-500 text-[11px] font-semibold flex items-center gap-1">
-                <Filter className="w-3 h-3 text-indigo-600" />
+              <span className="text-zinc-500 dark:text-zinc-400 text-[11px] font-semibold flex items-center gap-1">
+                <Filter className="w-3 h-3 text-zinc-700 dark:text-zinc-300" />
                 Active Filters:
               </span>
               {search && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
                   Search: "{search}"
-                  <button onClick={() => setSearch('')} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                  <button onClick={() => setSearch('')} className="hover:text-zinc-950 dark:hover:text-white font-bold ml-0.5">×</button>
                 </span>
               )}
               {branchFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-50 text-indigo-700">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
                   Branch: {branches.find((b) => b.id === branchFilter)?.name || 'Selected'}
-                  <button onClick={() => setBranchFilter('')} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                  <button onClick={() => setBranchFilter('')} className="hover:text-zinc-950 dark:hover:text-white font-bold ml-0.5">×</button>
                 </span>
               )}
               {deptFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
                   Department: {departments.find((d) => d.id === deptFilter)?.name || 'Selected'}
-                  <button onClick={() => setDeptFilter('')} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                  <button onClick={() => setDeptFilter('')} className="hover:text-zinc-950 dark:hover:text-white font-bold ml-0.5">×</button>
                 </span>
               )}
               {desigFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-50 text-purple-700">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
                   Designation: {designations.find((g) => g.id === desigFilter)?.name || 'Selected'}
-                  <button onClick={() => setDesigFilter('')} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                  <button onClick={() => setDesigFilter('')} className="hover:text-zinc-950 dark:hover:text-white font-bold ml-0.5">×</button>
                 </span>
               )}
               {statusFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
                   Status: {statusFilter}
-                  <button onClick={() => setStatusFilter('')} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                  <button onClick={() => setStatusFilter('')} className="hover:text-zinc-950 dark:hover:text-white font-bold ml-0.5">×</button>
                 </span>
               )}
             </div>
@@ -617,7 +617,7 @@ export const Employees = () => {
             <button
               type="button"
               onClick={resetFilters}
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
+              className="text-xs text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white font-semibold flex items-center gap-1"
             >
               <RotateCcw className="w-3 h-3" />
               Reset Filters
@@ -626,19 +626,19 @@ export const Employees = () => {
         )}
       </div>
 
-      {/* Employee Table (Image 3) */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Employee Table */}
+      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
         {loading ? (
           <Loader message="Loading workforce directory..." />
         ) : employees.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs space-y-2">
-            <Users className="w-8 h-8 text-slate-300 mx-auto" />
-            <p className="font-semibold text-slate-700">No employees found matching your filter criteria.</p>
+          <div className="p-12 text-center text-zinc-500 dark:text-zinc-400 text-xs space-y-2">
+            <Users className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto" />
+            <p className="font-semibold text-zinc-700 dark:text-zinc-300">No employees found matching your filter criteria.</p>
             {hasActiveFilters && (
               <button
                 type="button"
                 onClick={resetFilters}
-                className="text-indigo-600 hover:underline font-semibold text-xs"
+                className="text-zinc-900 dark:text-zinc-100 hover:underline font-semibold text-xs"
               >
                 Clear all filters to see everyone
               </button>
@@ -648,7 +648,7 @@ export const Employees = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[850px] text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
+                <tr className="bg-zinc-100/70 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Employee ID</th>
                   <th className="py-3 px-4">Name</th>
                   <th className="py-3 px-4">Branch</th>
@@ -659,14 +659,14 @@ export const Employees = () => {
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
                 {employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/60 transition-colors">
+                  <tr key={emp.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
                     {/* 1. Employee ID: Click to open profile */}
                     <td className="py-3 px-4">
                       <Link
                         to={`/employees/${emp.id}`}
-                        className="font-mono text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-xs"
+                        className="font-mono text-zinc-900 dark:text-zinc-100 hover:underline font-bold text-xs"
                         title="Click to open employee profile"
                       >
                         {emp.employee_code || '-'}
@@ -680,15 +680,15 @@ export const Employees = () => {
                         className="flex items-center gap-2.5 group"
                         title="Click to open employee profile"
                       >
-                        <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-xs uppercase flex-shrink-0 group-hover:bg-indigo-100 transition-colors">
+                        <div className="w-8 h-8 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex items-center justify-center font-bold text-xs uppercase flex-shrink-0 group-hover:opacity-80 transition-opacity">
                           {emp.first_name?.[0] || 'E'}
                           {emp.last_name?.[0] || ''}
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-900 group-hover:text-indigo-600 leading-tight">
+                          <p className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:underline leading-tight">
                             {emp.first_name} {emp.last_name}
                           </p>
-                          <p className="text-[11px] text-slate-500">{emp.designation_name || 'Staff'}</p>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">{emp.designation_name || 'Staff'}</p>
                         </div>
                       </Link>
                     </td>
@@ -709,11 +709,11 @@ export const Employees = () => {
                             }
                           }
                         }}
-                        className="text-slate-700 hover:text-indigo-600 font-medium text-left inline-flex items-center gap-1 group"
+                        className="text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white font-medium text-left inline-flex items-center gap-1 group"
                         title="Click to filter directory by this branch"
                       >
                         <span>{emp.branch_name || 'Corporate Campus (HQ)'}</span>
-                        <Filter className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 text-indigo-500 transition-opacity" />
+                        <Filter className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 text-zinc-500 transition-opacity" />
                       </button>
                     </td>
 
@@ -733,11 +733,11 @@ export const Employees = () => {
                             }
                           }
                         }}
-                        className="text-slate-600 hover:text-indigo-600 text-left inline-flex items-center gap-1 group"
+                        className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white text-left inline-flex items-center gap-1 group"
                         title="Click to filter directory by this department"
                       >
                         <span>{emp.department_name || 'General Operations'}</span>
-                        <Filter className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 text-indigo-500 transition-opacity" />
+                        <Filter className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 text-zinc-500 transition-opacity" />
                       </button>
                     </td>
 
@@ -746,17 +746,17 @@ export const Employees = () => {
                       <button
                         type="button"
                         onClick={() => setContactModalEmp(emp)}
-                        className="text-left group flex items-center gap-1.5 hover:text-indigo-600"
+                        className="text-left group flex items-center gap-1.5 hover:text-black dark:hover:text-white"
                         title="Click to view contact card"
                       >
-                        <div className="w-6 h-6 rounded bg-slate-100 group-hover:bg-indigo-50 flex items-center justify-center text-slate-500 group-hover:text-indigo-600">
+                        <div className="w-6 h-6 rounded bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
                           <Phone className="w-3 h-3" />
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-800 group-hover:text-indigo-600 leading-none">
+                          <p className="font-semibold text-zinc-800 dark:text-zinc-200 group-hover:underline leading-none">
                             {emp.phone || 'No Phone'}
                           </p>
-                          <p className="text-[10px] text-slate-400 group-hover:text-slate-500 mt-0.5">
+                          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">
                             View Contact
                           </p>
                         </div>
@@ -764,35 +764,35 @@ export const Employees = () => {
                     </td>
 
                     {/* 6. Joining Date: View details */}
-                    <td className="py-3 px-4 text-slate-600">
+                    <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400">
                       <Link
                         to={`/employees/${emp.id}`}
-                        className="hover:text-indigo-600 hover:underline font-medium"
+                        className="hover:text-black dark:hover:text-white hover:underline font-medium"
                         title="Click to view employment details"
                       >
                         {formatDate(emp.joining_date)}
                       </Link>
                     </td>
 
-                    {/* 7. Status: Active on Punch In, Inactive on Punch Out (Read-only Indicator) */}
+                    {/* 7. Status: Read-only Non-Clickable Duty Status Indicator */}
                     <td className="py-3 px-4">
                       {(() => {
                         const isLiveActive = emp.duty_status ? emp.duty_status === 'ACTIVE' : emp.status === 'ACTIVE';
                         return (
                           <div
-                            className="inline-flex items-center gap-1.5 cursor-default select-none text-left"
+                            className="inline-flex items-center gap-1.5 cursor-default select-none pointer-events-none text-left"
                             title={`Duty Status: ${isLiveActive ? 'ACTIVE (Clocked In)' : 'INACTIVE (Off Duty / Punched Out)'}`}
                           >
                             <span
                               className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide border ${
                                 isLiveActive
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                  : 'bg-zinc-100 text-zinc-600 border-zinc-200'
+                                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
+                                  : 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
                               }`}
                             >
                               <span
                                 className={`w-1.5 h-1.5 rounded-full ${
-                                  isLiveActive ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'
+                                  isLiveActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-400'
                                 }`}
                               />
                               <span>{isLiveActive ? 'ACTIVE' : 'INACTIVE'}</span>
@@ -808,7 +808,7 @@ export const Employees = () => {
                         {/* View Action */}
                         <Link
                           to={`/employees/${emp.id}`}
-                          className="px-2.5 py-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                          className="px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
                           title="View Employee Profile"
                         >
                           View
@@ -818,7 +818,7 @@ export const Employees = () => {
                         <button
                           type="button"
                           onClick={() => openEditModal(emp)}
-                          className="px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
+                          className="px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
                           title="Edit Employee Information"
                         >
                           Edit
@@ -829,29 +829,29 @@ export const Employees = () => {
                           <button
                             type="button"
                             onClick={() => setActiveMenuId(activeMenuId === emp.id ? null : emp.id)}
-                            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded"
+                            className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded"
                             title="More actions"
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </button>
 
                           {activeMenuId === emp.id && (
-                            <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
+                            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg z-30 py-1 text-xs">
                               <Link
                                 to={`/employees/${emp.id}`}
-                                className="flex items-center gap-2 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+                                className="flex items-center gap-2 px-3 py-1.5 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                                 onClick={() => setActiveMenuId(null)}
                               >
-                                <User className="w-3.5 h-3.5 text-slate-400" />
+                                <User className="w-3.5 h-3.5 text-zinc-400" />
                                 <span>View Full Profile</span>
                               </Link>
 
                               <button
                                 type="button"
                                 onClick={() => openEditModal(emp)}
-                                className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+                                className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                               >
-                                <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                                <Edit2 className="w-3.5 h-3.5 text-zinc-400" />
                                 <span>Edit Employee</span>
                               </button>
 
@@ -861,9 +861,9 @@ export const Employees = () => {
                                   setContactModalEmp(emp);
                                   setActiveMenuId(null);
                                 }}
-                                className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+                                className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                               >
-                                <Phone className="w-3.5 h-3.5 text-slate-400" />
+                                <Phone className="w-3.5 h-3.5 text-zinc-400" />
                                 <span>View Contact Info</span>
                               </button>
 
@@ -873,13 +873,13 @@ export const Employees = () => {
                                   copyToClipboard(emp.employee_code || '', emp.id);
                                   setActiveMenuId(null);
                                 }}
-                                className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+                                className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                               >
-                                <Copy className="w-3.5 h-3.5 text-slate-400" />
+                                <Copy className="w-3.5 h-3.5 text-zinc-400" />
                                 <span>{copiedItem === emp.id ? 'Copied!' : 'Copy Employee ID'}</span>
                               </button>
 
-                              <div className="border-t border-slate-100 my-1"></div>
+                              <div className="border-t border-zinc-100 dark:border-zinc-800 my-1"></div>
 
                               <button
                                 type="button"
@@ -887,16 +887,16 @@ export const Employees = () => {
                                   setActiveMenuId(null);
                                   handleToggleStatus(emp);
                                 }}
-                                className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-amber-600 hover:bg-amber-50"
+                                className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                               >
                                 {emp.status === 'ACTIVE' ? (
                                   <>
-                                    <XCircle className="w-3.5 h-3.5" />
+                                    <XCircle className="w-3.5 h-3.5 text-zinc-500" />
                                     <span>Deactivate Employee</span>
                                   </>
                                 ) : (
                                   <>
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
                                     <span>Activate Employee</span>
                                   </>
                                 )}
@@ -904,16 +904,16 @@ export const Employees = () => {
 
                               {isOwner && (
                                 <>
-                                  <div className="border-t border-slate-100 my-1"></div>
+                                  <div className="border-t border-zinc-100 dark:border-zinc-800 my-1"></div>
                                   <button
                                     type="button"
                                     onClick={() => {
                                       setActiveMenuId(null);
                                       handleDeleteEmployee(emp);
                                     }}
-                                    className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-rose-600 hover:bg-rose-50 font-semibold"
+                                    className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                    <Trash2 className="w-3.5 h-3.5 text-zinc-500" />
                                     <span>Remove Employee</span>
                                   </button>
                                 </>
@@ -930,15 +930,15 @@ export const Employees = () => {
           </div>
         )}
 
-        {/* 10. Pagination (Image 2) */}
-        <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+        {/* 10. Pagination */}
+        <div className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-600 dark:text-zinc-400">
           <div className="flex items-center gap-2">
             <span>
-              Showing Page <strong className="text-slate-900">{page}</strong> of{' '}
-              <strong className="text-slate-900">{Math.max(1, Math.ceil(totalCount / 20))}</strong>
+              Showing Page <strong className="text-zinc-900 dark:text-zinc-100">{page}</strong> of{' '}
+              <strong className="text-zinc-900 dark:text-zinc-100">{Math.max(1, Math.ceil(totalCount / 20))}</strong>
             </span>
-            <span className="text-slate-300">•</span>
-            <span>Total <strong>{totalCount}</strong> registered employees</span>
+            <span className="text-zinc-300 dark:text-zinc-700">•</span>
+            <span>Total <strong className="text-zinc-900 dark:text-zinc-100">{totalCount}</strong> registered employees</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -946,19 +946,19 @@ export const Employees = () => {
               type="button"
               disabled={!hasPrev || page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="flex items-center gap-1 px-3 py-1.5 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 disabled:opacity-40 font-semibold text-slate-700"
+              className="flex items-center gap-1 px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 font-semibold text-zinc-700 dark:text-zinc-300"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>Previous</span>
             </button>
-            <span className="px-2 py-1 font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg">
+            <span className="px-2.5 py-1 font-bold text-white dark:text-zinc-950 bg-zinc-950 dark:bg-zinc-100 rounded-lg">
               {page}
             </span>
             <button
               type="button"
               disabled={!hasNext}
               onClick={() => setPage((p) => p + 1)}
-              className="flex items-center gap-1 px-3 py-1.5 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 disabled:opacity-40 font-semibold text-slate-700"
+              className="flex items-center gap-1 px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 font-semibold text-zinc-700 dark:text-zinc-300"
             >
               <span>Next</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -975,32 +975,32 @@ export const Employees = () => {
       >
         {contactModalEmp && (
           <div className="space-y-4 text-xs">
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-base uppercase">
+            <div className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700">
+              <div className="w-12 h-12 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex items-center justify-center font-bold text-base uppercase">
                 {contactModalEmp.first_name?.[0] || 'E'}
                 {contactModalEmp.last_name?.[0] || ''}
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-900">
+                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                   {contactModalEmp.first_name} {contactModalEmp.last_name}
                 </p>
-                <p className="text-xs text-indigo-600 font-semibold">{contactModalEmp.designation_name || 'Staff'}</p>
-                <p className="text-[11px] text-slate-400 font-mono">{contactModalEmp.employee_code}</p>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold">{contactModalEmp.designation_name || 'Staff'}</p>
+                <p className="text-[11px] text-zinc-400 font-mono">{contactModalEmp.employee_code}</p>
               </div>
             </div>
 
             <div className="space-y-2.5">
               {/* Direct Phone */}
-              <div className="flex items-center justify-between p-2.5 border border-slate-200 rounded-lg bg-white">
+              <div className="flex items-center justify-between p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
                     <Phone className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Phone Number</p>
+                    <p className="text-[10px] text-zinc-400 uppercase font-semibold">Phone Number</p>
                     <a
                       href={`tel:${contactModalEmp.phone}`}
-                      className="font-semibold text-slate-800 hover:text-indigo-600"
+                      className="font-semibold text-zinc-900 dark:text-zinc-100 hover:underline"
                     >
                       {contactModalEmp.phone || 'Not Provided'}
                     </a>
@@ -1010,25 +1010,25 @@ export const Employees = () => {
                   <button
                     type="button"
                     onClick={() => copyToClipboard(contactModalEmp.phone, 'phone')}
-                    className="flex items-center gap-1 px-2 py-1 text-[11px] text-indigo-600 hover:bg-indigo-50 rounded font-semibold"
+                    className="flex items-center gap-1 px-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded font-semibold"
                   >
-                    {copiedItem === 'phone' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                    {copiedItem === 'phone' ? <Check className="w-3 h-3 text-zinc-900 dark:text-zinc-100" /> : <Copy className="w-3 h-3" />}
                     <span>{copiedItem === 'phone' ? 'Copied' : 'Copy'}</span>
                   </button>
                 )}
               </div>
 
               {/* Email */}
-              <div className="flex items-center justify-between p-2.5 border border-slate-200 rounded-lg bg-white">
+              <div className="flex items-center justify-between p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
                     <Mail className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Work Email</p>
+                    <p className="text-[10px] text-zinc-400 uppercase font-semibold">Work Email</p>
                     <a
                       href={`mailto:${contactModalEmp.email}`}
-                      className="font-semibold text-slate-800 hover:text-indigo-600"
+                      className="font-semibold text-zinc-900 dark:text-zinc-100 hover:underline"
                     >
                       {contactModalEmp.email || 'Not Provided'}
                     </a>
@@ -1038,9 +1038,9 @@ export const Employees = () => {
                   <button
                     type="button"
                     onClick={() => copyToClipboard(contactModalEmp.email, 'email')}
-                    className="flex items-center gap-1 px-2 py-1 text-[11px] text-indigo-600 hover:bg-indigo-50 rounded font-semibold"
+                    className="flex items-center gap-1 px-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded font-semibold"
                   >
-                    {copiedItem === 'email' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                    {copiedItem === 'email' ? <Check className="w-3 h-3 text-zinc-900 dark:text-zinc-100" /> : <Copy className="w-3 h-3" />}
                     <span>{copiedItem === 'email' ? 'Copied' : 'Copy'}</span>
                   </button>
                 )}
@@ -1048,40 +1048,40 @@ export const Employees = () => {
 
               {/* Organization Branch & Department */}
               <div className="grid grid-cols-2 gap-2">
-                <div className="p-2.5 border border-slate-200 rounded-lg">
-                  <p className="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1">
+                <div className="p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
+                  <p className="text-[10px] text-zinc-400 uppercase font-semibold flex items-center gap-1">
                     <Building2 className="w-3 h-3" />
                     Branch
                   </p>
-                  <p className="font-semibold text-slate-800 mt-0.5">{contactModalEmp.branch_name || 'Main Office'}</p>
+                  <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">{contactModalEmp.branch_name || 'Main Office'}</p>
                 </div>
-                <div className="p-2.5 border border-slate-200 rounded-lg">
-                  <p className="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1">
+                <div className="p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
+                  <p className="text-[10px] text-zinc-400 uppercase font-semibold flex items-center gap-1">
                     <Briefcase className="w-3 h-3" />
                     Department
                   </p>
-                  <p className="font-semibold text-slate-800 mt-0.5">{contactModalEmp.department_name || 'General'}</p>
+                  <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">{contactModalEmp.department_name || 'General'}</p>
                 </div>
               </div>
 
               {/* Address / Location if present */}
               {(contactModalEmp.address || contactModalEmp.city) && (
-                <div className="p-2.5 border border-slate-200 rounded-lg">
-                  <p className="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1">
+                <div className="p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900">
+                  <p className="text-[10px] text-zinc-400 uppercase font-semibold flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
                     Address
                   </p>
-                  <p className="text-slate-700 mt-0.5">
+                  <p className="text-zinc-700 dark:text-zinc-300 mt-0.5">
                     {[contactModalEmp.address, contactModalEmp.city].filter(Boolean).join(', ')}
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
               <Link
                 to={`/employees/${contactModalEmp.id}`}
-                className="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 hover:underline flex items-center gap-1"
               >
                 <span>View Full Profile</span>
                 <ExternalLink className="w-3 h-3" />
@@ -1089,7 +1089,7 @@ export const Employees = () => {
               <button
                 type="button"
                 onClick={() => setContactModalEmp(null)}
-                className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold"
+                className="px-4 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg font-semibold"
               >
                 Close
               </button>
@@ -1241,14 +1241,14 @@ export const Employees = () => {
               <button
                 type="button"
                 onClick={() => setEditModalEmp(null)}
-                className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold"
+                className="px-3 py-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold"
+                className="px-4 py-1.5 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg font-bold"
               >
                 {submitting ? 'Saving...' : 'Save Changes'}
               </button>
@@ -1257,34 +1257,34 @@ export const Employees = () => {
         </form>
       </Modal>
 
-      {/* MODAL 3: Import Excel / CSV Modal (Image 2) */}
+      {/* MODAL 3: Import Excel / CSV Modal */}
       <Modal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         title="Import Employees from Excel / CSV"
       >
         <form onSubmit={handleImportSubmit} className="space-y-4 text-xs">
-          <div className="p-3 bg-indigo-50/75 rounded-xl border border-indigo-100 space-y-2">
+          <div className="p-3 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-indigo-900 flex items-center gap-1.5">
-                <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
+              <span className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <FileSpreadsheet className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
                 Excel Batch Onboarding Template
               </span>
               <button
                 type="button"
                 onClick={handleDownloadTemplate}
-                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1"
+                className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 hover:underline flex items-center gap-1"
               >
                 <Download className="w-3 h-3" />
                 Download Sample Template (.xlsx)
               </button>
             </div>
-            <p className="text-[11px] text-indigo-700 leading-relaxed">
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
               Upload an Excel (.xlsx/.xls) or CSV sheet. Standard columns: <strong>First Name, Last Name, Email, Phone, Branch, Department, Designation, Joining Date, Base Salary</strong>.
             </p>
           </div>
 
-          <div className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-6 text-center transition-colors bg-slate-50/50">
+          <div className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-900 dark:hover:border-zinc-100 rounded-xl p-6 text-center transition-colors bg-zinc-50/50 dark:bg-zinc-900/50">
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
@@ -1293,22 +1293,22 @@ export const Employees = () => {
               id="excel-file-input"
             />
             <label htmlFor="excel-file-input" className="cursor-pointer space-y-2 block">
-              <Upload className="w-8 h-8 text-slate-400 mx-auto" />
-              <p className="font-semibold text-slate-700">
+              <Upload className="w-8 h-8 text-zinc-400 mx-auto" />
+              <p className="font-semibold text-zinc-800 dark:text-zinc-200">
                 {importFile ? importFile.name : 'Click or drag Excel/CSV file here'}
               </p>
-              <p className="text-[11px] text-slate-400">Supports .xlsx, .xls, and .csv files</p>
+              <p className="text-[11px] text-zinc-400">Supports .xlsx, .xls, and .csv files</p>
             </label>
           </div>
 
           {importResult && (
-            <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs space-y-1">
+            <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs space-y-1">
               <p className="font-bold flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
                 {importResult.message}
               </p>
               {importResult.errors?.length > 0 && (
-                <div className="mt-2 text-[11px] text-rose-700 bg-rose-50 p-2 rounded border border-rose-200 max-h-28 overflow-y-auto">
+                <div className="mt-2 text-[11px] text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 p-2 rounded border border-zinc-300 dark:border-zinc-700 max-h-28 overflow-y-auto">
                   <p className="font-semibold mb-1">Warnings / Skipped rows:</p>
                   <ul className="list-disc pl-4 space-y-0.5">
                     {importResult.errors.map((err, i) => (
@@ -1320,18 +1320,18 @@ export const Employees = () => {
             </div>
           )}
 
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setShowImportModal(false)}
-              className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold"
+              className="px-3 py-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg font-semibold"
             >
               {importResult ? 'Close' : 'Cancel'}
             </button>
             <button
               type="submit"
               disabled={importing || !importFile}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-semibold flex items-center gap-1.5"
+              className="px-4 py-1.5 bg-zinc-950 hover:bg-black disabled:opacity-50 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg font-bold flex items-center gap-1.5"
             >
               <Upload className="w-3.5 h-3.5" />
               <span>{importing ? 'Processing File...' : 'Upload & Import Employees'}</span>
@@ -1345,7 +1345,7 @@ export const Employees = () => {
         <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1 text-xs">
           {/* 1. Personal Information */}
           <div>
-            <p className="text-[10px] font-bold text-indigo-600 uppercase mb-2">1. Personal Information</p>
+            <p className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 uppercase mb-2">1. Personal Information</p>
             <div className="grid grid-cols-2 gap-2.5">
               <input
                 type="text"
@@ -1353,19 +1353,19 @@ export const Employees = () => {
                 required
                 value={formData.first_name}
                 onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
               <input
                 type="text"
                 placeholder="Last Name"
                 value={formData.last_name}
                 onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg bg-white"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
               >
                 <option value="PREFER_NOT_TO_SAY">Gender (Optional)</option>
                 <option value="MALE">Male</option>
@@ -1377,14 +1377,14 @@ export const Employees = () => {
                 title="Date of Birth"
                 value={formData.date_of_birth}
                 onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
             </div>
           </div>
 
           {/* 2. Contact Information */}
           <div>
-            <p className="text-[10px] font-bold text-indigo-600 uppercase mb-2">2. Contact Information</p>
+            <p className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 uppercase mb-2">2. Contact Information</p>
             <div className="grid grid-cols-2 gap-2.5">
               <input
                 type="email"
@@ -1392,40 +1392,40 @@ export const Employees = () => {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
               <input
                 type="tel"
                 placeholder="Phone Number"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
               <input
                 type="text"
                 placeholder="City"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
               <input
                 type="text"
                 placeholder="Address"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
             </div>
           </div>
 
           {/* 3. Employment Information */}
           <div>
-            <p className="text-[10px] font-bold text-indigo-600 uppercase mb-2">3. Employment Information</p>
+            <p className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 uppercase mb-2">3. Employment Information</p>
             <div className="grid grid-cols-3 gap-2">
               <select
                 value={formData.employment_type}
                 onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
-                className="px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white"
+                className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
               >
                 <option value="FULL_TIME">Full Time</option>
                 <option value="PART_TIME">Part Time</option>
@@ -1435,7 +1435,7 @@ export const Employees = () => {
               <select
                 value={formData.salary_type}
                 onChange={(e) => setFormData({ ...formData, salary_type: e.target.value })}
-                className="px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white"
+                className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
               >
                 <option value="MONTHLY">Monthly</option>
                 <option value="DAILY">Daily</option>
@@ -1446,21 +1446,21 @@ export const Employees = () => {
                 required
                 value={formData.joining_date}
                 onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
-                className="px-2.5 py-1.5 border border-slate-300 rounded-lg"
+                className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
             </div>
           </div>
 
           {/* 4 & 5. Branch, Department & Designation */}
           <div>
-            <p className="text-[10px] font-bold text-indigo-600 uppercase mb-2">
+            <p className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 uppercase mb-2">
               4 &amp; 5. Branch, Department &amp; Designation
             </p>
             <div className="grid grid-cols-3 gap-2">
               <select
                 value={formData.branch}
                 onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                className="px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white"
+                className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
               >
                 <option value="">Default Branch</option>
                 {branches.map((b) => (
@@ -1472,7 +1472,7 @@ export const Employees = () => {
               <select
                 value={formData.department}
                 onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                className="px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white"
+                className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
               >
                 <option value="">Department</option>
                 {departments.map((d) => (
@@ -1484,7 +1484,7 @@ export const Employees = () => {
               <select
                 value={formData.designation}
                 onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                className="px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white"
+                className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
               >
                 <option value="">Designation</option>
                 {designations.map((g) => (
@@ -1498,7 +1498,7 @@ export const Employees = () => {
 
           {/* 6 & 7. Salary Configuration & Shift Assignment */}
           <div>
-            <p className="text-[10px] font-bold text-indigo-600 uppercase mb-2">
+            <p className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 uppercase mb-2">
               6 &amp; 7. Salary Configuration &amp; Shift
             </p>
             <div className="grid grid-cols-2 gap-2.5">
@@ -1507,12 +1507,12 @@ export const Employees = () => {
                 placeholder="Base Monthly Salary (₹)"
                 value={formData.base_salary}
                 onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
               <select
                 value={formData.shift_id}
                 onChange={(e) => setFormData({ ...formData, shift_id: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg bg-white"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 font-medium"
               >
                 <option value="">Assign Shift (Optional)</option>
                 {shifts.map((s) => (
@@ -1526,44 +1526,44 @@ export const Employees = () => {
 
           {/* 8. Documents */}
           <div>
-            <p className="text-[10px] font-bold text-indigo-600 uppercase mb-2">8. Documents</p>
+            <p className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 uppercase mb-2">8. Documents</p>
             <div className="grid grid-cols-2 gap-2.5">
               <input
                 type="text"
                 placeholder="PAN Number"
                 value={formData.pan_number}
                 onChange={(e) => setFormData({ ...formData, pan_number: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg uppercase"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 uppercase"
               />
               <input
                 type="text"
                 placeholder="Aadhaar Number"
                 value={formData.aadhaar_number}
                 onChange={(e) => setFormData({ ...formData, aadhaar_number: e.target.value })}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
             </div>
           </div>
 
           {/* 9. Login Invitation */}
-          <label className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg cursor-pointer">
+          <label className="flex items-center gap-2 p-2.5 bg-zinc-50 dark:bg-zinc-800/60 rounded-lg cursor-pointer border border-zinc-200 dark:border-zinc-700">
             <input
               type="checkbox"
               checked={formData.send_invite}
               onChange={(e) => setFormData({ ...formData, send_invite: e.target.checked })}
-              className="rounded text-indigo-600"
+              className="rounded accent-zinc-900 dark:accent-zinc-100"
             />
-            <span className="font-semibold text-slate-700">
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200">
               9. Send Login Invitation &amp; Provision Employee Account
             </span>
           </label>
 
           {/* 4 Action Buttons */}
-          <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-end gap-2">
+          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+              className="px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
             >
               Cancel
             </button>
@@ -1571,7 +1571,7 @@ export const Employees = () => {
               type="button"
               disabled={submitting}
               onClick={() => submitEmployee('draft')}
-              className="px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg"
+              className="px-3 py-1.5 text-xs font-semibold border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
             >
               Save as Draft
             </button>
@@ -1579,7 +1579,7 @@ export const Employees = () => {
               type="button"
               disabled={submitting}
               onClick={() => submitEmployee('another')}
-              className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+              className="px-3 py-1.5 text-xs font-semibold border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
             >
               Save &amp; Add Another
             </button>
@@ -1587,7 +1587,7 @@ export const Employees = () => {
               type="button"
               disabled={submitting}
               onClick={() => submitEmployee('save')}
-              className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+              className="px-4 py-1.5 text-xs font-bold bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg shadow-xs"
             >
               {submitting ? 'Saving...' : 'Save Employee'}
             </button>

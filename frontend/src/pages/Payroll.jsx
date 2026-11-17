@@ -470,13 +470,13 @@ export const Payroll = () => {
             {loading ? (
               <Loader message="Loading payroll cycles..." />
             ) : runs.length === 0 ? (
-              <div className="p-12 text-center text-slate-500 text-xs space-y-3">
-                <Banknote className="w-8 h-8 text-slate-300 mx-auto" />
-                <p className="font-semibold text-slate-700">No payroll cycles created yet.</p>
-                <p className="text-slate-400">Click &ldquo;Process Monthly Payroll&rdquo; to calculate and generate this month&apos;s salaries based on your company rules.</p>
+              <div className="p-12 text-center text-zinc-500 dark:text-zinc-400 text-xs space-y-3">
+                <Banknote className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto" />
+                <p className="font-semibold text-zinc-700 dark:text-zinc-300">No payroll cycles created yet.</p>
+                <p className="text-zinc-400">Click &ldquo;Process Monthly Payroll&rdquo; to calculate and generate this month&apos;s salaries based on your company rules.</p>
                 <button
                   onClick={() => setShowProcessModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
                 >
                   <Calculator className="w-3.5 h-3.5" />
                   <span>Initiate First Payroll</span>
@@ -486,7 +486,7 @@ export const Payroll = () => {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[800px] text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
+                    <tr className="bg-zinc-100/70 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold uppercase text-[11px] tracking-wider">
                       <th className="py-3 px-4">Cycle / Period</th>
                       <th className="py-3 px-4">Working Days</th>
                       <th className="py-3 px-4">Gross Total</th>
@@ -496,38 +496,38 @@ export const Payroll = () => {
                       {canManagePayroll && <th className="py-3 px-4 text-right">Actions</th>}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
                     {runs.map((r) => {
                       const isDisbursed = r.is_disbursed || (r.status === 'LOCKED' && r.pay_date);
                       return (
-                        <tr key={r.id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="py-3.5 px-4 font-semibold text-slate-900">
+                        <tr key={r.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+                          <td className="py-3.5 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
                             <div className="flex items-center gap-1.5">
                               <span>{r.name}</span>
                               {isDisbursed && (
-                                <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200">
+                                <Badge variant="default">
                                   Disbursed
-                                </span>
+                                </Badge>
                               )}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-normal">
+                            <div className="text-[10px] text-zinc-400 font-normal">
                               {r.period_start || r.start_date} to {r.period_end || r.end_date}
                             </div>
                           </td>
-                          <td className="py-3.5 px-4 text-slate-600">{r.total_working_days || 30} days</td>
-                          <td className="py-3.5 px-4 font-medium text-slate-800">{formatINR(r.total_gross || r.gross_total || 0)}</td>
-                          <td className="py-3.5 px-4 text-rose-600 font-medium">{formatINR(r.total_deductions || 0)}</td>
-                          <td className="py-3.5 px-4 font-bold text-emerald-700">{formatINR(r.total_net || r.net_total || 0)}</td>
+                          <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400">{r.total_working_days || 30} days</td>
+                          <td className="py-3.5 px-4 font-medium text-zinc-800 dark:text-zinc-200">{formatINR(r.total_gross || r.gross_total || 0)}</td>
+                          <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400 font-medium">-{formatINR(r.total_deductions || 0)}</td>
+                          <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-zinc-100">{formatINR(r.total_net || r.net_total || 0)}</td>
                           <td className="py-3.5 px-4">
                             <Badge
                               variant={
                                 isDisbursed
-                                  ? 'success'
-                                  : r.status === 'APPROVED'
-                                  ? 'success'
-                                  : r.status === 'LOCKED'
                                   ? 'default'
-                                  : 'warning'
+                                  : r.status === 'APPROVED'
+                                  ? 'default'
+                                  : r.status === 'LOCKED'
+                                  ? 'neutral'
+                                  : 'neutral'
                               }
                             >
                               {isDisbursed ? 'DISBURSED' : r.status}
@@ -540,7 +540,7 @@ export const Payroll = () => {
                                 {r.status === 'DRAFT' && (
                                   <button
                                     onClick={() => handleCalculate(r.id)}
-                                    className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-xs font-semibold transition-colors"
+                                    className="px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded text-xs font-semibold transition-colors"
                                   >
                                     Calculate
                                   </button>
@@ -551,14 +551,14 @@ export const Payroll = () => {
                                   <>
                                     <button
                                       onClick={() => handleCalculate(r.id)}
-                                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold transition-colors"
+                                      className="px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded text-xs font-semibold transition-colors"
                                       title="Re-calculate with current company rules & punch records"
                                     >
                                       Re-calc
                                     </button>
                                     <button
                                       onClick={() => handleApprove(r.id)}
-                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
+                                      className="px-2.5 py-1 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded text-xs font-bold transition-colors"
                                     >
                                       Approve &amp; Lock
                                     </button>
@@ -569,7 +569,7 @@ export const Payroll = () => {
                                 {r.status === 'APPROVED' && !isDisbursed && (
                                   <button
                                     onClick={() => setDisburseRun(r)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-colors"
                                     title="Disburse salaries to employees via bank transfer or cash"
                                   >
                                     <CreditCard className="w-3.5 h-3.5" />
@@ -581,10 +581,10 @@ export const Payroll = () => {
                                 {isDisbursed && (
                                   <button
                                     onClick={() => handleExportBankSheet(r)}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded text-xs font-semibold transition-colors"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded text-xs font-semibold transition-colors"
                                     title="Export Bank Transfer Instruction Sheet (CSV)"
                                   >
-                                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                                    <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
                                     <span>Bank Sheet</span>
                                   </button>
                                 )}
@@ -592,7 +592,7 @@ export const Payroll = () => {
                                 {/* View Payslips link */}
                                 <button
                                   onClick={() => setActiveTab('payslips')}
-                                  className="px-2 py-1 text-indigo-600 hover:underline text-xs font-semibold"
+                                  className="px-2 py-1 text-zinc-900 dark:text-zinc-100 hover:underline text-xs font-semibold"
                                 >
                                   Payslips &rarr;
                                 </button>
@@ -612,39 +612,39 @@ export const Payroll = () => {
 
       {/* Management View: Company Work Hours & Overtime Rules Tab */}
       {!isEmployee && activeTab === 'rules' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 max-w-4xl">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden p-6 max-w-4xl">
+          <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6">
             <div>
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-100 flex items-center gap-2">
+                <Sliders className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
                 <span>Company Work Hour &amp; Overtime Rules</span>
               </h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                 Configure your company's standard working hours, shortfall wage cut policies, and overtime payout rates.
               </p>
             </div>
-            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-2.5 py-1 rounded-full">
               Automated Rule Engine Active
             </span>
           </div>
 
           {policySuccessMsg && (
-            <div className="mb-6 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-medium flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="mb-6 p-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-lg text-xs font-medium flex items-center gap-2">
+              <Check className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
               <span>{policySuccessMsg}</span>
             </div>
           )}
 
           <form onSubmit={handleSavePolicy} className="space-y-6 text-xs">
             {/* Rule 1: Work Hours Configuration */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
-              <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-indigo-600" />
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4">
+              <h4 className="font-bold text-zinc-950 dark:text-zinc-100 text-sm flex items-center gap-2">
+                <Clock className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
                 <span>Standard Working Hours Threshold</span>
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                     Standard Daily Work Hours (Hours / Day) *
                   </label>
                   <input
@@ -655,14 +655,14 @@ export const Payroll = () => {
                     required
                     value={policy.standard_daily_hours}
                     onChange={(e) => setPolicy({ ...policy, standard_daily_hours: parseFloat(e.target.value) || 8.0 })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600 font-semibold"
+                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-semibold"
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
                     Baseline daily duty requirement (typically 8.0 hours). Punch times below this are flagged as shortfall; times above earn overtime.
                   </p>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                     Standard Weekly Work Hours (Hours / Week) *
                   </label>
                   <input
@@ -673,9 +673,9 @@ export const Payroll = () => {
                     required
                     value={policy.standard_weekly_hours}
                     onChange={(e) => setPolicy({ ...policy, standard_weekly_hours: parseFloat(e.target.value) || 40.0 })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600 font-semibold"
+                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-semibold"
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
                     Weekly duty threshold for 5-day (40 hrs) or 6-day (48 hrs) work weeks.
                   </p>
                 </div>
@@ -683,14 +683,14 @@ export const Payroll = () => {
             </div>
 
             {/* Rule 2: Overtime Pay Rules */}
-            <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-4">
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-indigo-950 text-sm flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-indigo-600" />
+                  <h4 className="font-bold text-zinc-950 dark:text-zinc-100 text-sm flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
                     <span>Overtime (OT) Pay Policy</span>
                   </h4>
-                  <p className="text-[11px] text-indigo-700 mt-0.5">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                     Pay employees additional compensation when they exceed the standard daily working hours.
                   </p>
                 </div>
@@ -701,36 +701,36 @@ export const Payroll = () => {
                     onChange={(e) => setPolicy({ ...policy, enable_overtime: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <div className="w-11 h-6 bg-zinc-200 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-zinc-950 dark:peer-checked:bg-zinc-100 dark:peer-checked:after:bg-zinc-950"></div>
                 </label>
               </div>
 
               {policy.enable_overtime && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-indigo-100/80">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-zinc-200 dark:border-zinc-700">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                       Overtime Payout Rate Multiplier *
                     </label>
                     <select
                       value={policy.overtime_multiplier}
                       onChange={(e) => setPolicy({ ...policy, overtime_multiplier: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600 font-semibold"
+                      className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-semibold"
                     >
                       <option value={1.0}>1.0x (Regular Hourly Wage)</option>
                       <option value={1.25}>1.25x (Time and a Quarter)</option>
                       <option value={1.5}>1.5x (Time and a Half - Standard)</option>
                       <option value={2.0}>2.0x (Double Time)</option>
                     </select>
-                    <p className="text-[10px] text-slate-500 mt-1">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
                       Formula: (OT Hours) &times; (Hourly Rate) &times; ({policy.overtime_multiplier}x)
                     </p>
                   </div>
-                  <div className="bg-white p-3 rounded-lg border border-indigo-100 text-[11px] space-y-1">
-                    <p className="font-bold text-slate-700">Example Overtime Calculation:</p>
-                    <p className="text-slate-600">
+                  <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-[11px] space-y-1">
+                    <p className="font-bold text-zinc-900 dark:text-zinc-100">Example Overtime Calculation:</p>
+                    <p className="text-zinc-600 dark:text-zinc-400">
                       An employee with &#8377;30,000/mo salary earns approx. &#8377;125/hr. If they work 10 hrs (2 hrs OT) in an 8-hr day, they receive:
                     </p>
-                    <p className="font-mono font-bold text-emerald-700">
+                    <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
                       2 hrs &times; &#8377;125 &times; {policy.overtime_multiplier} = &#8377;{(2 * 125 * policy.overtime_multiplier).toFixed(2)} OT Pay
                     </p>
                   </div>
@@ -739,14 +739,14 @@ export const Payroll = () => {
             </div>
 
             {/* Rule 3: Shortfall Deficit Salary Cut Policy */}
-            <div className="p-4 bg-rose-50/40 rounded-xl border border-rose-100 space-y-4">
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-rose-950 text-sm flex items-center gap-2">
-                    <TrendingDown className="w-4 h-4 text-rose-600" />
+                  <h4 className="font-bold text-zinc-950 dark:text-zinc-100 text-sm flex items-center gap-2">
+                    <TrendingDown className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
                     <span>Incomplete Work Hours Shortfall Deduction (Salary Cut)</span>
                   </h4>
-                  <p className="text-[11px] text-rose-700 mt-0.5">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                     Automatically cut salary if an employee works fewer hours than the required daily company rule.
                   </p>
                 </div>
@@ -757,17 +757,17 @@ export const Payroll = () => {
                     onChange={(e) => setPolicy({ ...policy, enable_shortfall_deduction: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+                  <div className="w-11 h-6 bg-zinc-200 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-zinc-950 dark:peer-checked:bg-zinc-100 dark:peer-checked:after:bg-zinc-950"></div>
                 </label>
               </div>
 
               {policy.enable_shortfall_deduction && (
-                <div className="bg-white p-3 rounded-lg border border-rose-100 text-[11px] space-y-1">
-                  <p className="font-bold text-slate-700">How Shortfall Deduction Works:</p>
-                  <p className="text-slate-600">
+                <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-[11px] space-y-1">
+                  <p className="font-bold text-zinc-900 dark:text-zinc-100">How Shortfall Deduction Works:</p>
+                  <p className="text-zinc-600 dark:text-zinc-400">
                     If an employee logs out early (e.g., worked 6.0 hrs instead of {policy.standard_daily_hours} hrs), the system logs a {policy.standard_daily_hours - 6.0} hr deficit.
                   </p>
-                  <p className="font-mono font-bold text-rose-700">
+                  <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
                     Deduction: (Deficit Hours) &times; (Hourly Rate) = Itemized as "Work Hour Shortfall Cut" on their monthly payslip.
                   </p>
                 </div>
@@ -775,14 +775,14 @@ export const Payroll = () => {
             </div>
 
             {/* Rule 4: Leave & Absence Cut Policy */}
-            <div className="p-4 bg-amber-50/40 rounded-xl border border-amber-100 space-y-4">
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-amber-950 text-sm flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <h4 className="font-bold text-zinc-950 dark:text-zinc-100 text-sm flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
                     <span>Unpaid Leave &amp; Absenteeism Salary Cut</span>
                   </h4>
-                  <p className="text-[11px] text-amber-700 mt-0.5">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                     Deduct full daily rate for each unapproved absence or approved unpaid leave day.
                   </p>
                 </div>
@@ -793,25 +793,25 @@ export const Payroll = () => {
                     onChange={(e) => setPolicy({ ...policy, enable_unpaid_leave_deduction: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                  <div className="w-11 h-6 bg-zinc-200 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-zinc-950 dark:peer-checked:bg-zinc-100 dark:peer-checked:after:bg-zinc-950"></div>
                 </label>
               </div>
 
               {policy.enable_unpaid_leave_deduction && (
-                <div className="bg-white p-3 rounded-lg border border-amber-100 text-[11px] space-y-1">
-                  <p className="font-bold text-slate-700">Unpaid Days Treatment:</p>
-                  <p className="text-slate-600">
+                <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-[11px] space-y-1">
+                  <p className="font-bold text-zinc-900 dark:text-zinc-100">Unpaid Days Treatment:</p>
+                  <p className="text-zinc-600 dark:text-zinc-400">
                     Approved Paid Leaves receive 100% full wage. Unpaid leaves or unapproved absent days trigger a 1-day wage deduction: (Unpaid Days) &times; (Daily Base Rate).
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-3">
               <button
                 type="submit"
                 disabled={savingPolicy}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold flex items-center gap-2 shadow-sm transition-colors"
+                className="px-5 py-2 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
               >
                 <Check className="w-4 h-4" />
                 <span>{savingPolicy ? 'Saving Rules...' : 'Save Company Payroll Rules'}</span>
@@ -823,17 +823,17 @@ export const Payroll = () => {
 
       {/* Payslips Section (Self-service for employee, or all staff for management) */}
       {(isEmployee || activeTab === 'payslips') && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
+          <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-850/50 flex items-center justify-between">
             <div>
-              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-100 uppercase tracking-wider">
                 {isEmployee ? 'My Issued Payslips' : 'Generated Staff Payslips'}
               </h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                 Click &quot;Details&quot; on any statement to view itemized overtime earnings and salary cut deductions.
               </p>
             </div>
-            <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-100">
+            <span className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded border border-zinc-300 dark:border-zinc-700">
               {payslips.length} Statements Found
             </span>
           </div>
@@ -841,10 +841,10 @@ export const Payroll = () => {
             {loading ? (
               <Loader message="Loading payslip statements..." />
             ) : payslips.length === 0 ? (
-              <div className="p-12 text-center text-slate-500 text-xs space-y-2">
-                <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-                <p className="font-semibold text-slate-700">No payslips found in the active billing cycles.</p>
-                <p className="text-slate-400">
+              <div className="p-12 text-center text-zinc-500 dark:text-zinc-400 text-xs space-y-2">
+                <FileText className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto" />
+                <p className="font-semibold text-zinc-700 dark:text-zinc-300">No payslips found in the active billing cycles.</p>
+                <p className="text-zinc-400">
                   {isEmployee
                     ? 'Your company administrators have not yet locked or released this period’s payslips.'
                     : 'Approve and lock a payroll run to generate official payslips for all staff members.'}
@@ -854,7 +854,7 @@ export const Payroll = () => {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[850px] text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
+                    <tr className="bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-semibold uppercase text-[11px] tracking-wider">
                       <th className="py-3 px-4">Period</th>
                       {!isEmployee && <th className="py-3 px-4">Employee</th>}
                       <th className="py-3 px-4">Gross Salary</th>
@@ -865,7 +865,7 @@ export const Payroll = () => {
                       <th className="py-3 px-4 text-right">Actions / Payslip</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                     {payslips.map((p, idx) => {
                       const pKey = p.id || idx;
                       const isExpanded = Boolean(expandedPayslips[pKey]);
@@ -873,92 +873,92 @@ export const Payroll = () => {
 
                       return (
                         <React.Fragment key={pKey}>
-                          <tr className={`hover:bg-slate-50/60 transition-colors ${isExpanded ? 'bg-indigo-50/20' : ''}`}>
-                            <td className="py-3.5 px-4 font-semibold text-slate-900">
-                              <p className="font-bold text-slate-900">{p.period_display || p.period || 'Monthly Period'}</p>
-                              <p className="text-[10px] text-slate-400 font-mono">{p.payslip_number || `PS-${idx + 1}`}</p>
+                          <tr className={`hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors ${isExpanded ? 'bg-zinc-100 dark:bg-zinc-800' : ''}`}>
+                            <td className="py-3.5 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                              <p className="font-bold text-zinc-900 dark:text-zinc-100">{p.period_display || p.period || 'Monthly Period'}</p>
+                              <p className="text-[10px] text-zinc-400 font-mono">{p.payslip_number || `PS-${idx + 1}`}</p>
                             </td>
                             {!isEmployee && (
-                              <td className="py-3.5 px-4 text-slate-700 font-medium">
-                                <p className="font-semibold text-slate-900">{p.employee_name || 'Staff Member'}</p>
-                                <p className="text-[11px] text-slate-400 font-mono">{p.employee_code || p.payslip_number}</p>
+                              <td className="py-3.5 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
+                                <p className="font-semibold text-zinc-900 dark:text-zinc-100">{p.employee_name || 'Staff Member'}</p>
+                                <p className="text-[11px] text-zinc-400 font-mono">{p.employee_code || p.payslip_number}</p>
                               </td>
                             )}
-                            <td className="py-3.5 px-4 text-slate-700 font-medium">
+                            <td className="py-3.5 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
                               <span className="font-semibold">{formatINR(p.gross_salary || 55000)}</span>
                             </td>
                             <td className="py-3.5 px-4 font-medium">
                               {b.overtimeHours > 0 ? (
                                 <div className="space-y-0.5">
                                   <div className="flex items-center gap-1">
-                                    <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-[11px] inline-flex items-center gap-1">
-                                      <TrendingUp className="w-3 h-3 text-emerald-600" />
+                                    <span className="text-zinc-900 dark:text-zinc-100 font-bold bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 text-[11px] inline-flex items-center gap-1">
+                                      <TrendingUp className="w-3 h-3 text-zinc-700 dark:text-zinc-300" />
                                       +{b.overtimeHours.toFixed(1)} hrs OT
                                     </span>
                                   </div>
-                                  <p className="text-[11px] font-bold text-emerald-700 font-mono">
+                                  <p className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 font-mono">
                                     +{formatINR(b.overtimePay)}
                                   </p>
                                 </div>
                               ) : (
-                                <span className="text-slate-400 text-[11px]">0.0 hrs (₹0)</span>
+                                <span className="text-zinc-400 text-[11px]">0.0 hrs (₹0)</span>
                               )}
                             </td>
                             <td className="py-3.5 px-4">
                               <div className="space-y-1">
-                                <span className="font-bold text-rose-600 text-xs">
+                                <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">
                                   -{formatINR(p.total_deductions || 5200)}
                                 </span>
                                 {/* Short details pills showing WHERE salary was cut */}
                                 <div className="flex flex-wrap gap-1 max-w-[280px]">
                                   {b.shortfallAmount > 0 && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200" title={`${b.shortfallHours.toFixed(1)}h deficit from standard quota`}>
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700" title={`${b.shortfallHours.toFixed(1)}h deficit from standard quota`}>
                                       Shortfall: -{formatINR(b.shortfallAmount)}
                                     </span>
                                   )}
                                   {b.leaveCutAmount > 0 && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200" title={`${b.leaveCutDays} days unpaid leave`}>
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700" title={`${b.leaveCutDays} days unpaid leave`}>
                                       Leave Cut: -{formatINR(b.leaveCutAmount)}
                                     </span>
                                   )}
                                   {b.advanceAmount > 0 && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700">
                                       Advance: -{formatINR(b.advanceAmount)}
                                     </span>
                                   )}
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] text-slate-500 bg-slate-100 border border-slate-200">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
                                     PF (12%): -{formatINR(b.pfAmount)}
                                   </span>
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] text-slate-500 bg-slate-100 border border-slate-200">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
                                     Tax (5%): -{formatINR(b.taxAmount)}
                                   </span>
                                 </div>
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 font-bold text-emerald-700 text-sm">
+                            <td className="py-3.5 px-4 font-bold text-zinc-950 dark:text-zinc-50 text-sm">
                               {formatINR(p.net_salary || 49800)}
                             </td>
                             <td className="py-3.5 px-4">
-                              <Badge variant="success">ISSUED</Badge>
+                              <Badge variant="default">ISSUED</Badge>
                             </td>
                             <td className="py-3.5 px-4 text-right">
                               <div className="inline-flex items-center gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => setBreakdownModalPayslip(p)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg text-xs font-bold transition-colors shadow-2xs cursor-pointer"
                                   title="View itemized breakdown of overtime earnings and salary cuts"
                                 >
-                                  <Calculator className="w-3.5 h-3.5 text-indigo-600" />
+                                  <Calculator className="w-3.5 h-3.5" />
                                   <span>Details</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setViewPayslip(p)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
                                   title="View and print official payslip"
                                 >
-                                  <FileText className="w-3.5 h-3.5 text-slate-600" />
+                                  <FileText className="w-3.5 h-3.5 text-zinc-500" />
                                   <span className="hidden sm:inline">View &amp; Print</span>
                                 </button>
                               </div>
@@ -981,12 +981,12 @@ export const Payroll = () => {
         title="Initiate & Process Monthly Payroll"
       >
         <form onSubmit={handleInitiatePayroll} className="space-y-4 text-xs">
-          <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100 space-y-1">
-            <p className="font-bold text-indigo-900 flex items-center gap-1.5">
-              <Calculator className="w-4 h-4 text-indigo-600" />
+          <div className="p-3 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-1">
+            <p className="font-bold text-zinc-950 dark:text-zinc-100 flex items-center gap-1.5">
+              <Calculator className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
               Automated Rule-Driven Payroll Engine
             </p>
-            <p className="text-[11px] text-indigo-700 leading-relaxed">
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
               Initiating payroll scans active employee base salaries, aggregates monthly attendance punch logs, computes working days, and automatically applies company rules:
               standard daily hours ({policy.standard_daily_hours}h), overtime multiplier ({policy.overtime_multiplier}x), shortfall deductions, and statutory PF/TDS math.
             </p>
@@ -994,11 +994,11 @@ export const Payroll = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Payroll Month *</label>
+              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Payroll Month *</label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
               >
                 {MONTH_NAMES.map((m, idx) => (
                   <option key={m} value={idx}>{m}</option>
@@ -1006,11 +1006,11 @@ export const Payroll = () => {
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Payroll Year *</label>
+              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Payroll Year *</label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
               >
                 <option value={2025}>2025</option>
                 <option value={2026}>2026</option>
@@ -1019,28 +1019,28 @@ export const Payroll = () => {
             </div>
           </div>
 
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <p className="text-[11px] text-slate-500 font-semibold uppercase mb-1">Target Payroll Cycle</p>
-            <p className="font-bold text-slate-900 text-sm">
+          <div className="p-3 bg-zinc-50 dark:bg-zinc-850 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <p className="text-[11px] text-zinc-500 font-semibold uppercase mb-1">Target Payroll Cycle</p>
+            <p className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">
               {MONTH_NAMES[selectedMonth]} {selectedYear} Monthly Payroll
             </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
               Period: {selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}-01 to {selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}-{new Date(selectedYear, selectedMonth + 1, 0).getDate()} (30 days)
             </p>
           </div>
 
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setShowProcessModal(false)}
-              className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold"
+              className="px-3 py-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg font-semibold"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={processingPayroll}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold flex items-center gap-1.5 shadow-sm"
+              className="px-4 py-1.5 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Calculator className="w-3.5 h-3.5" />
               <span>{processingPayroll ? 'Computing Salaries...' : 'Compute & Generate Payroll'}</span>
@@ -1057,27 +1057,27 @@ export const Payroll = () => {
       >
         {disburseRun && (
           <form onSubmit={handleExecuteDisbursement} className="space-y-4 text-xs">
-            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 space-y-2">
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                  <CreditCard className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
                   Total Net Salary Payout
                 </span>
-                <span className="text-lg font-black text-emerald-800">
+                <span className="text-lg font-black text-zinc-950 dark:text-zinc-50">
                   {formatINR(disburseRun.total_net || 0)}
                 </span>
               </div>
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
                 Disbursing this payroll will mark salaries as officially paid out and log completed payment vouchers for all staff members.
               </p>
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Disbursement Mode *</label>
+              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Disbursement Mode *</label>
               <select
                 value={paymentMode}
                 onChange={(e) => setPaymentMode(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-600"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
               >
                 <option value="BANK_TRANSFER">Direct Corporate Bank Transfer (NEFT / RTGS / IMPS)</option>
                 <option value="UPI">Corporate UPI / Payment Gateway Payout</option>
@@ -1088,39 +1088,39 @@ export const Payroll = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Disbursement Date *</label>
+                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Disbursement Date *</label>
                 <input
                   type="date"
                   required
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg outline-none"
+                  className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Bank Reference / UTR No.</label>
+                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Bank Reference / UTR No.</label>
                 <input
                   type="text"
                   placeholder="e.g. UTR-202611-098273"
                   value={referenceNumber}
                   onChange={(e) => setReferenceNumber(e.target.value)}
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg outline-none"
+                  className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none"
                 />
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setDisburseRun(null)}
-                className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold"
+                className="px-3 py-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg font-semibold cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={disbursing}
-                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-1.5 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{disbursing ? 'Processing Disbursement...' : 'Confirm & Disburse Funds'}</span>
@@ -1145,48 +1145,48 @@ export const Payroll = () => {
           return (
             <div className="space-y-4 text-xs">
               {/* Top Banner: Statement & Net Take-Home */}
-              <div className="p-4 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 rounded-xl text-white shadow-md border border-indigo-800/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="p-4 bg-zinc-950 text-white rounded-xl shadow-xs border border-zinc-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-zinc-800 text-zinc-200 border border-zinc-700">
                       Statement Overview
                     </span>
-                    <span className="text-xs text-indigo-200 font-mono">
+                    <span className="text-xs text-zinc-400 font-mono">
                       {breakdownModalPayslip.payslip_number || 'N/A'}
                     </span>
                   </div>
                   <h4 className="text-base font-bold text-white mt-1">
                     {breakdownModalPayslip.period_display || breakdownModalPayslip.period || 'Monthly Period'} Compensation
                   </h4>
-                  <p className="text-[11px] text-indigo-200/80">
+                  <p className="text-[11px] text-zinc-400">
                     Gross Earnings: {formatINR(b.grossSalary)} • Total Deductions: -{formatINR(b.totalDeductions)}
                   </p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 text-right sm:min-w-[170px]">
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-indigo-200">Net Take-Home</p>
-                  <p className="text-2xl font-black text-emerald-400">{formatINR(b.netSalary)}</p>
+                <div className="bg-zinc-900 rounded-xl p-3 border border-zinc-800 text-right sm:min-w-[170px]">
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-zinc-400">Net Take-Home</p>
+                  <p className="text-2xl font-black text-white">{formatINR(b.netSalary)}</p>
                 </div>
               </div>
 
               {/* 4 Metric Chips */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* 1. Overtime Pay */}
-                <div className="p-3 bg-emerald-50/70 border border-emerald-200/70 rounded-xl space-y-1">
-                  <div className="flex items-center justify-between text-emerald-900">
+                <div className="p-3 bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between text-zinc-900 dark:text-zinc-100">
                     <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                      <TrendingUp className="w-4 h-4 text-emerald-600" />
+                      <TrendingUp className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
                       Overtime Pay Earned
                     </span>
                     {b.overtimeHours > 0 && (
-                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-200">
+                      <span className="text-[10px] font-bold bg-zinc-200 dark:bg-zinc-750 text-zinc-900 dark:text-zinc-100 px-1.5 py-0.5 rounded border border-zinc-300 dark:border-zinc-700">
                         +{b.overtimeHours.toFixed(1)} hrs
                       </span>
                     )}
                   </div>
-                  <p className="text-lg font-black text-emerald-700">
+                  <p className="text-lg font-black text-zinc-950 dark:text-zinc-50">
                     +{formatINR(b.overtimePay)}
                   </p>
-                  <p className="text-[11px] text-emerald-800">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     {b.overtimeHours > 0
                       ? `Paid for ${b.overtimeHours.toFixed(1)} hrs worked extra @ 1.5x overtime multiplier`
                       : 'No overtime hours logged for this billing period'}
@@ -1194,28 +1194,22 @@ export const Payroll = () => {
                 </div>
 
                 {/* 2. Hour Shortfall Cut */}
-                <div className={`p-3 rounded-xl border space-y-1 ${
-                  b.shortfallAmount > 0
-                    ? 'bg-rose-50/80 border-rose-200'
-                    : 'bg-slate-50 border-slate-200'
-                }`}>
+                <div className="p-3 bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                      b.shortfallAmount > 0 ? 'text-rose-900' : 'text-slate-700'
-                    }`}>
-                      <Clock className={`w-4 h-4 ${b.shortfallAmount > 0 ? 'text-rose-600' : 'text-slate-400'}`} />
+                    <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100">
+                      <Clock className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
                       Work Hour Shortfall Cut
                     </span>
                     {b.shortfallHours > 0 && (
-                      <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded border border-rose-200">
+                      <span className="text-[10px] font-bold bg-zinc-200 dark:bg-zinc-750 text-zinc-900 dark:text-zinc-100 px-1.5 py-0.5 rounded border border-zinc-300 dark:border-zinc-700">
                         -{b.shortfallHours.toFixed(1)}h deficit
                       </span>
                     )}
                   </div>
-                  <p className={`text-lg font-black ${b.shortfallAmount > 0 ? 'text-rose-700' : 'text-slate-400'}`}>
+                  <p className="text-lg font-black text-zinc-950 dark:text-zinc-50">
                     {b.shortfallAmount > 0 ? `-${formatINR(b.shortfallAmount)}` : '₹0.00'}
                   </p>
-                  <p className="text-[11px] text-slate-600">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     {b.shortfallAmount > 0
                       ? `Deducted for ${b.shortfallHours.toFixed(1)} deficit hours below standard daily quota`
                       : 'Zero shortfall (Full standard shift hours fulfilled)'}
@@ -1223,39 +1217,31 @@ export const Payroll = () => {
                 </div>
 
                 {/* 3. Statutory Deductions */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-indigo-600" />
+                <div className="p-3 bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-1">
+                  <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-1.5">
+                    <Shield className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
                     Statutory Deductions (PF &amp; Tax)
                   </span>
-                  <p className="text-lg font-black text-slate-900">
+                  <p className="text-lg font-black text-zinc-950 dark:text-zinc-50">
                     -{formatINR(b.pfAmount + b.taxAmount)}
                   </p>
-                  <p className="text-[11px] text-slate-600">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     PF (12%): {formatINR(b.pfAmount)} • TDS/Tax (5%): {formatINR(b.taxAmount)}
                   </p>
                 </div>
 
                 {/* 4. Leaves & Advances */}
-                <div className={`p-3 rounded-xl border space-y-1 ${
-                  (b.leaveCutAmount > 0 || b.advanceAmount > 0)
-                    ? 'bg-amber-50/80 border-amber-200'
-                    : 'bg-slate-50 border-slate-200'
-                }`}>
-                  <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                    (b.leaveCutAmount > 0 || b.advanceAmount > 0) ? 'text-amber-900' : 'text-slate-700'
-                  }`}>
-                    <Banknote className="w-4 h-4 text-amber-600" />
+                <div className="p-3 bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100">
+                    <Banknote className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
                     Leaves &amp; Advances Recovery
                   </span>
-                  <p className={`text-lg font-black ${
-                    (b.leaveCutAmount > 0 || b.advanceAmount > 0) ? 'text-amber-700' : 'text-slate-400'
-                  }`}>
+                  <p className="text-lg font-black text-zinc-950 dark:text-zinc-50">
                     {(b.leaveCutAmount > 0 || b.advanceAmount > 0)
                       ? `-${formatINR(b.leaveCutAmount + b.advanceAmount)}`
                       : '₹0.00'}
                   </p>
-                  <p className="text-[11px] text-slate-600">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     {b.leaveCutAmount > 0
                       ? `${b.leaveCutDays} unpaid day(s) cut (${formatINR(b.leaveCutAmount)})`
                       : b.advanceAmount > 0
@@ -1268,44 +1254,44 @@ export const Payroll = () => {
               {/* Itemized Comparison Breakdown */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 {/* Earnings List */}
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <div className="bg-slate-100/90 px-3 py-1.5 font-bold text-slate-800 text-[11px] uppercase tracking-wider flex justify-between">
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900">
+                  <div className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 font-bold text-zinc-800 dark:text-zinc-200 text-[11px] uppercase tracking-wider flex justify-between">
                     <span>Earnings</span>
                     <span>Amount (₹)</span>
                   </div>
-                  <div className="p-3 divide-y divide-slate-100 space-y-2">
-                    <div className="flex justify-between text-slate-700">
+                  <div className="p-3 divide-y divide-zinc-100 dark:divide-zinc-800 space-y-2">
+                    <div className="flex justify-between text-zinc-700 dark:text-zinc-300">
                       <span>Basic Salary</span>
-                      <span className="font-semibold text-slate-900">{formatINR(b.basicSalary)}</span>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatINR(b.basicSalary)}</span>
                     </div>
-                    <div className="flex justify-between text-slate-700 pt-1.5">
+                    <div className="flex justify-between text-zinc-700 dark:text-zinc-300 pt-1.5">
                       <div>
-                        <span className="font-semibold text-emerald-800">Overtime Earnings</span>
-                        <span className="block text-[10px] text-slate-400 font-mono">
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">Overtime Earnings</span>
+                        <span className="block text-[10px] text-zinc-400 font-mono">
                           +{b.overtimeHours.toFixed(1)} hrs @ 1.5x rate
                         </span>
                       </div>
-                      <span className="font-bold text-emerald-700">+{formatINR(b.overtimePay)}</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100">+{formatINR(b.overtimePay)}</span>
                     </div>
-                    <div className="flex justify-between font-bold text-slate-900 pt-2 border-t border-slate-200">
+                    <div className="flex justify-between font-bold text-zinc-900 dark:text-zinc-100 pt-2 border-t border-zinc-200 dark:border-zinc-800">
                       <span>Total Gross Pay</span>
-                      <span className="text-indigo-600">{formatINR(b.grossSalary)}</span>
+                      <span className="text-zinc-900 dark:text-zinc-100">{formatINR(b.grossSalary)}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Where Salary Was Cut List */}
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <div className="bg-slate-100/90 px-3 py-1.5 font-bold text-slate-800 text-[11px] uppercase tracking-wider flex justify-between">
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900">
+                  <div className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 font-bold text-zinc-800 dark:text-zinc-200 text-[11px] uppercase tracking-wider flex justify-between">
                     <span>Where Salary Was Cut</span>
                     <span>Deduction (₹)</span>
                   </div>
-                  <div className="p-3 divide-y divide-slate-100 space-y-2">
+                  <div className="p-3 divide-y divide-zinc-100 dark:divide-zinc-800 space-y-2">
                     {b.shortfallAmount > 0 ? (
-                      <div className="flex justify-between text-rose-700">
+                      <div className="flex justify-between text-zinc-900 dark:text-zinc-100">
                         <div>
                           <span className="font-semibold">Shortfall Cut</span>
-                          <span className="block text-[10px] text-rose-500 font-mono">
+                          <span className="block text-[10px] text-zinc-500 font-mono">
                             {b.shortfallHours.toFixed(1)}h deficit hours
                           </span>
                         </div>
@@ -1314,10 +1300,10 @@ export const Payroll = () => {
                     ) : null}
 
                     {b.leaveCutAmount > 0 ? (
-                      <div className="flex justify-between text-amber-700 pt-1.5">
+                      <div className="flex justify-between text-zinc-900 dark:text-zinc-100 pt-1.5">
                         <div>
                           <span className="font-semibold">Unpaid Leave Cut</span>
-                          <span className="block text-[10px] text-amber-500 font-mono">
+                          <span className="block text-[10px] text-zinc-500 font-mono">
                             {b.leaveCutDays} day(s) absent
                           </span>
                         </div>
@@ -1326,42 +1312,42 @@ export const Payroll = () => {
                     ) : null}
 
                     {b.advanceAmount > 0 ? (
-                      <div className="flex justify-between text-purple-700 pt-1.5">
+                      <div className="flex justify-between text-zinc-900 dark:text-zinc-100 pt-1.5">
                         <span className="font-semibold">Advance Recovery</span>
                         <span className="font-bold">-{formatINR(b.advanceAmount)}</span>
                       </div>
                     ) : null}
 
-                    <div className="flex justify-between text-slate-700 pt-1.5">
+                    <div className="flex justify-between text-zinc-700 dark:text-zinc-300 pt-1.5">
                       <span>Provident Fund (12%)</span>
                       <span className="font-semibold">-{formatINR(b.pfAmount)}</span>
                     </div>
 
-                    <div className="flex justify-between text-slate-700 pt-1.5">
+                    <div className="flex justify-between text-zinc-700 dark:text-zinc-300 pt-1.5">
                       <span>Professional Tax &amp; TDS (5%)</span>
                       <span className="font-semibold">-{formatINR(b.taxAmount)}</span>
                     </div>
 
-                    <div className="flex justify-between font-bold text-slate-900 pt-2 border-t border-slate-200">
+                    <div className="flex justify-between font-bold text-zinc-900 dark:text-zinc-100 pt-2 border-t border-zinc-200 dark:border-zinc-800">
                       <span>Total Wage Cuts</span>
-                      <span className="text-rose-600">-{formatINR(b.totalDeductions)}</span>
+                      <span className="text-zinc-900 dark:text-zinc-100">-{formatINR(b.totalDeductions)}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Equation Calculation Note */}
-              <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl flex items-center justify-between text-[11px] text-indigo-950 font-medium">
+              <div className="p-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl flex items-center justify-between text-[11px] text-zinc-900 dark:text-zinc-100 font-medium">
                 <span>
                   Gross ({formatINR(b.grossSalary)}) − Total Cuts ({formatINR(b.totalDeductions)})
                 </span>
-                <span className="font-bold text-emerald-700 text-xs">
+                <span className="font-bold text-zinc-950 dark:text-zinc-50 text-xs">
                   = In-Hand Credited: {formatINR(b.netSalary)}
                 </span>
               </div>
 
               {/* Modal Footer Actions */}
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-zinc-200 dark:border-zinc-800">
                 <button
                   type="button"
                   onClick={() => {
@@ -1369,15 +1355,15 @@ export const Payroll = () => {
                     setBreakdownModalPayslip(null);
                     setViewPayslip(target);
                   }}
-                  className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                  className="px-3 py-1.5 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                 >
-                  <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                  <FileText className="w-3.5 h-3.5" />
                   <span>View &amp; Print Official Payslip</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setBreakdownModalPayslip(null)}
-                  className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold transition-colors cursor-pointer"
+                  className="px-4 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg font-semibold transition-colors cursor-pointer"
                 >
                   Close
                 </button>
@@ -1400,53 +1386,53 @@ export const Payroll = () => {
           return (
             <div className="space-y-4 text-xs">
               {/* Header / Company Banner */}
-              <div className="border border-slate-200 rounded-xl p-4 bg-white shadow-2xs space-y-4 printable-payslip">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-white dark:bg-zinc-900 shadow-2xs space-y-4 printable-payslip">
+                <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                      <Building className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-base font-extrabold text-zinc-950 dark:text-zinc-100 tracking-tight flex items-center gap-2">
+                      <Building className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
                       <span>{business?.name || 'Trinetra Technologies Pvt Ltd'}</span>
                     </h3>
-                    <p className="text-[11px] text-slate-500">Corporate Campus (HQ) • Verified Workforce Platform</p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Corporate Campus (HQ) • Verified Workforce Platform</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded uppercase">
+                    <span className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-2 py-0.5 rounded uppercase">
                       Official Payslip
                     </span>
-                    <p className="text-[11px] text-slate-600 font-mono mt-1 font-bold">
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-mono mt-1 font-bold">
                       {viewPayslip.payslip_number || 'PS-202610-0001'}
                     </p>
                   </div>
                 </div>
 
                 {/* Employee Summary Details */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-zinc-50 dark:bg-zinc-850 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800">
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Employee Name</p>
-                    <p className="font-bold text-slate-800 text-xs mt-0.5">{viewPayslip.employee_name || user?.full_name}</p>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase">Employee Name</p>
+                    <p className="font-bold text-zinc-900 dark:text-zinc-100 text-xs mt-0.5">{viewPayslip.employee_name || user?.full_name}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Employee ID</p>
-                    <p className="font-mono font-bold text-slate-800 text-xs mt-0.5">{viewPayslip.employee_code || 'TRIN-0009'}</p>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase">Employee ID</p>
+                    <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100 text-xs mt-0.5">{viewPayslip.employee_code || 'TRIN-0009'}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Pay Period</p>
-                    <p className="font-semibold text-slate-800 text-xs mt-0.5">{viewPayslip.period_display || viewPayslip.period || 'October 2026'}</p>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase">Pay Period</p>
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs mt-0.5">{viewPayslip.period_display || viewPayslip.period || 'October 2026'}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Payment Status</p>
-                    <p className="font-bold text-emerald-600 text-xs mt-0.5">VERIFIED / ISSUED</p>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase">Payment Status</p>
+                    <p className="font-bold text-zinc-900 dark:text-zinc-100 text-xs mt-0.5">VERIFIED / ISSUED</p>
                   </div>
                 </div>
 
                 {/* Work Hours & Overtime Summary if present */}
                 {Number(viewPayslip.overtime_hours || 0) > 0 && (
-                  <div className="p-2.5 bg-indigo-50/60 rounded-lg border border-indigo-100 flex items-center justify-between text-[11px]">
-                    <span className="font-semibold text-indigo-900 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                  <div className="p-2.5 bg-zinc-50 dark:bg-zinc-850 rounded-lg border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
                       Recorded Overtime Working Hours:
                     </span>
-                    <span className="font-bold text-indigo-800 font-mono">
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100 font-mono">
                       {Number(viewPayslip.overtime_hours).toFixed(2)} hrs (Paid at company rate)
                     </span>
                   </div>
@@ -1455,103 +1441,103 @@ export const Payroll = () => {
                 {/* Earnings & Deductions Tables */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Earnings Breakdown */}
-                  <div className="border border-slate-200 rounded-lg overflow-hidden">
-                    <div className="bg-slate-100/80 px-3 py-1.5 font-bold text-slate-700 text-[11px] uppercase tracking-wider flex justify-between">
+                  <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-900">
+                    <div className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 font-bold text-zinc-800 dark:text-zinc-200 text-[11px] uppercase tracking-wider flex justify-between">
                       <span>Earnings</span>
                       <span>Amount (₹)</span>
                     </div>
-                    <div className="divide-y divide-slate-100 p-2 space-y-1.5">
+                    <div className="divide-y divide-zinc-100 dark:divide-zinc-800 p-2 space-y-1.5">
                       {earningsList.length > 0 ? (
                         earningsList.map((c, i) => (
-                          <div key={i} className="flex justify-between text-slate-700">
+                          <div key={i} className="flex justify-between text-zinc-700 dark:text-zinc-300">
                             <div>
-                              <span className="font-medium text-slate-800">{c.component_name}</span>
+                              <span className="font-medium text-zinc-900 dark:text-zinc-100">{c.component_name}</span>
                               {c.calculation_details?.overtime_hours && (
-                                <span className="block text-[10px] text-slate-400 font-mono">
+                                <span className="block text-[10px] text-zinc-400 font-mono">
                                   {c.calculation_details.overtime_hours} hrs @ ₹{c.calculation_details.hourly_rate}/hr ({c.calculation_details.multiplier}x rate)
                                 </span>
                               )}
                             </div>
-                            <span className="font-semibold text-slate-900">{formatINR(c.amount)}</span>
+                            <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatINR(c.amount)}</span>
                           </div>
                         ))
                       ) : (
                         <>
-                          <div className="flex justify-between text-slate-700">
+                          <div className="flex justify-between text-zinc-700 dark:text-zinc-300">
                             <span>Basic Salary</span>
                             <span className="font-semibold">{formatINR(Number(viewPayslip.gross_salary || 55000) * 0.7)}</span>
                           </div>
-                          <div className="flex justify-between text-slate-700">
+                          <div className="flex justify-between text-zinc-700 dark:text-zinc-300">
                             <span>House Rent Allowance (HRA)</span>
                             <span className="font-semibold">{formatINR(Number(viewPayslip.gross_salary || 55000) * 0.2)}</span>
                           </div>
-                          <div className="flex justify-between text-slate-700">
+                          <div className="flex justify-between text-zinc-700 dark:text-zinc-300">
                             <span>Special Allowance</span>
                             <span className="font-semibold">{formatINR(Number(viewPayslip.gross_salary || 55000) * 0.1)}</span>
                           </div>
                         </>
                       )}
-                      <div className="flex justify-between font-bold text-slate-900 pt-1.5 border-t border-slate-200">
+                      <div className="flex justify-between font-bold text-zinc-900 dark:text-zinc-100 pt-1.5 border-t border-zinc-200 dark:border-zinc-800">
                         <span>Gross Earnings</span>
-                        <span className="text-indigo-600">{formatINR(viewPayslip.gross_salary || 55000)}</span>
+                        <span className="text-zinc-900 dark:text-zinc-100">{formatINR(viewPayslip.gross_salary || 55000)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Deductions Breakdown */}
-                  <div className="border border-slate-200 rounded-lg overflow-hidden">
-                    <div className="bg-slate-100/80 px-3 py-1.5 font-bold text-slate-700 text-[11px] uppercase tracking-wider flex justify-between">
+                  <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-900">
+                    <div className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 font-bold text-zinc-800 dark:text-zinc-200 text-[11px] uppercase tracking-wider flex justify-between">
                       <span>Deductions</span>
                       <span>Amount (₹)</span>
                     </div>
-                    <div className="divide-y divide-slate-100 p-2 space-y-1.5">
+                    <div className="divide-y divide-zinc-100 dark:divide-zinc-800 p-2 space-y-1.5">
                       {deductionsList.length > 0 ? (
                         deductionsList.map((c, i) => (
-                          <div key={i} className="flex justify-between text-slate-700">
+                          <div key={i} className="flex justify-between text-zinc-700 dark:text-zinc-300">
                             <div>
-                              <span className="font-medium text-slate-800">{c.component_name}</span>
+                              <span className="font-medium text-zinc-900 dark:text-zinc-100">{c.component_name}</span>
                               {c.calculation_details?.shortfall_hours && (
-                                <span className="block text-[10px] text-rose-500 font-mono">
+                                <span className="block text-[10px] text-zinc-500 font-mono">
                                   Deficit: {c.calculation_details.shortfall_hours} hrs short @ ₹{c.calculation_details.hourly_rate}/hr
                                 </span>
                               )}
                               {c.calculation_details?.unpaid_days && (
-                                <span className="block text-[10px] text-rose-500 font-mono">
+                                <span className="block text-[10px] text-zinc-500 font-mono">
                                   {c.calculation_details.unpaid_days} days absent @ ₹{c.calculation_details.daily_rate}/day
                                 </span>
                               )}
                             </div>
-                            <span className="font-semibold text-rose-600">{formatINR(c.amount)}</span>
+                            <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatINR(c.amount)}</span>
                           </div>
                         ))
                       ) : (
                         <>
-                          <div className="flex justify-between text-slate-700">
+                          <div className="flex justify-between text-zinc-700 dark:text-zinc-300">
                             <span>Provident Fund (PF - 12%)</span>
                             <span className="font-semibold">{formatINR(Number(viewPayslip.gross_salary || 55000) * 0.12)}</span>
                           </div>
-                          <div className="flex justify-between text-slate-700">
+                          <div className="flex justify-between text-zinc-700 dark:text-zinc-300">
                             <span>Professional Tax &amp; TDS (5%)</span>
                             <span className="font-semibold">{formatINR(Number(viewPayslip.gross_salary || 55000) * 0.05)}</span>
                           </div>
                         </>
                       )}
-                      <div className="flex justify-between font-bold text-slate-900 pt-1.5 border-t border-slate-200">
+                      <div className="flex justify-between font-bold text-zinc-900 dark:text-zinc-100 pt-1.5 border-t border-zinc-200 dark:border-zinc-800">
                         <span>Total Deductions</span>
-                        <span className="text-rose-600">{formatINR(viewPayslip.total_deductions || 5200)}</span>
+                        <span className="text-zinc-900 dark:text-zinc-100">{formatINR(viewPayslip.total_deductions || 5200)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Net Payout Banner */}
-                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
+                <div className="p-3 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wide">Net Take-Home Salary</p>
-                    <p className="text-xs text-emerald-700 mt-0.5">Credited directly to registered bank account</p>
+                    <p className="text-[10px] font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wide">Net Take-Home Salary</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Credited directly to registered bank account</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-black text-emerald-700">
+                    <span className="text-xl font-black text-zinc-950 dark:text-zinc-50">
                       {formatINR(viewPayslip.net_salary || 49800)}
                     </span>
                   </div>
@@ -1563,7 +1549,7 @@ export const Payroll = () => {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold flex items-center gap-1.5 shadow-sm"
+                  className="px-3.5 py-1.5 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>Print / Save as PDF</span>
@@ -1571,7 +1557,7 @@ export const Payroll = () => {
                 <button
                   type="button"
                   onClick={() => setViewPayslip(null)}
-                  className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold"
+                  className="px-3 py-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg font-semibold cursor-pointer"
                 >
                   Close
                 </button>

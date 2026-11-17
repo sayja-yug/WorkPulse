@@ -31,7 +31,12 @@ import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from '../../utils/constants';
 import { Modal } from '../ui/Modal';
 
-export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
+export const Sidebar = ({
+  isOpen = false,
+  onClose = () => {},
+  isCollapsed = false,
+  onToggleCollapse,
+}) => {
   const {
     user,
     activeRole,
@@ -261,29 +266,33 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-zinc-950 text-zinc-300 flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] border-r border-zinc-800/80 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:z-30 select-none ${
+      className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-zinc-950 text-zinc-300 flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] border-r border-zinc-800/80 transition-all duration-200 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:z-30 select-none ${
+        isCollapsed ? 'lg:w-20' : 'lg:w-64 xl:w-72'
+      } ${
         isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
       }`}
     >
       {/* 1. Header: Brand & Notification Quick Action */}
-      <div className="h-16 px-4 sm:px-5 flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950 shrink-0">
+      <div className={`h-16 px-4 flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950 shrink-0 ${isCollapsed ? 'lg:justify-center lg:px-2' : 'sm:px-5'}`}>
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-white text-zinc-950 flex items-center justify-center font-black text-base shadow-sm shrink-0">
             W
           </div>
-          <div className="min-w-0">
-            <h1 className="text-sm font-bold text-white tracking-tight leading-none truncate">
-              WorkPulse
-            </h1>
-            <p className="text-[10px] text-zinc-400 font-medium tracking-wider uppercase mt-1 leading-none">
-              Enterprise HRMS
-            </p>
-          </div>
+          {!isCollapsed && (
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold text-white tracking-tight leading-none truncate">
+                WorkPulse
+              </h1>
+              <p className="text-[10px] text-zinc-400 font-medium tracking-wider uppercase mt-1 leading-none">
+                Enterprise HRMS
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Notification Bell Button */}
-          <div className="relative" ref={notifDropdownRef}>
+          {!isCollapsed && (
+            <div className="relative" ref={notifDropdownRef}>
             <button
               type="button"
               onClick={() => setShowNotifications(!showNotifications)}
@@ -396,6 +405,7 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
               </div>
             )}
           </div>
+          )}
 
           {/* Mobile close button */}
           <button
@@ -482,7 +492,7 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
       </div>
 
       {/* 3. Navigation Menu Items */}
-      <nav className="flex-1 min-h-0 px-3 py-3 space-y-1 overflow-y-auto overscroll-contain">
+      <nav className={`flex-1 min-h-0 py-3 space-y-1 overflow-y-auto overscroll-contain ${isCollapsed ? 'px-2' : 'px-3'}`}>
         {visibleNavItems.map((item) => {
           const displayName = isEmployeeRole && item.employeeName ? item.employeeName : item.name;
           return (
@@ -491,8 +501,11 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
               to={item.path}
               end={item.path === '/'}
               onClick={onClose}
+              title={isCollapsed ? displayName : undefined}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
+                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                  isCollapsed ? 'lg:justify-center lg:px-2' : ''
+                } ${
                   isActive
                     ? 'bg-white text-zinc-950 font-bold shadow-xs'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
@@ -500,7 +513,7 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
               }
             >
               <item.icon className="w-4 h-4 shrink-0" />
-              <span className="truncate">{displayName}</span>
+              {!isCollapsed && <span className="truncate">{displayName}</span>}
             </NavLink>
           );
         })}
@@ -509,8 +522,11 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
           <NavLink
             to="/testing-panel"
             onClick={onClose}
+            title={isCollapsed ? "Diagnostics" : undefined}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                isCollapsed ? 'lg:justify-center lg:px-2' : ''
+              } ${
                 isActive
                   ? 'bg-zinc-800 text-white font-bold'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
@@ -518,43 +534,50 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
             }
           >
             <Terminal className="w-4 h-4 shrink-0" />
-            <span className="truncate">Diagnostics</span>
+            {!isCollapsed && <span className="truncate">Diagnostics</span>}
           </NavLink>
         </div>
       </nav>
 
       {/* 4. Bottom User Profile & Logout Bar */}
-      <div className="p-3 border-t border-zinc-800/80 bg-zinc-950 shrink-0 pb-safe pb-4 sm:pb-3">
-        <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800">
+      <div className={`p-3 border-t border-zinc-800/80 bg-zinc-950 shrink-0 pb-safe pb-4 sm:pb-3 ${isCollapsed ? 'lg:p-2' : ''}`}>
+        <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800 ${isCollapsed ? 'lg:justify-center lg:p-1.5' : ''}`}>
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-white text-zinc-950 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+            <div
+              className="w-8 h-8 rounded-full bg-white text-zinc-950 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs"
+              title={isCollapsed ? `${user?.full_name || user?.email} (${roleLabel})` : undefined}
+            >
               {user?.first_name ? user.first_name[0].toUpperCase() : 'U'}
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-white truncate leading-tight">
-                {user?.full_name || user?.email}
-              </p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 leading-tight">
-                  {roleLabel}
-                </span>
+            {!isCollapsed && (
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate leading-tight">
+                  {user?.full_name || user?.email}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 leading-tight">
+                    {roleLabel}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              logout();
-            }}
-            title="Log out of account"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800 hover:bg-rose-950/80 hover:text-rose-200 border border-zinc-700 hover:border-rose-800 rounded-lg transition-colors cursor-pointer shrink-0"
-            aria-label="Logout"
-          >
-            <LogOut className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="text-[11px] font-bold">Logout</span>
-          </button>
+          {!isCollapsed && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                logout();
+              }}
+              title="Log out of account"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800 hover:bg-rose-950/80 hover:text-rose-200 border border-zinc-700 hover:border-rose-800 rounded-lg transition-colors cursor-pointer shrink-0"
+              aria-label="Logout"
+            >
+              <LogOut className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="text-[11px] font-bold">Logout</span>
+            </button>
+          )}
         </div>
       </div>
 

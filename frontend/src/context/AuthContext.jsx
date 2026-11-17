@@ -58,11 +58,24 @@ export const AuthProvider = ({ children }) => {
     fetchSession();
   }, []);
 
-  const login = async (email, password, businessId = null) => {
-    const payloadData = { email, password };
-    if (businessId && businessId !== 'AUTO') {
-      payloadData.business_id = businessId;
+  const login = async (emailOrPayload, passwordArg, businessId = null) => {
+    let payloadData;
+    if (typeof emailOrPayload === 'object' && emailOrPayload !== null) {
+      payloadData = {
+        email: emailOrPayload.email,
+        password: emailOrPayload.password,
+      };
+      const bId = emailOrPayload.business_id || emailOrPayload.businessId;
+      if (bId && bId !== 'AUTO') {
+        payloadData.business_id = bId;
+      }
+    } else {
+      payloadData = { email: emailOrPayload, password: passwordArg };
+      if (businessId && businessId !== 'AUTO') {
+        payloadData.business_id = businessId;
+      }
     }
+
     const res = await api.post('/auth/login/', payloadData);
     const payload = res.data?.data || res.data;
     const access = payload?.access;

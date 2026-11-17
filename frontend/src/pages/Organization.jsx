@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Building2,
   MapPin,
   Users,
   Briefcase,
   Calendar,
+  CalendarCheck2,
   Sparkles,
   Plus,
   Edit3,
@@ -38,6 +39,7 @@ const ALL_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'S
 
 export const Organization = () => {
   const { business } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(true);
 
@@ -624,7 +626,16 @@ export const Organization = () => {
                         {b.is_active !== false ? 'ACTIVE' : 'INACTIVE'}
                       </Badge>
                     </td>
-                    <td className="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                      <Button
+                        size="xs"
+                        variant="primary"
+                        leftIcon={CalendarCheck2}
+                        onClick={() => navigate(`/attendance?branch=${b.id}&branchName=${encodeURIComponent(b.name)}`)}
+                        title={`View attendance for ${b.name}`}
+                      >
+                        Attendance
+                      </Button>
                       <Button
                         size="xs"
                         variant="secondary"
@@ -1002,9 +1013,14 @@ export const Organization = () => {
               <Button size="xs" variant="secondary" onClick={() => handleViewBranchEmployees(selectedBranch)}>
                 View Employees
               </Button>
-              <Link to="/attendance" className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-lg font-bold text-xs">
-                Attendance
-              </Link>
+              <Button
+                size="xs"
+                variant="outline"
+                leftIcon={CalendarCheck2}
+                onClick={() => navigate(`/attendance?branch=${selectedBranch.id}&branchName=${encodeURIComponent(selectedBranch.name)}`)}
+              >
+                Branch Attendance
+              </Button>
             </div>
 
             {showBranchEmployees && (

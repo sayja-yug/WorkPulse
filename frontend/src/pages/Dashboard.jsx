@@ -59,8 +59,11 @@ export const Dashboard = () => {
     try {
       const attListRes = await api.get('/attendance/');
       const list = attListRes.value?.data?.data || attListRes.data?.data || attListRes.data?.results || attListRes.data || [];
-      const todayStr = new Date().toISOString().split('T')[0];
-      const found = Array.isArray(list) ? list.find((r) => r.date === todayStr) : null;
+      const localToday = new Date().toLocaleDateString('en-CA');
+      const utcToday = new Date().toISOString().split('T')[0];
+      const found = Array.isArray(list)
+        ? list.find((r) => r.date === localToday || r.date === utcToday)
+        : null;
       setTodayRecord(found || null);
     } catch {
       // silent
@@ -70,11 +73,14 @@ export const Dashboard = () => {
   const handleDashboardPunchIn = async () => {
     try {
       setPunchingAction(true);
-      await api.post('/attendance/check-in/', {
+      const res = await api.post('/attendance/check-in/', {
         latitude: 28.6280,
         longitude: 77.3649,
         source: 'WEB',
       });
+      if (res.data?.data) {
+        setTodayRecord(res.data.data);
+      }
       await fetchAttendanceRecord();
       toast.success('Punched in successfully! Have a productive day.');
     } catch (err) {
@@ -87,10 +93,13 @@ export const Dashboard = () => {
   const handleDashboardPunchOut = async () => {
     try {
       setPunchingAction(true);
-      await api.post('/attendance/check-out/', {
+      const res = await api.post('/attendance/check-out/', {
         latitude: 28.6280,
         longitude: 77.3649,
       });
+      if (res.data?.data) {
+        setTodayRecord(res.data.data);
+      }
       await fetchAttendanceRecord();
       toast.info('Punched out successfully! Work session ended.');
     } catch (err) {
@@ -160,35 +169,65 @@ export const Dashboard = () => {
     loadDashboard();
   }, [business]);
 
+  const parseCheckInDate = (val) => {
+    if (!val) return null;
+    if (val instanceof Date && !isNaN(val.getTime())) return val;
+
+    if (typeof val === 'string') {
+      // Handles ISO formats like "2026-11-17T13:08:00Z" or "2026-11-17 13:08:00"
+      if (val.includes('T') || val.includes('-') || val.includes('/')) {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) return d;
+      }
+      // Handles bare time strings like "13:08:00" or "01:08:00"
+      const match = val.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      if (match) {
+        const now = new Date();
+        now.setHours(Number(match[1]) || 0, Number(match[2]) || 0, Number(match[3]) || 0, 0);
+        return now;
+      }
+      const fallback = new Date(val);
+      if (!isNaN(fallback.getTime())) return fallback;
+    }
+    return null;
+  };
+
   const computeRealtimeHours = () => {
     if (!todayRecord) return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false };
 
+    // Active live shift (Checked in but not checked out yet)
     if (todayRecord.check_in && !todayRecord.check_out) {
-      const parts = todayRecord.check_in.split(':');
-      const inDate = new Date();
-      inDate.setHours(Number(parts[0]), Number(parts[1]), Number(parts[2] || 0), 0);
+      const inDate = parseCheckInDate(todayRecord.check_in);
+
+      if (!inDate || isNaN(inDate.getTime())) {
+        return { formatted: '0.00 hrs', text: 'Active shift', isLive: true };
+      }
 
       const diffMs = Math.max(0, currentTime.getTime() - inDate.getTime());
       const totalHours = diffMs / (1000 * 60 * 60);
-      const hrs = Math.floor(totalHours);
-      const mins = Math.floor((totalHours - hrs) * 60);
+      const safeHours = isNaN(totalHours) || !isFinite(totalHours) ? 0 : totalHours;
+      const hrs = Math.floor(safeHours);
+      const mins = Math.floor((safeHours - hrs) * 60);
 
       return {
-        formatted: `${totalHours.toFixed(2)} hrs`,
+        formatted: `${safeHours.toFixed(2)} hrs`,
         text: `${hrs}h ${mins}m active`,
         isLive: true,
       };
     }
 
-    if (todayRecord.working_hours) {
+    // Completed shift (Already checked out, working_hours calculated by server)
+    if (todayRecord.working_hours !== undefined && todayRecord.working_hours !== null) {
       const num = Number(todayRecord.working_hours);
-      const hrs = Math.floor(num);
-      const mins = Math.round((num - hrs) * 60);
-      return {
-        formatted: `${num.toFixed(2)} hrs`,
-        text: `${hrs}h ${mins}m completed`,
-        isLive: false,
-      };
+      if (!isNaN(num) && isFinite(num)) {
+        const hrs = Math.floor(num);
+        const mins = Math.round((num - hrs) * 60);
+        return {
+          formatted: `${num.toFixed(2)} hrs`,
+          text: `${hrs}h ${mins}m completed`,
+          isLive: false,
+        };
+      }
     }
 
     return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false };

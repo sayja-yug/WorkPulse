@@ -53,10 +53,32 @@ class EmployeeListSerializer(serializers.ModelSerializer):
         return rec.check_in if rec else None
 
     def get_duty_status(self, obj):
-        rec = self._get_today_record(obj)
-        if rec and rec.check_in and not rec.check_out:
-            return 'ACTIVE'
-        return 'INACTIVE'
+        # In mid and enterprise companies, punch-out does not make an employee inactive
+        return obj.status
+
+    def _get_last_punch_date(self, obj):
+        if not hasattr(obj, '_cached_last_punch'):
+            from apps.attendance.models import AttendanceRecord
+            last_rec = AttendanceRecord.objects.filter(employee=obj, check_in__isnull=False).order_by('-date').first()
+            obj._cached_last_punch = str(last_rec.date) if last_rec else None
+        return obj._cached_last_punch
+
+    def get_last_punch_date(self, obj):
+        return self._get_last_punch_date(obj)
+
+    def get_unpunched_days(self, obj):
+        from datetime import date
+        today = timezone.now().date()
+        last_date = self._get_last_punch_date(obj)
+        if last_date:
+            try:
+                d = date.fromisoformat(last_date)
+                return max(0, (today - d).days)
+            except Exception:
+                pass
+        if obj.joining_date:
+            return max(0, (today - obj.joining_date).days)
+        return 0
 
     class Meta:
         model = Employee
@@ -65,6 +87,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
             'email', 'phone', 'branch', 'branch_name', 'department', 'department_name',
             'designation', 'designation_name', 'employment_type', 'salary_type',
             'status', 'duty_status', 'is_punched_in', 'check_in_time',
+            'last_punch_date', 'unpunched_days',
             'joining_date', 'emergency_contact_name', 'emergency_contact_phone',
             'address', 'city'
         ]

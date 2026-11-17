@@ -8,6 +8,7 @@ import {
   Users,
   CalendarCheck2,
   AlertCircle,
+  AlertTriangle,
   Banknote,
   Receipt,
   TrendingUp,
@@ -24,7 +25,8 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { formatINR, formatTime } from '../utils/formatters';
 import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
-import { calculateWorkHoursSummary } from '../utils/workHours';
+import { calculateWorkHoursSummary, parseCheckInDate } from '../utils/workHours';
+import { calculateEmployeeInactivity } from '../utils/employeeInactivity';
 
 export const Dashboard = () => {
   const { user, business, activeRole } = useAuth();
@@ -48,6 +50,7 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [punchingAction, setPunchingAction] = useState(false);
+  const [inactiveEmployees, setInactiveEmployees] = useState([]);
 
   // Live timer tick every 10 seconds for real-time employee working hours
   useEffect(() => {
@@ -161,6 +164,29 @@ export const Dashboard = () => {
         }
 
         await fetchAttendanceRecord();
+
+        // For Business Owners and HR, compute any employees inactive for 3+ consecutive days
+        if (!isEmployee) {
+          try {
+            const [empRes, attRes] = await Promise.all([
+              api.get('/employees/'),
+              api.get('/attendance/'),
+            ]);
+            const empList = empRes.data?.data || empRes.data?.results || empRes.data || [];
+            const attList = attRes.data?.data || attRes.data?.results || attRes.data || [];
+            if (Array.isArray(empList)) {
+              const inactiveList = empList
+                .map((emp) => {
+                  const inact = calculateEmployeeInactivity(emp, attList);
+                  return { ...emp, inactivity: inact };
+                })
+                .filter((emp) => emp.inactivity.isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED');
+              setInactiveEmployees(inactiveList);
+            }
+          } catch {
+            // silent
+          }
+        }
       } catch (err) {
         console.error('Failed to load dashboard:', err);
       } finally {
@@ -169,37 +195,14 @@ export const Dashboard = () => {
     };
 
     loadDashboard();
-  }, [business]);
-
-  const parseCheckInDate = (val) => {
-    if (!val) return null;
-    if (val instanceof Date && !isNaN(val.getTime())) return val;
-
-    if (typeof val === 'string') {
-      // Handles ISO formats like "2026-11-17T13:08:00Z" or "2026-11-17 13:08:00"
-      if (val.includes('T') || val.includes('-') || val.includes('/')) {
-        const d = new Date(val);
-        if (!isNaN(d.getTime())) return d;
-      }
-      // Handles bare time strings like "13:08:00" or "01:08:00"
-      const match = val.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-      if (match) {
-        const now = new Date();
-        now.setHours(Number(match[1]) || 0, Number(match[2]) || 0, Number(match[3]) || 0, 0);
-        return now;
-      }
-      const fallback = new Date(val);
-      if (!isNaN(fallback.getTime())) return fallback;
-    }
-    return null;
-  };
+  }, [business, isEmployee]);
 
   const computeRealtimeHours = () => {
     if (!todayRecord) return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false, hours: 0 };
 
     // Active live shift (Checked in but not checked out yet)
     if (todayRecord.check_in && !todayRecord.check_out) {
-      const inDate = parseCheckInDate(todayRecord.check_in);
+      const inDate = parseCheckInDate(todayRecord.check_in, todayRecord.date);
 
       if (!inDate || isNaN(inDate.getTime())) {
         return { formatted: '0.00 hrs', text: 'Active shift', isLive: true, hours: 0 };
@@ -207,7 +210,7 @@ export const Dashboard = () => {
 
       const diffMs = Math.max(0, currentTime.getTime() - inDate.getTime());
       const totalHours = diffMs / (1000 * 60 * 60);
-      const safeHours = isNaN(totalHours) || !isFinite(totalHours) ? 0 : totalHours;
+      const safeHours = isNaN(totalHours) || !isFinite(totalHours) ? 0 : Math.max(0, totalHours);
       const hrs = Math.floor(safeHours);
       const mins = Math.floor((safeHours - hrs) * 60);
 
@@ -369,6 +372,64 @@ export const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Enterprise Inactivity Notification Alert Banner (Owner & HR View) */}
+      {!isEmployee && inactiveEmployees.length > 0 && (
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-amber-300 shadow-sm relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 shrink-0 mt-0.5 sm:mt-0">
+                <AlertTriangle className="w-5 h-5 text-amber-700" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-zinc-950">
+                    Enterprise Attendance Alert: {inactiveEmployees.length} Employee{inactiveEmployees.length > 1 ? 's' : ''} Inactive
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 uppercase tracking-wide">
+                    3+ Days No Punch
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-600 mt-0.5 leading-relaxed">
+                  These employees have not logged a punch-in for 3 or more consecutive working days. Their profile status is marked inactive until attendance is resumed or reviewed by HR.
+                </p>
+
+                {/* Inactive Employee Quick Summary Chips */}
+                <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                  {inactiveEmployees.slice(0, 5).map((emp) => (
+                    <Link
+                      key={emp.id}
+                      to={`/employees/${emp.id}`}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-50 hover:bg-amber-50 text-zinc-800 hover:text-amber-900 border border-zinc-200 text-xs font-semibold transition-colors"
+                      title={emp.inactivity?.label}
+                    >
+                      <span>{emp.full_name}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
+                        {emp.inactivity?.days}d unpunched
+                      </span>
+                    </Link>
+                  ))}
+                  {inactiveEmployees.length > 5 && (
+                    <span className="text-xs text-zinc-500 font-medium px-1">
+                      +{inactiveEmployees.length - 5} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0 self-start sm:self-center">
+              <Link
+                to="/employees?status=INACTIVE_3_DAYS"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-950 text-white text-xs font-bold hover:bg-zinc-800 transition-colors shadow-xs"
+              >
+                <span>Review In HR Directory</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. KPI Cards Grid */}
       {isEmployee ? (

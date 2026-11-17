@@ -28,11 +28,13 @@ import {
   MapPin,
   Check,
   Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import { formatDate } from '../utils/formatters';
+import { calculateEmployeeInactivity } from '../utils/employeeInactivity';
 
 const INITIAL_FORM = () => ({
   first_name: '',
@@ -79,7 +81,8 @@ export const Employees = () => {
   const [branchFilter, setBranchFilter] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [desigFilter, setDesigFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
 
   // Modals & Popups
   const [showModal, setShowModal] = useState(searchParams.get('action') === 'add');
@@ -114,6 +117,7 @@ export const Employees = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
+      const isCustomFilter = statusFilter === 'INACTIVE_3_DAYS';
       const res = await api.get('/employees/', {
         params: {
           page,
@@ -121,7 +125,7 @@ export const Employees = () => {
           branch: branchFilter || undefined,
           department: deptFilter || undefined,
           designation: desigFilter || undefined,
-          status: statusFilter || undefined,
+          status: isCustomFilter ? undefined : (statusFilter || undefined),
         },
       });
       const list = res.data?.results || res.data?.data || res.data || [];
@@ -146,13 +150,28 @@ export const Employees = () => {
       api.get('/branches/departments/'),
       api.get('/branches/designations/'),
       api.get('/shifts/'),
-    ]).then(([bRes, dRes, gRes, sRes]) => {
+      api.get('/attendance/'),
+    ]).then(([bRes, dRes, gRes, sRes, aRes]) => {
       if (bRes.status === 'fulfilled') setBranches(bRes.value.data?.results || bRes.value.data?.data || []);
       if (dRes.status === 'fulfilled') setDepartments(dRes.value.data?.results || dRes.value.data?.data || []);
       if (gRes.status === 'fulfilled') setDesignations(gRes.value.data?.results || gRes.value.data?.data || []);
       if (sRes.status === 'fulfilled') setShifts(sRes.value.data?.results || sRes.value.data?.data || []);
+      if (aRes.status === 'fulfilled') setAttendanceRecords(aRes.value.data?.results || aRes.value.data?.data || []);
     });
   }, []);
+
+  const getInactivity = (emp) => calculateEmployeeInactivity(emp, attendanceRecords);
+
+  const displayedEmployees = employees.filter((emp) => {
+    if (statusFilter === 'INACTIVE_3_DAYS') {
+      return getInactivity(emp).isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED';
+    }
+    return true;
+  });
+
+  const inactiveEmployees = employees.filter(
+    (emp) => getInactivity(emp).isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED'
+  );
 
   const resetFilters = () => {
     setSearch('');
@@ -567,10 +586,11 @@ export const Employees = () => {
             className="px-3 py-2 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
           >
             <option value="">Filter by Status (All)</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive / Draft</option>
+            <option value="ACTIVE">Active (Working)</option>
+            <option value="INACTIVE_3_DAYS">Inactive (3+ Days No Punch)</option>
             <option value="ON_NOTICE">On Notice</option>
             <option value="TERMINATED">Terminated</option>
+            <option value="RESIGNED">Resigned</option>
           </select>
         </div>
 
@@ -626,11 +646,40 @@ export const Employees = () => {
         )}
       </div>
 
+      {/* HR Enterprise Notice: Inactive Employees (3+ Days No Punch) */}
+      {inactiveEmployees.length > 0 && (
+        <div className="p-4 bg-amber-50/80 border border-amber-300 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-amber-950">
+                Attendance Inactivity Alert: {inactiveEmployees.length} employee{inactiveEmployees.length > 1 ? 's' : ''} unpunched for 3+ consecutive days.
+              </p>
+              <p className="text-zinc-600 mt-0.5">
+                Under enterprise policy, employees without attendance for 3 or more days are marked inactive in the system until next clock-in.
+              </p>
+            </div>
+          </div>
+          {statusFilter !== 'INACTIVE_3_DAYS' && (
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('INACTIVE_3_DAYS');
+                setPage(1);
+              }}
+              className="px-3 py-1.5 bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold rounded-lg border border-amber-300 text-xs shrink-0 transition-colors cursor-pointer"
+            >
+              Show Inactive Only ({inactiveEmployees.length})
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Employee Table */}
       <div className="bg-white  rounded-xl border border-zinc-200  shadow-xs overflow-hidden">
         {loading ? (
           <Loader message="Loading workforce directory..." />
-        ) : employees.length === 0 ? (
+        ) : displayedEmployees.length === 0 ? (
           <div className="p-12 text-center text-zinc-500  text-xs space-y-2">
             <Users className="w-8 h-8 text-zinc-300  mx-auto" />
             <p className="font-semibold text-zinc-700 ">No employees found matching your filter criteria.</p>
@@ -660,7 +709,7 @@ export const Employees = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 ">
-                {employees.map((emp) => (
+                {displayedEmployees.map((emp) => (
                   <tr key={emp.id} className="hover:bg-zinc-50  transition-colors">
                     {/* 1. Employee ID: Click to open profile */}
                     <td className="py-3 px-4">
@@ -774,28 +823,36 @@ export const Employees = () => {
                       </Link>
                     </td>
 
-                    {/* 7. Status: Read-only Non-Clickable Duty Status Indicator */}
+                    {/* 7. Status: Enterprise 3-Day Inactivity Indicator */}
                     <td className="py-3 px-4">
                       {(() => {
-                        const isLiveActive = emp.duty_status ? emp.duty_status === 'ACTIVE' : emp.status === 'ACTIVE';
+                        const inact = getInactivity(emp);
+                        if (emp.status === 'TERMINATED' || emp.status === 'RESIGNED') {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200 select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                              <span>INACTIVE ({emp.status === 'TERMINATED' ? 'Terminated' : 'Resigned'})</span>
+                            </span>
+                          );
+                        }
+                        if (inact.isInactive) {
+                          return (
+                            <div className="flex flex-col items-start gap-0.5" title={inact.label}>
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 select-none">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span>INACTIVE ({inact.days}d no punch)</span>
+                              </span>
+                              <span className="text-[10px] text-zinc-500 font-medium pl-1">
+                                {inact.lastPunchDate ? `Last: ${inact.lastPunchDate}` : 'No punch on file'}
+                              </span>
+                            </div>
+                          );
+                        }
                         return (
-                          <div
-                            className="inline-flex items-center gap-1.5 cursor-default select-none pointer-events-none text-left"
-                            title={`Duty Status: ${isLiveActive ? 'ACTIVE (Clocked In)' : 'INACTIVE (Off Duty / Punched Out)'}`}
-                          >
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide border ${
-                                isLiveActive
-                                  ? 'bg-zinc-900 text-white   border-zinc-900 '
-                                  : 'bg-zinc-100 text-zinc-600 border-zinc-200   '
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  isLiveActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-400'
-                                }`}
-                              />
-                              <span>{isLiveActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                          <div className="inline-flex items-center gap-1.5" title="Active Employee">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              <span>ACTIVE</span>
                             </span>
                           </div>
                         );

@@ -7,30 +7,34 @@
 export const parseCheckInDate = (val, dateStr = null) => {
   if (!val) return null;
   if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val !== 'string') return null;
 
   // 1. If it's a full ISO or datetime string with 'T' or space
-  if (typeof val === 'string' && (val.includes('T') || val.includes(' '))) {
+  if (val.includes('T') || (val.includes('-') && val.includes(':'))) {
     const d = new Date(val);
     if (!isNaN(d.getTime())) return d;
   }
 
-  // 2. If it's just a time like '09:30' or '09:30:00'
-  if (typeof val === 'string' && val.includes(':')) {
-    const parts = val.split(':');
-    const h = parseInt(parts[0], 10);
-    const m = parseInt(parts[1], 10);
-    const s = parts[2] ? parseInt(parts[2], 10) : 0;
-    if (isNaN(h) || isNaN(m)) return null;
+  // 2. Handles 12-hour (e.g. "05:05 pm", "01:08 PM") or 24-hour (e.g. "17:05:00", "09:30")
+  const match = val.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (match) {
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const s = match[3] ? parseInt(match[3], 10) : 0;
+    const meridian = match[4]?.toLowerCase();
+
+    if (meridian === 'pm' && h < 12) h += 12;
+    if (meridian === 'am' && h === 12) h = 0;
 
     let base = new Date();
     if (dateStr) {
-      const parsedDate = new Date(dateStr);
+      const parsedDate = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`);
       if (!isNaN(parsedDate.getTime())) {
         base = parsedDate;
       }
     }
-    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, s);
-    return isNaN(d.getTime()) ? null : d;
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, s, 0);
+    if (!isNaN(d.getTime())) return d;
   }
 
   const fallback = new Date(val);
@@ -217,3 +221,4 @@ export const calculateWorkHoursSummary = (records = [], todayRecord = null, live
     daysWorkedThisMonth,
   };
 };
+

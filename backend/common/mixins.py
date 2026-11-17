@@ -42,7 +42,13 @@ class TenantCreateMixin:
                 business = Business.objects.filter(id=business_id).first()
             elif getattr(self.request.user, 'active_business', None):
                 business = self.request.user.active_business
+            elif hasattr(self.request, 'user') and self.request.user.is_authenticated:
+                from apps.businesses.models import BusinessMembership
+                m = BusinessMembership.objects.filter(user=self.request.user, is_active=True).first()
+                if m:
+                    business = m.business
         if business:
+            self.request.business = business
             serializer.save(business=business)
         else:
             serializer.save()

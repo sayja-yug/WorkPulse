@@ -23,6 +23,7 @@ import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
 import { formatDate, formatINR, formatTime } from '../utils/formatters';
 import { calculateWorkHoursSummary } from '../utils/workHours';
+import { calculateEmployeeInactivity } from '../utils/employeeInactivity';
 
 export const EmployeeProfile = () => {
   const { id } = useParams();
@@ -217,7 +218,31 @@ export const EmployeeProfile = () => {
               <h2 className="text-xl font-bold text-zinc-950">
                 {employee.full_name || `${employee.first_name} ${employee.last_name}`}
               </h2>
-              <Badge variant={employee.status === 'ACTIVE' ? 'success' : 'danger'}>{employee.status}</Badge>
+              {(() => {
+                const inact = calculateEmployeeInactivity(employee, attendance);
+                if (employee.status === 'TERMINATED' || employee.status === 'RESIGNED') {
+                  return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                      <span>INACTIVE ({employee.status})</span>
+                    </span>
+                  );
+                }
+                if (inact.isInactive) {
+                  return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title={inact.label}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      <span>INACTIVE ({inact.days}d no punch)</span>
+                    </span>
+                  );
+                }
+                return (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>ACTIVE</span>
+                  </span>
+                );
+              })()}
             </div>
             <p className="text-xs text-zinc-500 mt-0.5">
               <span className="font-mono font-semibold text-zinc-900">{employee.employee_code}</span> &bull;{' '}

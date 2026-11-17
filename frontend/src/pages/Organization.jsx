@@ -80,16 +80,23 @@ export const Organization = () => {
   // Fetch all org data
   const parseApiError = (err, fallback) => {
     const data = err.response?.data;
-    if (!data) return fallback;
+    if (!data) return err.message || fallback;
     if (typeof data === 'string') return data;
     if (data.error?.message) return data.error.message;
     if (data.detail) return data.detail;
     if (data.message) return data.message;
-    const firstKey = Object.keys(data)[0];
-    if (firstKey) {
-      const val = data[firstKey];
-      if (Array.isArray(val) && val.length > 0) return `${firstKey}: ${val[0]}`;
-      if (typeof val === 'string') return `${firstKey}: ${val}`;
+    if (typeof data === 'object') {
+      const messages = [];
+      for (const [key, val] of Object.entries(data)) {
+        if (key === 'error' && typeof val === 'object' && val?.message) {
+          messages.push(val.message);
+        } else if (Array.isArray(val)) {
+          messages.push(`${key !== 'non_field_errors' ? `${key}: ` : ''}${val.join(' ')}`);
+        } else if (typeof val === 'string') {
+          messages.push(`${key !== 'detail' ? `${key}: ` : ''}${val}`);
+        }
+      }
+      if (messages.length > 0) return messages.join(' | ');
     }
     return fallback;
   };

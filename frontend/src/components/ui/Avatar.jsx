@@ -32,8 +32,8 @@ export const Avatar = ({
     <div
       className={`
         relative inline-flex items-center justify-center shrink-0 rounded-full select-none
-        bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-bold tracking-tight
-        border border-zinc-200/80 dark:border-zinc-800 shadow-2xs overflow-hidden
+        bg-zinc-950 text-white   font-bold tracking-tight
+        border border-zinc-200/80  shadow-2xs overflow-hidden
         ${sizeStyle} ${className}
       `}
       {...props}

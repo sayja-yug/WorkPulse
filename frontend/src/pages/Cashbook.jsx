@@ -104,18 +104,18 @@ export const Cashbook = () => {
       </div>
 
       {/* Ledger Table */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
+      <div className="bg-white  rounded-xl border border-zinc-200  shadow-xs overflow-hidden">
         {loading ? (
           <Loader message="Loading cashbook transactions..." />
         ) : transactions.length === 0 ? (
-          <div className="p-12 text-center text-zinc-500 dark:text-zinc-400 text-xs">
+          <div className="p-12 text-center text-zinc-500  text-xs">
             No cashbook transactions recorded yet.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[650px] text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-semibold uppercase text-[11px]">
+                <tr className="bg-zinc-50  border-b border-zinc-200  text-zinc-500  font-semibold uppercase text-[11px]">
                   <th className="py-3 px-4">Date</th>
                   <th className="py-3 px-4">Description</th>
                   <th className="py-3 px-4">Type</th>
@@ -124,22 +124,22 @@ export const Cashbook = () => {
                   <th className="py-3 px-4 text-right">Balance After</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              <tbody className="divide-y divide-zinc-200 ">
                 {transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(tx.date)}</td>
-                    <td className="py-3 px-4 text-zinc-800 dark:text-zinc-200">{tx.description}</td>
+                  <tr key={tx.id} className="hover:bg-zinc-50  transition-colors">
+                    <td className="py-3 px-4 font-semibold text-zinc-900 ">{formatDate(tx.date)}</td>
+                    <td className="py-3 px-4 text-zinc-800 ">{tx.description}</td>
                     <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700">
-                        {tx.type === 'CASH_IN' ? <ArrowDownLeft className="w-3 h-3 text-zinc-700 dark:text-zinc-300" /> : <ArrowUpRight className="w-3 h-3 text-zinc-700 dark:text-zinc-300" />}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-100  text-zinc-900  border border-zinc-300 ">
+                        {tx.type === 'CASH_IN' ? <ArrowDownLeft className="w-3 h-3 text-zinc-700 " /> : <ArrowUpRight className="w-3 h-3 text-zinc-700 " />}
                         {tx.type === 'CASH_IN' ? 'CASH IN' : 'CASH OUT'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-zinc-500 dark:text-zinc-400 font-mono text-[11px]">{tx.payment_mode || 'Cash'}</td>
-                    <td className="py-3 px-4 text-right font-bold text-zinc-950 dark:text-zinc-50">
+                    <td className="py-3 px-4 text-zinc-500  font-mono text-[11px]">{tx.payment_mode || 'Cash'}</td>
+                    <td className="py-3 px-4 text-right font-bold text-zinc-950 ">
                       {tx.type === 'CASH_IN' ? '+' : '-'}{formatINR(tx.amount)}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+                    <td className="py-3 px-4 text-right font-mono font-semibold text-zinc-700 ">
                       {formatINR(tx.balance_after)}
                     </td>
                   </tr>
@@ -154,64 +154,64 @@ export const Cashbook = () => {
         <form onSubmit={handleRecord} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Entry Type *</label>
+              <label className="block text-[11px] font-semibold text-zinc-700  mb-1">Entry Type *</label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
+                className="w-full px-3 py-2 border border-zinc-300  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
               >
                 <option value="CASH_IN">Cash In (Income)</option>
                 <option value="CASH_OUT">Cash Out (Expense)</option>
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Amount (₹) *</label>
+              <label className="block text-[11px] font-semibold text-zinc-700  mb-1">Amount (₹) *</label>
               <input
                 type="number"
                 step="0.01"
                 required
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
+                className="w-full px-3 py-2 border border-zinc-300  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
               />
             </div>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Description *</label>
+            <label className="block text-[11px] font-semibold text-zinc-700  mb-1">Description *</label>
             <input
               type="text"
               required
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
+              className="w-full px-3 py-2 border border-zinc-300  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Date *</label>
+              <label className="block text-[11px] font-semibold text-zinc-700  mb-1">Date *</label>
               <input
                 type="date"
                 required
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
+                className="w-full px-3 py-2 border border-zinc-300  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Payment Mode</label>
+              <label className="block text-[11px] font-semibold text-zinc-700  mb-1">Payment Mode</label>
               <input
                 type="text"
                 value={form.payment_mode}
                 onChange={(e) => setForm({ ...form, payment_mode: e.target.value })}
-                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
+                className="w-full px-3 py-2 border border-zinc-300  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
               />
             </div>
           </div>
-          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-2">
-            <button type="button" onClick={() => setShowModal(false)} className="px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg cursor-pointer">
+          <div className="pt-3 border-t border-zinc-200  flex justify-end gap-2">
+            <button type="button" onClick={() => setShowModal(false)} className="px-3 py-1.5 text-xs font-semibold text-zinc-600  hover:bg-zinc-100  rounded-lg cursor-pointer">
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-bold bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg shadow-xs cursor-pointer">
+            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-bold bg-zinc-950 hover:bg-black text-white    rounded-lg shadow-xs cursor-pointer">
               {submitting ? 'Saving...' : 'Save Transaction'}
             </button>
           </div>

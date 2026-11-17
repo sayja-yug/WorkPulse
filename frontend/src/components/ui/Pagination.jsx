@@ -43,21 +43,21 @@ export const Pagination = ({
     <div
       className={`
         flex flex-col sm:flex-row items-center justify-between gap-3 p-3 sm:p-4
-        border-t border-zinc-200 dark:border-zinc-800 text-xs select-none ${className}
+        border-t border-zinc-200  text-xs select-none ${className}
       `}
       {...props}
     >
-      <div className="text-zinc-500 dark:text-zinc-400">
+      <div className="text-zinc-500 ">
         {totalItems ? (
           <span>
-            Showing <strong className="text-zinc-900 dark:text-zinc-100">{startItem}</strong> to{' '}
-            <strong className="text-zinc-900 dark:text-zinc-100">{endItem}</strong> of{' '}
-            <strong className="text-zinc-900 dark:text-zinc-100">{totalItems}</strong> entries
+            Showing <strong className="text-zinc-900 ">{startItem}</strong> to{' '}
+            <strong className="text-zinc-900 ">{endItem}</strong> of{' '}
+            <strong className="text-zinc-900 ">{totalItems}</strong> entries
           </span>
         ) : (
           <span>
-            Page <strong className="text-zinc-900 dark:text-zinc-100">{currentPage}</strong> of{' '}
-            <strong className="text-zinc-900 dark:text-zinc-100">{totalPages}</strong>
+            Page <strong className="text-zinc-900 ">{currentPage}</strong> of{' '}
+            <strong className="text-zinc-900 ">{totalPages}</strong>
           </span>
         )}
       </div>
@@ -92,8 +92,8 @@ export const Pagination = ({
                 className={`
                   w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer
                   ${isCurrent
-                    ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-2xs font-bold'
-                    : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    ? 'bg-zinc-950 text-white   shadow-2xs font-bold'
+                    : 'text-zinc-700  hover:bg-zinc-100 '
                   }
                 `}
               >

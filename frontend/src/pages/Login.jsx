@@ -317,9 +317,9 @@ export const Login = () => {
         </div>
 
         {/* Right: Auth Forms */}
-        <div className="p-6 sm:p-8 flex flex-col justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors">
+        <div className="p-6 sm:p-8 flex flex-col justify-center bg-white text-zinc-900 transition-colors">
           {/* Form Selector Tabs */}
-          <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 mb-6">
+          <div className="flex items-center border-b border-zinc-200 mb-6">
             <button
               type="button"
               onClick={() => {
@@ -328,8 +328,8 @@ export const Login = () => {
               }}
               className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
                 !isRegistering
-                  ? 'border-zinc-950 dark:border-white text-zinc-950 dark:text-white'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+                  ? 'border-zinc-950 text-zinc-950'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-600'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -344,8 +344,8 @@ export const Login = () => {
               }}
               className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
                 isRegistering
-                  ? 'border-zinc-950 dark:border-white text-zinc-950 dark:text-white'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+                  ? 'border-zinc-950 text-zinc-950'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-600'
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
@@ -354,8 +354,8 @@ export const Login = () => {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs font-semibold flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0 mt-0.5" />
+            <div className="mb-4 p-3 rounded-lg bg-zinc-100 border border-zinc-300 text-zinc-900 text-xs font-semibold flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-zinc-900 shrink-0 mt-0.5" />
               <div className="flex-1">{error}</div>
             </div>
           )}
@@ -365,12 +365,12 @@ export const Login = () => {
             <>
               <div className="mb-4">
                 <div className="flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold uppercase tracking-wider">
+                  <span className="px-2 py-0.5 bg-zinc-100 text-zinc-800 border border-zinc-200 rounded text-[10px] font-bold uppercase tracking-wider">
                     Portal Authentication
                   </span>
                 </div>
-                <h2 className="text-xl font-bold text-zinc-950 dark:text-white tracking-tight mt-1">Sign In to Your Workspace</h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <h2 className="text-xl font-bold text-zinc-950 tracking-tight mt-1">Sign In to Your Workspace</h2>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   Select your company and enter your credentials to access your dashboard.
                 </p>
               </div>
@@ -378,7 +378,7 @@ export const Login = () => {
               <form onSubmit={handleLoginSubmit} className="space-y-3.5">
                 {/* Company Dropdown Selection */}
                 <div>
-                  <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-zinc-800 uppercase tracking-wider mb-1.5">
                     Company / Organization *
                   </label>
                   <div className="relative">
@@ -391,7 +391,7 @@ export const Login = () => {
                         setError('');
                       }}
                       required
-                      className="w-full pl-9 pr-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg text-base sm:text-xs bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-medium focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full pl-9 pr-3 py-2 border border-zinc-300 rounded-lg text-base sm:text-xs bg-white text-zinc-900 font-medium focus:ring-1 focus:ring-zinc-950 outline-none"
                     >
                       <option value="" disabled>
                         -- Select Your Registered Company --
@@ -411,19 +411,19 @@ export const Login = () => {
                     </select>
                   </div>
                   {autoDetectedCompany && (
-                    <p className="text-[11px] text-zinc-700 dark:text-zinc-300 font-medium mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-zinc-700 font-medium mt-1 flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />
                       <span>Auto-detected: {autoDetectedCompany.name}</span>
                     </p>
                   )}
-                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
+                  <p className="text-[10px] text-zinc-500 mt-1">
                     * Employees can only log into their registered organization.
                   </p>
                 </div>
 
                 {/* Email Address */}
                 <div>
-                  <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-zinc-800 uppercase tracking-wider mb-1.5">
                     Registered Work Email *
                   </label>
                   <div className="relative">
@@ -435,7 +435,7 @@ export const Login = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       onBlur={handleEmailBlur}
                       placeholder="e.g. employee@trinetra.com"
-                      className="w-full pl-9 pr-3 py-2 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full pl-9 pr-3 py-2 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                   </div>
                 </div>
@@ -443,7 +443,7 @@ export const Login = () => {
                 {/* Password */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                    <label className="block text-xs font-bold text-zinc-800 uppercase tracking-wider">
                       Password *
                     </label>
                   </div>
@@ -455,12 +455,12 @@ export const Login = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full pl-9 pr-9 py-2 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full pl-9 pr-9 py-2 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                      className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-600 cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -470,7 +470,7 @@ export const Login = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isLoading ? (
                     <span>Verifying Company &amp; Credentials...</span>
@@ -484,22 +484,22 @@ export const Login = () => {
               </form>
 
               {/* Demo quick credential helper */}
-              <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                <span className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider block mb-1.5">
+              <div className="mt-4 pt-3 border-t border-zinc-100">
+                <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block mb-1.5">
                   Demo Quick-Fill Accounts:
                 </span>
                 <div className="grid grid-cols-2 gap-1.5 mb-1.5">
                   <button
                     type="button"
                     onClick={() => handleQuickFill('EMPLOYEE', 'trinetra')}
-                    className="px-2.5 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[10px] font-semibold text-zinc-800 dark:text-zinc-200 transition-colors text-left truncate cursor-pointer"
+                    className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[10px] font-semibold text-zinc-800 transition-colors text-left truncate cursor-pointer"
                   >
                     👤 Trinetra Employee
                   </button>
                   <button
                     type="button"
                     onClick={() => handleQuickFill('OWNER', 'trinetra')}
-                    className="px-2.5 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[10px] font-semibold text-zinc-800 dark:text-zinc-200 transition-colors text-left truncate cursor-pointer"
+                    className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[10px] font-semibold text-zinc-800 transition-colors text-left truncate cursor-pointer"
                   >
                     👑 Trinetra Owner
                   </button>
@@ -508,14 +508,14 @@ export const Login = () => {
                   <button
                     type="button"
                     onClick={() => handleQuickFill('EMPLOYEE', 'apex-global')}
-                    className="px-2.5 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[10px] font-semibold text-zinc-800 dark:text-zinc-200 transition-colors text-left truncate cursor-pointer"
+                    className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[10px] font-semibold text-zinc-800 transition-colors text-left truncate cursor-pointer"
                   >
                     🏢 Apex Global Emp
                   </button>
                   <button
                     type="button"
                     onClick={() => handleQuickFill('SUPER_ADMIN')}
-                    className="px-2.5 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[10px] font-semibold text-zinc-800 dark:text-zinc-200 transition-colors text-left truncate cursor-pointer"
+                    className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[10px] font-semibold text-zinc-800 transition-colors text-left truncate cursor-pointer"
                   >
                     🛡️ Super Admin
                   </button>
@@ -526,23 +526,23 @@ export const Login = () => {
             /* Owner Registration Step 1 */
             <>
               <div className="mb-4">
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold uppercase tracking-wider mb-2">
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-100 text-zinc-800 border border-zinc-200 rounded text-[10px] font-bold uppercase tracking-wider mb-2">
                   <Briefcase className="w-3 h-3" />
                   <span>Business Owners &amp; Employers Only</span>
                 </div>
-                <h2 className="text-xl font-bold text-zinc-950 dark:text-white tracking-tight">Register Your Business</h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">Register Your Business</h2>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   Create your administrator account and setup your company workspace.
                 </p>
               </div>
 
               {/* Notice for Employees */}
-              <div className="p-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[11px] text-zinc-700 dark:text-zinc-300 mb-3 leading-relaxed">
+              <div className="p-3 bg-zinc-100 border border-zinc-200 rounded-lg text-[11px] text-zinc-700 mb-3 leading-relaxed">
                 <strong>Notice for Employees:</strong> Employees do not need to register here. Your account is provisioned by your company HR/Owner. Switch to the{' '}
                 <button
                   type="button"
                   onClick={() => setIsRegistering(false)}
-                  className="font-bold underline text-zinc-950 dark:text-white cursor-pointer"
+                  className="font-bold underline text-zinc-950 cursor-pointer"
                 >
                   Sign In
                 </button>{' '}
@@ -552,75 +552,75 @@ export const Login = () => {
               <form onSubmit={handleCreateAccount} className="space-y-2.5">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">Owner First Name *</label>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">Owner First Name *</label>
                     <input
                       type="text"
                       required
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       placeholder="e.g. Vikram"
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full px-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">Last Name *</label>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">Last Name *</label>
                     <input
                       type="text"
                       required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       placeholder="e.g. Aditya"
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full px-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">Work Email *</label>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">Work Email *</label>
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="owner@mycompany.com"
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full px-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">Phone Number *</label>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">Phone Number *</label>
                     <input
                       type="tel"
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+91 98765 43210"
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full px-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">Password *</label>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">Password *</label>
                     <input
                       type="password"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Min. 8 characters"
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full px-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">Confirm Password *</label>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">Confirm Password *</label>
                     <input
                       type="password"
                       required
                       value={passwordConfirm}
                       onChange={(e) => setPasswordConfirm(e.target.value)}
                       placeholder="Re-type password"
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full px-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                   </div>
                 </div>
@@ -628,7 +628,7 @@ export const Login = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <span>{isLoading ? 'Creating Owner Account...' : 'Continue to Verification'}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -640,31 +640,31 @@ export const Login = () => {
             <>
               <div className="mb-4">
                 <span className="text-[10px] font-bold text-zinc-500 uppercase">Step 2 of 3 — Verification</span>
-                <h2 className="text-xl font-bold text-zinc-950 dark:text-white tracking-tight">Verify Owner Credentials</h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">Verify Owner Credentials</h2>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   Confirm verification for <strong>{email}</strong> ({phone})
                 </p>
               </div>
               <form onSubmit={handleVerifyContinue} className="space-y-4">
-                <div className="p-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-zinc-900 dark:text-white shrink-0" />
+                <div className="p-3 bg-zinc-100 border border-zinc-200 rounded-lg text-xs text-zinc-800 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-zinc-900 shrink-0" />
                   <span>Sandbox verification OTP: <strong className="font-mono">123456</strong></span>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">Verification Code (OTP)</label>
+                  <label className="block text-xs font-bold text-zinc-800 mb-1">Verification Code (OTP)</label>
                   <input
                     type="text"
                     required
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value)}
                     placeholder="Enter 6-digit code"
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-sm font-mono tracking-widest focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                    className="w-full px-3 py-2 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-sm font-mono tracking-widest focus:ring-1 focus:ring-zinc-950 outline-none"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <span>{isLoading ? 'Verifying...' : 'Set Up Business Organization'}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -676,14 +676,14 @@ export const Login = () => {
             <>
               <div className="mb-4">
                 <span className="text-[10px] font-bold text-zinc-500 uppercase">Step 3 of 3 — Company Setup</span>
-                <h2 className="text-xl font-bold text-zinc-950 dark:text-white tracking-tight">Set Up Your Company</h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">Set Up Your Company</h2>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   Enter your company organization details to launch your workspace.
                 </p>
               </div>
               <form onSubmit={handleCreateBusiness} className="space-y-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">Registered Business Name *</label>
+                  <label className="block text-[11px] font-bold text-zinc-800 mb-1">Registered Business Name *</label>
                   <div className="relative">
                     <Building className="w-4 h-4 text-zinc-400 absolute left-3 top-2 pointer-events-none" />
                     <input
@@ -692,27 +692,27 @@ export const Login = () => {
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       placeholder="e.g. Acme Corp Technologies Ltd"
-                      className="w-full pl-9 pr-3 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full pl-9 pr-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">Headquarters City</label>
+                    <label className="block text-[11px] font-bold text-zinc-800 mb-1">Headquarters City</label>
                     <input
                       type="text"
                       value={companyCity}
                       onChange={(e) => setCompanyCity(e.target.value)}
                       placeholder="e.g. Mumbai"
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full px-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">Operating Currency</label>
+                    <label className="block text-[11px] font-bold text-zinc-800 mb-1">Operating Currency</label>
                     <select
                       value={companyCurrency}
                       onChange={(e) => setCompanyCurrency(e.target.value)}
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg text-base sm:text-xs bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white outline-none"
+                      className="w-full px-3 py-1.5 border border-zinc-300 rounded-lg text-base sm:text-xs bg-white text-zinc-900 focus:ring-1 focus:ring-zinc-950 outline-none"
                     >
                       <option value="INR">INR (₹)</option>
                       <option value="USD">USD ($)</option>
@@ -722,7 +722,7 @@ export const Login = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <span>{isLoading ? 'Creating Business...' : 'Launch Business Workspace'}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -732,19 +732,19 @@ export const Login = () => {
           ) : (
             /* Registration Done */
             <div className="text-center space-y-4 py-4">
-              <div className="w-14 h-14 bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-white rounded-full flex items-center justify-center mx-auto border border-zinc-300 dark:border-zinc-700">
+              <div className="w-14 h-14 bg-zinc-100 text-zinc-950 rounded-full flex items-center justify-center mx-auto border border-zinc-300">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-zinc-950 dark:text-white">Organization Created!</h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                <h2 className="text-xl font-bold text-zinc-950">Organization Created!</h2>
+                <p className="text-xs text-zinc-500 mt-1">
                   <strong>{createdBusinessName}</strong> is ready. You are provisioned as Business Owner with full platform access.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleGoToDashboard}
-                className="w-full py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Go to Dashboard</span>
                 <ArrowRight className="w-4 h-4" />
@@ -752,7 +752,7 @@ export const Login = () => {
             </div>
           )}
 
-          <p className="text-center text-[11px] text-zinc-400 dark:text-zinc-500 mt-4">
+          <p className="text-center text-[11px] text-zinc-400 mt-4">
             Protected by WorkPulse Multi-Tenant Identity Engine
           </p>
         </div>

@@ -20,12 +20,12 @@ export const Switch = forwardRef(({
       {(label || description) && (
         <div className="flex flex-col">
           {label && (
-            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
+            <span className="text-xs font-semibold text-zinc-900  leading-tight">
               {label}
             </span>
           )}
           {description && (
-            <span className="text-2xs text-zinc-500 dark:text-zinc-400 mt-0.5 leading-normal">
+            <span className="text-2xs text-zinc-500  mt-0.5 leading-normal">
               {description}
             </span>
           )}
@@ -43,8 +43,8 @@ export const Switch = forwardRef(({
           className="sr-only peer"
           {...props}
         />
-        <div className="w-9 h-5 rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 peer-checked:bg-zinc-950 dark:peer-checked:bg-white peer-checked:border-zinc-950 dark:peer-checked:border-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-zinc-950 dark:peer-focus-visible:ring-white">
-          <div className="w-3.5 h-3.5 mt-[2px] ml-[2px] rounded-full bg-white dark:bg-zinc-950 peer-checked:translate-x-4 transition-transform shadow-xs" />
+        <div className="w-9 h-5 rounded-full border border-zinc-300  bg-zinc-200  peer-checked:bg-zinc-950  peer-checked:border-zinc-950  transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-zinc-950 ">
+          <div className="w-3.5 h-3.5 mt-[2px] ml-[2px] rounded-full bg-white  peer-checked:translate-x-4 transition-transform shadow-xs" />
         </div>
       </div>
     </label>

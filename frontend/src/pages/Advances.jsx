@@ -190,41 +190,41 @@ export const Advances = () => {
       {/* KPI Cards (for Owners & Managers) */}
       {!isEmployee && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
+          <div className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-xs flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
+              <span className="text-[11px] font-bold uppercase text-zinc-500  tracking-wider">
                 Pending Requests
               </span>
-              <p className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 mt-1">{pendingRequests.length}</p>
+              <p className="text-2xl font-bold text-zinc-950  mt-1">{pendingRequests.length}</p>
               <p className="text-[11px] text-zinc-400 mt-0.5">Awaiting your approval</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100  flex items-center justify-center text-zinc-900 ">
               <Clock className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
+          <div className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-xs flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
+              <span className="text-[11px] font-bold uppercase text-zinc-500  tracking-wider">
                 Active Advances
               </span>
-              <p className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 mt-1">{activeAdvances.length}</p>
+              <p className="text-2xl font-bold text-zinc-950  mt-1">{activeAdvances.length}</p>
               <p className="text-[11px] text-zinc-400 mt-0.5">Approved &amp; Disbursed</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100  flex items-center justify-center text-zinc-900 ">
               <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
+          <div className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-xs flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
+              <span className="text-[11px] font-bold uppercase text-zinc-500  tracking-wider">
                 Advance Volume
               </span>
-              <p className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 mt-1">{formatINR(totalDisbursedAmount)}</p>
+              <p className="text-2xl font-bold text-zinc-950  mt-1">{formatINR(totalDisbursedAmount)}</p>
               <p className="text-[11px] text-zinc-400 mt-0.5">Under monthly payroll deduction</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100  flex items-center justify-center text-zinc-900 ">
               <Banknote className="w-5 h-5" />
             </div>
           </div>
@@ -232,18 +232,18 @@ export const Advances = () => {
       )}
 
       {/* Advance Records Table */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-850/50 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-100 uppercase tracking-wider">
+      <div className="bg-white  rounded-xl border border-zinc-200  shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-zinc-200  bg-zinc-50/50  flex items-center justify-between">
+          <h3 className="text-xs font-bold text-zinc-950  uppercase tracking-wider">
             {isEmployee ? 'My Advance Records' : 'Staff Salary Advance Requests & Disbursements'}
           </h3>
-          <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">{advances.length} Records</span>
+          <span className="text-[11px] font-semibold text-zinc-500 ">{advances.length} Records</span>
         </div>
 
         {loading ? (
           <Loader message="Loading salary advances..." />
         ) : advances.length === 0 ? (
-          <div className="p-12 text-center text-zinc-500 dark:text-zinc-400 text-xs">
+          <div className="p-12 text-center text-zinc-500  text-xs">
             {isEmployee
               ? 'You have not submitted any salary advance requests.'
               : 'No salary advance applications submitted yet. Employees can request advances or you can issue one using the button above.'}
@@ -252,7 +252,7 @@ export const Advances = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-semibold uppercase text-[11px] tracking-wider">
+                <tr className="bg-zinc-50  border-b border-zinc-200  text-zinc-500  font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Request Date</th>
                   {!isEmployee && <th className="py-3 px-4">Employee</th>}
                   <th className="py-3 px-4">Amount</th>
@@ -262,21 +262,21 @@ export const Advances = () => {
                   {canApproveAdvances && <th className="py-3 px-4 text-right">Owner / Admin Actions</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              <tbody className="divide-y divide-zinc-200 ">
                 {advances.map((adv) => (
-                  <tr key={adv.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                  <tr key={adv.id} className="hover:bg-zinc-50  transition-colors">
+                    <td className="py-3.5 px-4 font-semibold text-zinc-900 ">
                       {formatDate(adv.requested_at || adv.created_at)}
                     </td>
 
                     {!isEmployee && (
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-zinc-900 dark:text-zinc-100">{adv.employee_name || 'Staff Member'}</div>
+                        <div className="font-bold text-zinc-900 ">{adv.employee_name || 'Staff Member'}</div>
                         <div className="text-[10px] text-zinc-400 font-mono">{adv.employee_code || '-'}</div>
                       </td>
                     )}
 
-                    <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-zinc-100">
+                    <td className="py-3.5 px-4 font-bold text-zinc-900 ">
                       {formatINR(adv.amount)}
                       {adv.monthly_deduction && (
                         <div className="text-[10px] text-zinc-400 font-normal">
@@ -285,11 +285,11 @@ export const Advances = () => {
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400">
+                    <td className="py-3.5 px-4 text-zinc-600 ">
                       {adv.repayment_months || 1} month(s)
                     </td>
 
-                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400 max-w-xs truncate">
+                    <td className="py-3.5 px-4 text-zinc-600  max-w-xs truncate">
                       {adv.reason || 'Salary advance'}
                     </td>
 
@@ -314,13 +314,13 @@ export const Advances = () => {
                           <div className="inline-flex items-center gap-1.5">
                             <button
                               onClick={() => handleApprove(adv.id)}
-                              className="px-2.5 py-1 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                              className="px-2.5 py-1 bg-zinc-950 hover:bg-black text-white    rounded text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                             >
                               Approve
                             </button>
                             <button
                               onClick={() => handleReject(adv.id)}
-                              className="px-2.5 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 rounded text-xs font-semibold transition-colors cursor-pointer"
+                              className="px-2.5 py-1 bg-white hover:bg-zinc-100   text-zinc-700  border border-zinc-300  rounded text-xs font-semibold transition-colors cursor-pointer"
                             >
                               Reject
                             </button>
@@ -328,12 +328,12 @@ export const Advances = () => {
                         ) : adv.status === 'APPROVED' ? (
                           <button
                             onClick={() => handleDisburse(adv.id)}
-                            className="px-2.5 py-1 bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-zinc-950 hover:bg-black text-white    rounded text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                           >
                             Disburse Funds
                           </button>
                         ) : adv.status === 'DISBURSED' ? (
-                          <span className="text-[11px] text-zinc-800 dark:text-zinc-200 font-medium">
+                          <span className="text-[11px] text-zinc-800  font-medium">
                             ✓ In Payroll Recovery
                           </span>
                         ) : (
@@ -359,14 +359,14 @@ export const Advances = () => {
           {/* If Owner / Admin: Select Employee */}
           {!isEmployee && (
             <div>
-              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+              <label className="block text-[11px] font-semibold text-zinc-700  mb-1">
                 Select Recipient Employee *
               </label>
               <select
                 required
                 value={formData.employee}
                 onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
-                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
+                className="w-full px-3 py-2 border border-zinc-300  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
               >
                 <option value="" disabled>
                   -- Choose Employee --
@@ -381,7 +381,7 @@ export const Advances = () => {
           )}
 
           <div>
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-[11px] font-semibold text-zinc-700  mb-1">
               Advance Amount (₹) *
             </label>
             <input
@@ -393,7 +393,7 @@ export const Advances = () => {
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               placeholder="e.g. 15000"
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
+              className="w-full px-3 py-2 border border-zinc-300  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-950"
             />
             {isEmployee && (
               <p className="text-[10px] text-zinc-400 mt-1">Maximum eligible: 50% of monthly gross salary</p>
@@ -401,13 +401,13 @@ export const Advances = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-[11px] font-semibold text-zinc-700  mb-1">
               Repayment Schedule (EMIs) *
             </label>
             <select
               value={formData.repayment_months}
               onChange={(e) => setFormData({ ...formData, repayment_months: e.target.value })}
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
+              className="w-full px-3 py-2 border border-zinc-300  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-950 font-medium"
             >
               <option value="1">1 Month (Deduct 100% from next payslip)</option>
               <option value="2">2 Months (Equal split across 2 payslips)</option>
@@ -417,7 +417,7 @@ export const Advances = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-[11px] font-semibold text-zinc-700  mb-1">
               {isEmployee ? 'Reason for Advance *' : 'Disbursement Notes / Reason *'}
             </label>
             <textarea
@@ -426,22 +426,22 @@ export const Advances = () => {
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               placeholder={isEmployee ? 'State reason for salary advance...' : 'Disbursement purpose or internal notes...'}
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-950"
+              className="w-full px-3 py-2 border border-zinc-300  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-950"
             />
           </div>
 
-          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-zinc-200  flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+              className="px-3 py-1.5 text-xs font-semibold text-zinc-600  hover:bg-zinc-100  rounded-lg transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 text-xs font-bold text-white bg-zinc-950 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-lg shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 text-xs font-bold text-white bg-zinc-950 hover:bg-black    rounded-lg shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               <span>{isEmployee ? 'Submit Advance Request' : 'Issue Advance to Employee'}</span>
               <ArrowRight className="w-3.5 h-3.5" />

@@ -28,7 +28,7 @@ export const TableHeader = forwardRef(({
   return (
     <thead
       ref={ref}
-      className={`border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/70 ${className}`}
+      className={`border-b border-zinc-200  bg-zinc-50/70  ${className}`}
       {...props}
     >
       {children}
@@ -45,7 +45,7 @@ export const TableBody = forwardRef(({
   return (
     <tbody
       ref={ref}
-      className={`divide-y divide-zinc-100 dark:divide-zinc-800/80 bg-white dark:bg-zinc-950 ${className}`}
+      className={`divide-y divide-zinc-100  bg-white  ${className}`}
       {...props}
     >
       {children}
@@ -62,7 +62,7 @@ export const TableFooter = forwardRef(({
   return (
     <tfoot
       ref={ref}
-      className={`border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 font-medium ${className}`}
+      className={`border-t border-zinc-200  bg-zinc-50  font-medium ${className}`}
       {...props}
     >
       {children}
@@ -83,8 +83,8 @@ export const TableRow = forwardRef(({
       ref={ref}
       className={`
         transition-colors
-        ${hover ? 'hover:bg-zinc-50/80 dark:hover:bg-zinc-900/60' : ''}
-        ${selected ? 'bg-zinc-100/70 dark:bg-zinc-900' : ''}
+        ${hover ? 'hover:bg-zinc-50/80 ' : ''}
+        ${selected ? 'bg-zinc-100/70 ' : ''}
         ${className}
       `}
       {...props}
@@ -105,7 +105,7 @@ export const TableHead = forwardRef(({
       ref={ref}
       scope="col"
       className={`
-        py-3 px-3.5 text-[11px] font-bold text-zinc-600 dark:text-zinc-400
+        py-3 px-3.5 text-[11px] font-bold text-zinc-600 
         uppercase tracking-wider whitespace-nowrap select-none ${className}
       `}
       {...props}
@@ -124,7 +124,7 @@ export const TableCell = forwardRef(({
   return (
     <td
       ref={ref}
-      className={`py-3 px-3.5 text-zinc-800 dark:text-zinc-200 align-middle ${className}`}
+      className={`py-3 px-3.5 text-zinc-800  align-middle ${className}`}
       {...props}
     >
       {children}

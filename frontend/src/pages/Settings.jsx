@@ -35,38 +35,38 @@ export const Settings = () => {
       </div>
 
       {/* Business Details Card */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
+      <div className="bg-white  rounded-xl border border-zinc-200  p-6 shadow-xs space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-zinc-100  border border-zinc-300  text-zinc-900  font-bold flex items-center justify-center">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-zinc-950 dark:text-zinc-50 text-base leading-tight">{business?.name}</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">Tenant UUID: {business?.id}</p>
+            <h3 className="font-bold text-zinc-950  text-base leading-tight">{business?.name}</h3>
+            <p className="text-xs text-zinc-500  font-mono">Tenant UUID: {business?.id}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 text-xs text-zinc-600 dark:text-zinc-400">
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-850 rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 text-xs text-zinc-600 ">
+          <div className="p-3 bg-zinc-50  rounded-lg border border-zinc-200 ">
             <span className="text-zinc-400 block font-semibold mb-0.5">Operating Timezone</span>
-            <span className="font-bold text-zinc-900 dark:text-zinc-100">{business?.timezone || 'Asia/Kolkata'}</span>
+            <span className="font-bold text-zinc-900 ">{business?.timezone || 'Asia/Kolkata'}</span>
           </div>
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-850 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <div className="p-3 bg-zinc-50  rounded-lg border border-zinc-200 ">
             <span className="text-zinc-400 block font-semibold mb-0.5">Base Currency</span>
-            <span className="font-bold text-zinc-900 dark:text-zinc-100">{business?.currency || 'INR (₹)'}</span>
+            <span className="font-bold text-zinc-900 ">{business?.currency || 'INR (₹)'}</span>
           </div>
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-850 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <div className="p-3 bg-zinc-50  rounded-lg border border-zinc-200 ">
             <span className="text-zinc-400 block font-semibold mb-0.5">URL Identifier</span>
-            <span className="font-bold text-zinc-900 dark:text-zinc-100 font-mono">{business?.slug}</span>
+            <span className="font-bold text-zinc-900  font-mono">{business?.slug}</span>
           </div>
         </div>
       </div>
 
       {/* Branch Geofences Table */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-100">Worksite Branches &amp; Geofence Radiuses</h3>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">{branches.length} locations configured</span>
+      <div className="bg-white  rounded-xl border border-zinc-200  shadow-xs overflow-hidden">
+        <div className="px-6 py-4 border-b border-zinc-200  flex items-center justify-between">
+          <h3 className="text-sm font-bold text-zinc-950 ">Worksite Branches &amp; Geofence Radiuses</h3>
+          <span className="text-xs text-zinc-500  font-medium">{branches.length} locations configured</span>
         </div>
 
         {loading ? (
@@ -75,7 +75,7 @@ export const Settings = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-semibold uppercase text-[11px] tracking-wider">
+                <tr className="bg-zinc-50  border-b border-zinc-200  text-zinc-500  font-semibold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Branch Name</th>
                   <th className="py-3 px-4">Code</th>
                   <th className="py-3 px-4">City</th>
@@ -84,17 +84,17 @@ export const Settings = () => {
                   <th className="py-3 px-4">Head Office</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              <tbody className="divide-y divide-zinc-200 ">
                 {branches.map((b) => (
-                  <tr key={b.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-zinc-900 dark:text-zinc-100">{b.name}</td>
-                    <td className="py-3.5 px-4 font-mono text-zinc-700 dark:text-zinc-300">{b.code}</td>
-                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400">{b.city}</td>
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <tr key={b.id} className="hover:bg-zinc-50  transition-colors">
+                    <td className="py-3.5 px-4 font-semibold text-zinc-900 ">{b.name}</td>
+                    <td className="py-3.5 px-4 font-mono text-zinc-700 ">{b.code}</td>
+                    <td className="py-3.5 px-4 text-zinc-600 ">{b.city}</td>
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-zinc-500 ">
                       {b.latitude ? `${Number(b.latitude).toFixed(4)}, ${Number(b.longitude).toFixed(4)}` : 'Not Set'}
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="font-semibold text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700">
+                      <span className="font-semibold text-zinc-900  bg-zinc-100  px-2 py-0.5 rounded border border-zinc-300 ">
                         {b.geofence_radius || 500} meters
                       </span>
                     </td>

@@ -69,35 +69,35 @@ export const TestingPanel = () => {
 
       {/* System Status Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase">
+        <div className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-xs">
+          <div className="flex items-center justify-between text-xs text-zinc-500  font-semibold uppercase">
             <span>API Gateway</span>
-            <Activity className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+            <Activity className="w-4 h-4 text-zinc-900 " />
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
-            <span className="text-sm font-bold text-zinc-950 dark:text-zinc-50">Online &amp; Responding</span>
+            <CheckCircle2 className="w-4 h-4 text-zinc-900 " />
+            <span className="text-sm font-bold text-zinc-950 ">Online &amp; Responding</span>
           </div>
           <p className="text-[11px] text-zinc-400 mt-1">Django 5.1 REST API • Port 8000</p>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase">
+        <div className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-xs">
+          <div className="flex items-center justify-between text-xs text-zinc-500  font-semibold uppercase">
             <span>PostgreSQL Database</span>
-            <Database className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+            <Database className="w-4 h-4 text-zinc-900 " />
           </div>
           <div className="flex items-center gap-2 mt-2">
             {health?.database === 'connected' ? (
               <>
-                <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
-                <span className="text-sm font-bold text-zinc-950 dark:text-zinc-50">
+                <CheckCircle2 className="w-4 h-4 text-zinc-900 " />
+                <span className="text-sm font-bold text-zinc-950 ">
                   {health.database_engine || 'PostgreSQL'} Connected
                 </span>
               </>
             ) : (
               <>
                 <XCircle className="w-4 h-4 text-zinc-500" />
-                <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Connecting...</span>
+                <span className="text-sm font-bold text-zinc-700 ">Connecting...</span>
               </>
             )}
           </div>
@@ -106,69 +106,69 @@ export const TestingPanel = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase">
+        <div className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-xs">
+          <div className="flex items-center justify-between text-xs text-zinc-500  font-semibold uppercase">
             <span>Active Role Scope</span>
-            <UserCheck className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+            <UserCheck className="w-4 h-4 text-zinc-900 " />
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
-            <span className="text-sm font-bold text-zinc-950 dark:text-zinc-50 font-mono">{activeRole}</span>
+            <CheckCircle2 className="w-4 h-4 text-zinc-900 " />
+            <span className="text-sm font-bold text-zinc-950  font-mono">{activeRole}</span>
           </div>
           <p className="text-[11px] text-zinc-400 mt-1">{permissions.length} granular permissions granted</p>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase">
+        <div className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-xs">
+          <div className="flex items-center justify-between text-xs text-zinc-500  font-semibold uppercase">
             <span>Active Tenant Session</span>
-            <Shield className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+            <Shield className="w-4 h-4 text-zinc-900 " />
           </div>
-          <p className="text-sm font-bold text-zinc-950 dark:text-zinc-50 mt-2 truncate">{business?.name || 'My Organization'}</p>
+          <p className="text-sm font-bold text-zinc-950  mt-2 truncate">{business?.name || 'My Organization'}</p>
           <p className="text-[11px] text-zinc-400 mt-1 font-mono truncate">{business?.slug || 'my-org'}</p>
         </div>
       </div>
 
       {/* Active User Session Details */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs">
-        <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50 mb-1 flex items-center gap-2">
-          <UserCheck className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+      <div className="bg-white  rounded-xl border border-zinc-200  p-6 shadow-xs">
+        <h3 className="text-sm font-bold text-zinc-950  mb-1 flex items-center gap-2">
+          <UserCheck className="w-4 h-4 text-zinc-900 " />
           <span>Active Authenticated Session Profile</span>
         </h3>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+        <p className="text-xs text-zinc-500  mb-4">
           Session identity and business membership verified from PostgreSQL
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="p-3.5 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800">
+          <div className="p-3.5 bg-zinc-50  rounded-xl border border-zinc-200 ">
             <span className="text-zinc-400 block font-medium mb-1">User Full Name</span>
-            <span className="font-bold text-zinc-950 dark:text-zinc-50 text-sm">{user?.full_name || 'Anonymous'}</span>
+            <span className="font-bold text-zinc-950  text-sm">{user?.full_name || 'Anonymous'}</span>
           </div>
-          <div className="p-3.5 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800">
+          <div className="p-3.5 bg-zinc-50  rounded-xl border border-zinc-200 ">
             <span className="text-zinc-400 block font-medium mb-1">Email Address</span>
-            <span className="font-bold text-zinc-950 dark:text-zinc-50 text-sm font-mono">{user?.email || '-'}</span>
+            <span className="font-bold text-zinc-950  text-sm font-mono">{user?.email || '-'}</span>
           </div>
-          <div className="p-3.5 bg-zinc-50 dark:bg-zinc-850 rounded-xl border border-zinc-200 dark:border-zinc-800">
+          <div className="p-3.5 bg-zinc-50  rounded-xl border border-zinc-200 ">
             <span className="text-zinc-400 block font-medium mb-1">Assigned Role</span>
-            <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm font-mono">{ROLE_LABELS[activeRole] || activeRole}</span>
+            <span className="font-bold text-zinc-900  text-sm font-mono">{ROLE_LABELS[activeRole] || activeRole}</span>
           </div>
         </div>
       </div>
 
       {/* Granted Permission Matrix for current session */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs">
-        <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50 mb-1">Live Granted Permissions in PostgreSQL</h3>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-          Granular permission codes loaded from the database for <span className="font-semibold text-zinc-900 dark:text-zinc-100">{user?.email}</span> (Role: <span className="font-bold text-zinc-950 dark:text-zinc-50">{activeRole}</span>)
+      <div className="bg-white  rounded-xl border border-zinc-200  p-6 shadow-xs">
+        <h3 className="text-sm font-bold text-zinc-950  mb-1">Live Granted Permissions in PostgreSQL</h3>
+        <p className="text-xs text-zinc-500  mb-4">
+          Granular permission codes loaded from the database for <span className="font-semibold text-zinc-900 ">{user?.email}</span> (Role: <span className="font-bold text-zinc-950 ">{activeRole}</span>)
         </p>
 
-        <div className="flex flex-wrap gap-1.5 max-h-52 overflow-y-auto p-3 bg-zinc-50 dark:bg-zinc-850 rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-wrap gap-1.5 max-h-52 overflow-y-auto p-3 bg-zinc-50  rounded-lg border border-zinc-200 ">
           {permissions.length === 0 ? (
             <span className="text-xs text-zinc-400">All permissions granted (Superuser / Business Owner mode active)</span>
           ) : (
             permissions.map((p) => (
               <span
                 key={p}
-                className="px-2 py-0.5 rounded font-mono text-[10px] font-medium bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-2xs"
+                className="px-2 py-0.5 rounded font-mono text-[10px] font-medium bg-white  text-zinc-900  border border-zinc-300  shadow-2xs"
               >
                 {p}
               </span>

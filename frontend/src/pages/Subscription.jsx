@@ -156,11 +156,11 @@ export const Subscription = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+            <h3 className="text-xs font-bold text-zinc-950  uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-zinc-900 " />
               <span>Company Purchased Plan</span>
             </h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            <p className="text-xs text-zinc-500  mt-0.5">
               Active plan entitlements and features currently unlocked for {companyName}
             </p>
           </div>
@@ -168,60 +168,60 @@ export const Subscription = () => {
           <button
             type="button"
             onClick={() => setShowAllPlans(!showAllPlans)}
-            className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 hover:underline transition-colors cursor-pointer"
+            className="text-xs font-semibold text-zinc-900  hover:underline transition-colors cursor-pointer"
           >
             {showAllPlans ? 'Hide Other Plans' : 'Compare Other Tiers →'}
           </button>
         </div>
 
         {/* Highlighted Purchased Plan Card */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl border-2 border-zinc-950 dark:border-zinc-100 p-6 shadow-xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="bg-white  rounded-xl border-2 border-zinc-950  p-6 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-200 ">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950">
+                <span className="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded bg-zinc-950 text-white  ">
                   {purchasedPlan.code} TIER
                 </span>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-zinc-100  text-zinc-900  border border-zinc-300 ">
                   ✓ Active for {companyName}
                 </span>
               </div>
-              <h4 className="text-xl font-bold text-zinc-950 dark:text-zinc-50 mt-2">{purchasedPlan.name}</h4>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{purchasedPlan.description}</p>
+              <h4 className="text-xl font-bold text-zinc-950  mt-2">{purchasedPlan.name}</h4>
+              <p className="text-xs text-zinc-500  mt-0.5">{purchasedPlan.description}</p>
             </div>
             <div className="text-left md:text-right">
-              <span className="text-2xl font-black text-zinc-950 dark:text-zinc-50">
+              <span className="text-2xl font-black text-zinc-950 ">
                 {formatINR(currentSub?.billing_cycle === 'ANNUAL' ? (purchasedPlan.annual_price || 24990) : (purchasedPlan.monthly_price || 2499))}
               </span>
               <span className="text-xs text-zinc-400 font-normal"> / {currentSub?.billing_cycle === 'ANNUAL' ? 'year' : 'month'}</span>
-              <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-semibold mt-0.5">Paid &amp; In Good Standing</p>
+              <p className="text-[11px] text-zinc-600  font-semibold mt-0.5">Paid &amp; In Good Standing</p>
             </div>
           </div>
 
           {/* Included Features Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-4 text-xs">
-            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 ">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900  shrink-0" />
               <span>Full India Statutory Payroll (PF, TDS, Advances)</span>
             </div>
-            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 ">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900  shrink-0" />
               <span>Multi-Site Geofenced Attendance &amp; Selfie Punches</span>
             </div>
-            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 ">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900  shrink-0" />
               <span>Configurable Overtime Multipliers &amp; Shortfall Cuts</span>
             </div>
-            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 ">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900  shrink-0" />
               <span>Up to {purchasedPlan.max_employees} Staff Members Allowed</span>
             </div>
-            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 ">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900  shrink-0" />
               <span>Up to {purchasedPlan.max_branches} Company Branches Included</span>
             </div>
-            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-              <CheckCircle2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
+            <div className="flex items-center gap-2 text-zinc-700 ">
+              <CheckCircle2 className="w-4 h-4 text-zinc-900  shrink-0" />
               <span>Cashbook Ledgers &amp; Expense Audit Trails</span>
             </div>
           </div>
@@ -230,19 +230,19 @@ export const Subscription = () => {
         {/* Optional Other Plans toggle */}
         {showAllPlans && (
           <div className="pt-2 space-y-3">
-            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Other Platform Tiers</p>
+            <p className="text-xs font-semibold text-zinc-500  uppercase tracking-wider">Other Platform Tiers</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {plans
                 .filter((p) => p.code !== purchasedPlan.code)
                 .map((p) => (
-                  <div key={p.id} className="bg-zinc-50 dark:bg-zinc-850 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs space-y-3">
+                  <div key={p.id} className="bg-zinc-50  p-4 rounded-xl border border-zinc-200  text-xs space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase">{p.name}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">{p.code}</span>
+                      <span className="font-bold text-zinc-900  uppercase">{p.name}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-200  text-zinc-800 ">{p.code}</span>
                     </div>
-                    <p className="text-lg font-bold text-zinc-950 dark:text-zinc-50">{formatINR(p.monthly_price)}<span className="text-xs text-zinc-400 font-normal">/mo</span></p>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">{p.description}</p>
-                    <div className="text-[11px] text-zinc-600 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 pt-2 space-y-0.5">
+                    <p className="text-lg font-bold text-zinc-950 ">{formatINR(p.monthly_price)}<span className="text-xs text-zinc-400 font-normal">/mo</span></p>
+                    <p className="text-[11px] text-zinc-500 ">{p.description}</p>
+                    <div className="text-[11px] text-zinc-600  border-t border-zinc-200  pt-2 space-y-0.5">
                       <p>Employees: <strong>{p.max_employees === -1 ? 'Unlimited' : p.max_employees}</strong></p>
                       <p>Branches: <strong>{p.max_branches === -1 ? 'Unlimited' : p.max_branches}</strong></p>
                     </div>
@@ -254,29 +254,29 @@ export const Subscription = () => {
       </div>
 
       {/* Invoices Section */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-850/50 flex items-center justify-between">
+      <div className="bg-white  rounded-xl border border-zinc-200  shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-zinc-200  bg-zinc-50/50  flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
-            <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-100 uppercase tracking-wider">
+            <FileText className="w-4 h-4 text-zinc-900 " />
+            <h3 className="text-xs font-bold text-zinc-950  uppercase tracking-wider">
               Billing Invoices for {companyName}
             </h3>
           </div>
-          <span className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-2.5 py-0.5 rounded">
+          <span className="text-[11px] font-semibold text-zinc-800  bg-zinc-100  border border-zinc-300  px-2.5 py-0.5 rounded">
             {invoices.length} Official Tax Invoices
           </span>
         </div>
 
         {invoices.length === 0 ? (
-          <div className="p-8 text-center text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
-            <FileText className="w-6 h-6 text-zinc-300 dark:text-zinc-600 mx-auto" />
-            <p className="font-semibold text-zinc-700 dark:text-zinc-300">No invoices generated yet for this period.</p>
+          <div className="p-8 text-center text-xs text-zinc-500  space-y-1">
+            <FileText className="w-6 h-6 text-zinc-300  mx-auto" />
+            <p className="font-semibold text-zinc-700 ">No invoices generated yet for this period.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-semibold uppercase text-[11px]">
+                <tr className="bg-zinc-50  border-b border-zinc-200  text-zinc-500  font-semibold uppercase text-[11px]">
                   <th className="py-3 px-4">Invoice #</th>
                   <th className="py-3 px-4">Billed To Company</th>
                   <th className="py-3 px-4">Description</th>
@@ -286,21 +286,21 @@ export const Subscription = () => {
                   <th className="py-3 px-4 text-right">Receipt</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              <tbody className="divide-y divide-zinc-200 ">
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-zinc-900 dark:text-zinc-100">{inv.invoice_number}</td>
-                    <td className="py-3.5 px-4 font-medium text-zinc-800 dark:text-zinc-200">{inv.business_name || companyName}</td>
-                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400">{inv.notes || `${planName} License`}</td>
-                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400">{formatDate(inv.issued_date || inv.paid_at || inv.created_at)}</td>
-                    <td className="py-3.5 px-4 font-bold text-zinc-950 dark:text-zinc-50 text-sm">{formatINR(inv.total || inv.amount)}</td>
+                  <tr key={inv.id} className="hover:bg-zinc-50  transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-zinc-900 ">{inv.invoice_number}</td>
+                    <td className="py-3.5 px-4 font-medium text-zinc-800 ">{inv.business_name || companyName}</td>
+                    <td className="py-3.5 px-4 text-zinc-600 ">{inv.notes || `${planName} License`}</td>
+                    <td className="py-3.5 px-4 text-zinc-600 ">{formatDate(inv.issued_date || inv.paid_at || inv.created_at)}</td>
+                    <td className="py-3.5 px-4 font-bold text-zinc-950  text-sm">{formatINR(inv.total || inv.amount)}</td>
                     <td className="py-3.5 px-4">
                       <Badge variant={inv.status === 'PAID' ? 'default' : 'neutral'}>{inv.status}</Badge>
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <button
                         onClick={() => window.print()}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 rounded text-xs font-semibold transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-zinc-100   text-zinc-800  border border-zinc-300  rounded text-xs font-semibold transition-colors cursor-pointer"
                         title="Print / Save Receipt"
                       >
                         <Printer className="w-3.5 h-3.5" />

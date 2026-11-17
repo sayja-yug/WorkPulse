@@ -60,7 +60,7 @@ export const Notifications = () => {
         {notifications.length > 0 && (
           <button
             onClick={handleMarkAllRead}
-            className="flex items-center gap-1.5 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-zinc-100 hover:bg-zinc-200   text-zinc-900  border border-zinc-300  rounded-lg text-xs font-semibold transition-colors cursor-pointer"
           >
             <CheckCheck className="w-4 h-4" />
             <span>Mark All Read</span>
@@ -68,38 +68,38 @@ export const Notifications = () => {
         )}
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
+      <div className="bg-white  rounded-xl border border-zinc-200  shadow-xs overflow-hidden">
         {loading ? (
           <Loader message="Loading notifications..." />
         ) : notifications.length === 0 ? (
           <div className="p-12 text-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-full bg-zinc-100  text-zinc-900  flex items-center justify-center mx-auto">
               <Bell className="w-6 h-6" />
             </div>
-            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">You&apos;re all caught up!</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">No unread notifications in your queue right now.</p>
+            <p className="text-sm font-semibold text-zinc-900 ">You&apos;re all caught up!</p>
+            <p className="text-xs text-zinc-500 ">No unread notifications in your queue right now.</p>
           </div>
         ) : (
-          <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <div className="divide-y divide-zinc-200 ">
             {notifications.map((n) => (
               <div
                 key={n.id}
-                className={`p-4 flex items-start justify-between gap-4 ${n.is_read ? 'bg-white dark:bg-zinc-900' : 'bg-zinc-50/80 dark:bg-zinc-850/60'}`}
+                className={`p-4 flex items-start justify-between gap-4 ${n.is_read ? 'bg-white ' : 'bg-zinc-50/80 '}`}
               >
                 <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg mt-0.5 ${n.is_read ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400' : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100'}`}>
+                  <div className={`p-2 rounded-lg mt-0.5 ${n.is_read ? 'bg-zinc-100  text-zinc-400' : 'bg-zinc-200  text-zinc-900 '}`}>
                     <Info className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">{n.title || 'System Notification'}</p>
-                    <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">{n.message || n.body}</p>
+                    <p className="text-sm font-semibold text-zinc-950 ">{n.title || 'System Notification'}</p>
+                    <p className="text-xs text-zinc-600  mt-0.5">{n.message || n.body}</p>
                     <p className="text-[11px] text-zinc-400 mt-1">{formatDate(n.created_at)}</p>
                   </div>
                 </div>
                 {!n.is_read && (
                   <button
                     onClick={() => handleMarkRead(n.id)}
-                    className="text-xs font-bold text-zinc-950 dark:text-zinc-100 hover:underline flex-shrink-0 cursor-pointer"
+                    className="text-xs font-bold text-zinc-950  hover:underline flex-shrink-0 cursor-pointer"
                   >
                     Mark Read
                   </button>

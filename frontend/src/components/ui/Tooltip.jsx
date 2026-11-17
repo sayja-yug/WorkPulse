@@ -43,7 +43,7 @@ export const Tooltip = ({
           role="tooltip"
           className={`
             absolute z-50 px-2.5 py-1 text-2xs font-semibold
-            bg-zinc-950 text-white dark:bg-white dark:text-zinc-950
+            bg-zinc-950 text-white  
             rounded-md shadow-subtle pointer-events-none whitespace-nowrap
             animate-in fade-in zoom-in-95 duration-100
             ${positions[position] || positions.top}

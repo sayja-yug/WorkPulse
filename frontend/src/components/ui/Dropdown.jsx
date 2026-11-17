@@ -36,8 +36,8 @@ export const Dropdown = forwardRef(({
           ref={ref}
           className={`
             absolute ${alignStyles} mt-1.5 min-w-[180px] max-w-xs
-            bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800
-            rounded-xl shadow-popover py-1 z-50 text-xs text-zinc-900 dark:text-zinc-100
+            bg-white  border border-zinc-200 
+            rounded-xl shadow-popover py-1 z-50 text-xs text-zinc-900 
             animate-in fade-in zoom-in-95 duration-100
             ${menuClassName}
           `}
@@ -69,21 +69,21 @@ export const DropdownItem = ({
         w-full text-left px-3.5 py-2 flex items-center gap-2.5 transition-colors cursor-pointer select-none
         disabled:opacity-40 disabled:pointer-events-none
         ${danger
-          ? 'text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold'
-          : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-950 dark:hover:text-white'
+          ? 'text-zinc-900  hover:bg-zinc-100  font-semibold'
+          : 'text-zinc-700  hover:bg-zinc-100  hover:text-zinc-950 '
         }
         ${className}
       `}
       {...props}
     >
-      {Icon && <Icon className="w-4 h-4 shrink-0 text-zinc-400 dark:text-zinc-500" />}
+      {Icon && <Icon className="w-4 h-4 shrink-0 text-zinc-400 " />}
       <span className="truncate">{children}</span>
     </button>
   );
 };
 
 export const DropdownSeparator = ({ className = '' }) => (
-  <div className={`border-t border-zinc-100 dark:border-zinc-800 my-1 ${className}`} />
+  <div className={`border-t border-zinc-100  my-1 ${className}`} />
 );
 
 export default Dropdown;

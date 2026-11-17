@@ -76,14 +76,30 @@ export const Organization = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch all org data
+  const parseApiError = (err, fallback) => {
+    const data = err.response?.data;
+    if (!data) return fallback;
+    if (typeof data === 'string') return data;
+    if (data.error?.message) return data.error.message;
+    if (data.detail) return data.detail;
+    if (data.message) return data.message;
+    const firstKey = Object.keys(data)[0];
+    if (firstKey) {
+      const val = data[firstKey];
+      if (Array.isArray(val) && val.length > 0) return `${firstKey}: ${val[0]}`;
+      if (typeof val === 'string') return `${firstKey}: ${val}`;
+    }
+    return fallback;
+  };
+
   const fetchAll = async () => {
     try {
       setLoading(true);
       const calls = [
         api.get('/branches/'),
-        api.get('/departments/'),
-        api.get('/designations/'),
-        api.get('/holidays/'),
+        api.get('/branches/departments/'),
+        api.get('/branches/designations/'),
+        api.get('/attendance/holidays/'),
       ];
       if (business?.id) {
         calls.push(api.get(`/businesses/${business.id}/`));
@@ -147,7 +163,7 @@ export const Organization = () => {
       setShowBizEdit(false);
       await fetchAll();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to update business profile');
+      alert(parseApiError(err, 'Failed to update business profile'));
     } finally {
       setSubmitting(false);
     }
@@ -185,7 +201,7 @@ export const Organization = () => {
       setShowBranchModal(false);
       await fetchAll();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to save branch');
+      alert(parseApiError(err, 'Failed to save branch'));
     } finally {
       setSubmitting(false);
     }
@@ -198,7 +214,7 @@ export const Organization = () => {
       await api.patch(`/branches/${b.id}/`, { is_active: b.is_active === false });
       await fetchAll();
     } catch (err) {
-      alert(err.response?.data?.error?.message || `Failed to ${action} branch`);
+      alert(parseApiError(err, `Failed to ${action} branch`));
     }
   };
 
@@ -233,14 +249,14 @@ export const Organization = () => {
     try {
       setSubmitting(true);
       if (editingDept) {
-        await api.patch(`/departments/${editingDept.id}/`, deptForm);
+        await api.patch(`/branches/departments/${editingDept.id}/`, deptForm);
       } else {
-        await api.post('/departments/', deptForm);
+        await api.post('/branches/departments/', deptForm);
       }
       setShowDeptModal(false);
       await fetchAll();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to save department');
+      alert(parseApiError(err, 'Failed to save department'));
     } finally {
       setSubmitting(false);
     }
@@ -263,12 +279,12 @@ export const Organization = () => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await api.post('/designations/', desigForm);
+      await api.post('/branches/designations/', desigForm);
       setShowDesigModal(false);
       setDesigForm({ name: '', level: 1 });
       await fetchAll();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to add designation');
+      alert(parseApiError(err, 'Failed to add designation'));
     } finally {
       setSubmitting(false);
     }
@@ -291,7 +307,7 @@ export const Organization = () => {
       setShowWorkingDaysModal(false);
       await fetchAll();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to update working days');
+      alert(parseApiError(err, 'Failed to update working days'));
     } finally {
       setSubmitting(false);
     }
@@ -302,12 +318,12 @@ export const Organization = () => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await api.post('/holidays/', holidayForm);
+      await api.post('/attendance/holidays/', holidayForm);
       setShowHolidayModal(false);
       setHolidayForm({ name: '', date: '', type: 'PUBLIC' });
       await fetchAll();
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to add holiday');
+      alert(parseApiError(err, 'Failed to add holiday'));
     } finally {
       setSubmitting(false);
     }

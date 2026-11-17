@@ -36,6 +36,8 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     is_punched_in = serializers.SerializerMethodField()
     check_in_time = serializers.SerializerMethodField()
     duty_status = serializers.SerializerMethodField()
+    last_punch_date = serializers.SerializerMethodField()
+    unpunched_days = serializers.SerializerMethodField()
 
     def _get_today_record(self, obj):
         if not hasattr(obj, '_cached_today_record'):

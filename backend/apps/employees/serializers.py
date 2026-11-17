@@ -55,8 +55,12 @@ class EmployeeListSerializer(serializers.ModelSerializer):
         return rec.check_in if rec else None
 
     def get_duty_status(self, obj):
-        # In mid and enterprise companies, punch-out does not make an employee inactive
-        return obj.status
+        if obj.status in ('TERMINATED', 'RESIGNED', 'ABSCONDING'):
+            return obj.status
+        unpunched = self.get_unpunched_days(obj)
+        if unpunched >= 3:
+            return 'INACTIVE'
+        return 'ACTIVE'
 
     def _get_last_punch_date(self, obj):
         if not hasattr(obj, '_cached_last_punch'):

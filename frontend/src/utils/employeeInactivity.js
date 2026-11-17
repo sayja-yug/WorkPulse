@@ -86,3 +86,4 @@ export const calculateEmployeeInactivity = (emp, attendanceRecords = []) => {
     lastPunchDate: referenceDateStr,
   };
 };
+

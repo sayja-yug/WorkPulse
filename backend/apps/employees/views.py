@@ -28,8 +28,60 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = Employee.objects.select_related('branch', 'department', 'designation', 'user').all()
-    filterset_fields = ['branch', 'department', 'designation', 'status', 'employment_type', 'is_field_employee']
+    filterset_fields = ['branch', 'department', 'designation', 'employment_type', 'is_field_employee']
     search_fields = ['first_name', 'last_name', 'employee_code', 'email', 'phone']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get('status')
+        if not status_param:
+            return qs
+
+        status_param = status_param.strip().upper()
+        from apps.attendance.models import AttendanceRecord
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.db.models import Q
+
+        today = timezone.now().date()
+        threshold_date = today - timedelta(days=3)
+
+        # Employee IDs who logged at least one punch-in within the last 3 days
+        business = getattr(self.request, 'business', None)
+        att_qs = AttendanceRecord.objects.filter(check_in__isnull=False, date__gte=threshold_date)
+        if business:
+            att_qs = att_qs.filter(business=business)
+        recently_active_ids = att_qs.values_list('employee_id', flat=True).distinct()
+
+        if status_param in ('INACTIVE_3_DAYS', 'INACTIVE'):
+            # Inactive enterprise definition:
+            # 1. Explicitly marked INACTIVE/ABSCONDING in DB, OR
+            # 2. No punch-in for 3+ consecutive days (not in recently_active_ids) and not terminated/resigned
+            return qs.filter(
+                Q(status=Employee.Status.INACTIVE) |
+                Q(status=Employee.Status.ABSCONDING) |
+                (
+                    ~Q(id__in=recently_active_ids) &
+                    ~Q(status__in=[Employee.Status.TERMINATED, 'RESIGNED']) &
+                    (Q(joining_date__lt=threshold_date) | Q(joining_date__isnull=True))
+                )
+            ).distinct()
+
+        elif status_param == 'ACTIVE':
+            # Truly active working employees:
+            # DB status is ACTIVE AND (punched in within last 3 days OR joined within last 3 days)
+            return qs.filter(
+                Q(status=Employee.Status.ACTIVE) &
+                (
+                    Q(id__in=recently_active_ids) |
+                    Q(joining_date__gte=threshold_date)
+                )
+            ).distinct()
+
+        elif status_param in ('TERMINATED', 'RESIGNED', 'ON_NOTICE', 'ABSCONDING'):
+            return qs.filter(status=status_param)
+
+        return qs
 
     def get_serializer_class(self):
         if self.action == 'list':

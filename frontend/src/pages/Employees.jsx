@@ -117,7 +117,6 @@ export const Employees = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const isCustomFilter = statusFilter === 'INACTIVE_3_DAYS';
       const res = await api.get('/employees/', {
         params: {
           page,
@@ -125,7 +124,7 @@ export const Employees = () => {
           branch: branchFilter || undefined,
           department: deptFilter || undefined,
           designation: desigFilter || undefined,
-          status: isCustomFilter ? undefined : (statusFilter || undefined),
+          status: statusFilter || undefined,
         },
       });
       const list = res.data?.results || res.data?.data || res.data || [];
@@ -162,12 +161,7 @@ export const Employees = () => {
 
   const getInactivity = (emp) => calculateEmployeeInactivity(emp, attendanceRecords);
 
-  const displayedEmployees = employees.filter((emp) => {
-    if (statusFilter === 'INACTIVE_3_DAYS') {
-      return getInactivity(emp).isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED';
-    }
-    return true;
-  });
+  const displayedEmployees = employees;
 
   const inactiveEmployees = employees.filter(
     (emp) => getInactivity(emp).isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED'
@@ -180,6 +174,7 @@ export const Employees = () => {
     setDesigFilter('');
     setStatusFilter('');
     setPage(1);
+    navigate('/employees', { replace: true });
   };
 
   const hasActiveFilters = Boolean(search || branchFilter || deptFilter || desigFilter || statusFilter);
@@ -628,8 +623,16 @@ export const Employees = () => {
               )}
               {statusFilter && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100  text-zinc-800  border border-zinc-200 ">
-                  Status: {statusFilter}
-                  <button onClick={() => setStatusFilter('')} className="hover:text-zinc-950  font-bold ml-0.5">×</button>
+                  Status: {statusFilter === 'INACTIVE_3_DAYS' ? 'Inactive (3+ Days No Punch)' : statusFilter === 'ACTIVE' ? 'Active (Working)' : statusFilter}
+                  <button
+                    onClick={() => {
+                      setStatusFilter('');
+                      navigate('/employees', { replace: true });
+                    }}
+                    className="hover:text-zinc-950 font-bold ml-0.5 cursor-pointer"
+                  >
+                    ×
+                  </button>
                 </span>
               )}
             </div>

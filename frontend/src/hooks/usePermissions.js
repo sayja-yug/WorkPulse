@@ -11,12 +11,14 @@ export const usePermissions = () => {
   const isPlatformAdmin = isSuperAdmin || isSupportAdmin || isBillingAdmin;
   const isHR = hasRole(ROLES.HR_MANAGER) || isOwner;
   const isAccountant = hasRole(ROLES.ACCOUNTANT) || isOwner;
+  const isAccountantStrict = activeRole === ROLES.ACCOUNTANT || (!isOwner && !isSuperAdmin && !isHR && roles.includes(ROLES.ACCOUNTANT));
   const isBranchManager = hasRole(ROLES.BRANCH_MANAGER) || isOwner;
   const isBranchManagerStrict = activeRole === ROLES.BRANCH_MANAGER || (!isOwner && !isSuperAdmin && !isHR && roles.includes(ROLES.BRANCH_MANAGER));
   const isSupervisor = hasRole(ROLES.SUPERVISOR) || isHR || isOwner;
   const isAuditor = hasRole(ROLES.AUDITOR);
   const isEmployee = activeRole === ROLES.EMPLOYEE || activeRole === ROLES.FIELD_EMPLOYEE;
   const isFieldEmployee = activeRole === ROLES.FIELD_EMPLOYEE;
+  const isSelfAttendanceOnly = isEmployee || isAccountantStrict;
 
   return {
     user,
@@ -32,12 +34,14 @@ export const usePermissions = () => {
     isPlatformAdmin,
     isHR,
     isAccountant,
+    isAccountantStrict,
     isBranchManager,
     isBranchManagerStrict,
     isSupervisor,
     isAuditor,
     isEmployee,
     isFieldEmployee,
+    isSelfAttendanceOnly,
     canManageEmployees: isHR || isBranchManager || isOwner,
     canCreateEmployee: hasPermission('employee.create') || isOwner,
     canManageBranches: !isBranchManagerStrict && (isOwner || isSuperAdmin),

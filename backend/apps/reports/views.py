@@ -145,6 +145,11 @@ class BusinessOverviewView(views.APIView):
 
         cash_balance = CashbookService.get_current_balance(business)
 
+        from apps.advances.models import Advance
+        pending_advances_qs = Advance.objects.filter(business=business, status=Advance.Status.PENDING)
+        pending_advances_count = pending_advances_qs.count()
+        pending_advances_amount = pending_advances_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
         return Response({
             'success': True,
             'data': {
@@ -165,10 +170,13 @@ class BusinessOverviewView(views.APIView):
                 'branch_stats': branch_stats,
                 'recent_activity': recent_activity[:6],
                 'pending_leaves_count': pending_leaves,
+                'pending_advances_count': pending_advances_count,
                 'financials': {
                     'monthly_payroll_total': monthly_payroll_total,
                     'monthly_expenses_total': str(monthly_expenses),
-                    'cash_balance': str(cash_balance)
+                    'cash_balance': str(cash_balance),
+                    'pending_advances_count': pending_advances_count,
+                    'pending_advances_amount': str(pending_advances_amount)
                 }
             }
         })

@@ -35,6 +35,8 @@ export const Dashboard = () => {
     isEmployee,
     isHR,
     isAccountant,
+    isAccountantStrict,
+    isSelfAttendanceOnly,
     isAuditor,
     isOwner,
     canManageEmployees,
@@ -166,7 +168,7 @@ export const Dashboard = () => {
         await fetchAttendanceRecord();
 
         // For Business Owners and HR, compute any employees inactive for 3+ consecutive days
-        if (!isEmployee) {
+        if (!isEmployee && !isAccountantStrict) {
           try {
             const [empRes, attRes] = await Promise.all([
               api.get('/employees/'),
@@ -195,7 +197,7 @@ export const Dashboard = () => {
     };
 
     loadDashboard();
-  }, [business, isEmployee]);
+  }, [business, isEmployee, isAccountantStrict]);
 
   const computeRealtimeHours = () => {
     if (!todayRecord) return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false, hours: 0 };
@@ -269,7 +271,7 @@ export const Dashboard = () => {
             <span className="text-xs text-zinc-300 font-medium">
               {business?.name || 'No Company Selected'}
             </span>
-            {isEmployee && (
+            {isSelfAttendanceOnly && (
               <span
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                   isPunchedIn
@@ -284,7 +286,11 @@ export const Dashboard = () => {
           </div>
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">Welcome back, {user?.full_name}!</h2>
           <p className="text-zinc-400 text-xs mt-1">
-            {isEmployee
+            {isAccountantStrict
+              ? isPunchedIn
+                ? `Clocked in at ${formatTime(todayRecord.check_in)}. Financial overview, payroll processing, and cashbook ledger below.`
+                : 'You are currently off duty. Clock in to activate your shift and begin tracking duty hours.'
+              : isEmployee
               ? isPunchedIn
                 ? `You clocked in at ${formatTime(todayRecord.check_in)}. Shift hours are actively tracked below.`
                 : 'You are currently off duty. Punch in to activate your shift and begin tracking hours.'
@@ -296,6 +302,56 @@ export const Dashboard = () => {
 
         {/* Role-specific Quick Actions */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {isAccountantStrict && (
+            <>
+              {!isPunchedIn ? (
+                <button
+                  type="button"
+                  disabled={punchingAction}
+                  onClick={handleDashboardPunchIn}
+                  className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{punchingAction ? 'Punching In...' : 'Punch In (PI)'}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={punchingAction}
+                  onClick={handleDashboardPunchOut}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{punchingAction ? 'Punching Out...' : 'Punch Out (PO)'}</span>
+                </button>
+              )}
+              <Link
+                to="/payroll"
+                className="px-3.5 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
+              >
+                Process Payroll
+              </Link>
+              <Link
+                to="/cashbook"
+                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                Cashbook &amp; Expenses
+              </Link>
+              <Link
+                to="/advances"
+                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                Advances &amp; Loans
+              </Link>
+              <Link
+                to="/reports"
+                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                Financial Reports
+              </Link>
+            </>
+          )}
+
           {isEmployee && (
             <>
               {!isPunchedIn ? (
@@ -334,7 +390,7 @@ export const Dashboard = () => {
             </>
           )}
 
-          {canCreateEmployee && !isEmployee && (
+          {canCreateEmployee && !isEmployee && !isAccountantStrict && (
             <Link
               to="/employees?action=add"
               className="flex items-center gap-1.5 px-3.5 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
@@ -344,7 +400,7 @@ export const Dashboard = () => {
             </Link>
           )}
 
-          {canManageEmployees && !isEmployee && (
+          {canManageEmployees && !isEmployee && !isAccountantStrict && (
             <Link
               to="/attendance"
               className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
@@ -353,7 +409,7 @@ export const Dashboard = () => {
             </Link>
           )}
 
-          {canManagePayroll && !isEmployee && (
+          {canManagePayroll && !isEmployee && !isAccountantStrict && (
             <Link
               to="/payroll"
               className="px-3.5 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
@@ -374,7 +430,7 @@ export const Dashboard = () => {
       </div>
 
       {/* Enterprise Inactivity Notification Alert Banner (Owner & HR View) */}
-      {!isEmployee && inactiveEmployees.length > 0 && (
+      {!isEmployee && !isAccountantStrict && inactiveEmployees.length > 0 && (
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-amber-300 shadow-sm relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start gap-3">
@@ -432,7 +488,74 @@ export const Dashboard = () => {
       )}
 
       {/* 2. KPI Cards Grid */}
-      {isEmployee ? (
+      {isAccountantStrict ? (
+        /* Dedicated Accountant Financial & Self-Attendance KPI Grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+          {/* Card 1: Duty Status & Clock In/Out */}
+          <Link to="/attendance" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Duty Status</span>
+              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <Badge variant={isPunchedIn ? 'inverted' : 'default'} dot>
+                {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'INACTIVE (OFF DUTY)'}
+              </Badge>
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">
+              {isPunchedIn
+                ? `Clocked in: ${formatTime(todayRecord.check_in)}`
+                : todayRecord?.check_out
+                ? `Clocked out: ${formatTime(todayRecord.check_out)}`
+                : 'Click to punch attendance'}
+            </p>
+          </Link>
+
+          {/* Card 2: Monthly Payroll Total */}
+          <Link to="/payroll" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Monthly Payroll</span>
+              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                <Banknote className="w-5 h-5" />
+              </div>
+            </div>
+            <p className="text-2xl font-black text-zinc-950 mt-2">
+              {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
+            </p>
+            <p className="text-xs text-zinc-950 font-bold mt-1">Open Payroll Engine &rarr;</p>
+          </Link>
+
+          {/* Card 3: Monthly Expenses */}
+          <Link to="/cashbook" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Monthly Expenses</span>
+              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                <Receipt className="w-5 h-5" />
+              </div>
+            </div>
+            <p className="text-2xl font-black text-zinc-950 mt-2">
+              {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
+            </p>
+            <p className="text-xs text-zinc-950 font-bold mt-1">Open Expense Tracker &rarr;</p>
+          </Link>
+
+          {/* Card 4: Liquid Cashbook Balance */}
+          <Link to="/cashbook" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Cashbook Balance</span>
+              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+            </div>
+            <p className="text-2xl font-black text-zinc-950 mt-2">
+              {formatINR(stats?.financials?.cash_balance ?? 0)}
+            </p>
+            <p className="text-xs text-zinc-950 font-bold mt-1">Open Cash Register &rarr;</p>
+          </Link>
+        </div>
+      ) : isEmployee ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
           {/* Card 1: Live Status & Punch In/Out */}
           <Link to="/attendance" className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
@@ -583,8 +706,8 @@ export const Dashboard = () => {
         </div>
       )}
 
-      {/* 3. Financial Summaries for Non-Employees */}
-      {!isEmployee && (
+      {/* 3. Financial Summaries for Non-Employees & Non-Accountants */}
+      {!isEmployee && !isAccountantStrict && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
           <Link to="/payroll" className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all flex items-center justify-between group">
             <div>
@@ -627,8 +750,8 @@ export const Dashboard = () => {
         </div>
       )}
 
-      {/* 3. Dedicated Cumulative Work Hours Strip (Today, Weekly, Monthly) for Employee */}
-      {isEmployee && (
+      {/* 3. Dedicated Cumulative Work Hours Strip (Today, Weekly, Monthly) for Employee & Accountant */}
+      {isSelfAttendanceOnly && (
         <div className="bg-white rounded-xl border border-zinc-200 shadow-subtle p-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-100 pb-3 mb-4">
             <div className="flex items-center gap-2">
@@ -700,18 +823,18 @@ export const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         {/* Clickable Monochrome Attendance Chart */}
         <div
-          onClick={() => navigate(isEmployee ? '/attendance' : '/reports')}
+          onClick={() => navigate(isSelfAttendanceOnly ? '/attendance' : '/reports')}
           className="lg:col-span-2 bg-white  p-5 sm:p-6 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 cursor-pointer transition-all"
-          title={isEmployee ? 'Click to open My Attendance' : 'Click to open Attendance Analytics'}
+          title={isSelfAttendanceOnly ? 'Click to open My Attendance' : 'Click to open Attendance Analytics'}
         >
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm sm:text-base font-bold text-zinc-950  flex items-center gap-1.5">
-                <span>{isEmployee ? 'My Recent Attendance Activity' : 'Attendance Trend'}</span>
+                <span>{isSelfAttendanceOnly ? 'My Recent Attendance Activity' : 'Attendance Trend'}</span>
                 <ArrowUpRight className="w-4 h-4 text-zinc-400" />
               </h3>
               <p className="text-xs text-zinc-500  mt-0.5">
-                {isEmployee ? 'Click chart to view your full Attendance Logs' : 'Click chart to view full Attendance Analytics'}
+                {isSelfAttendanceOnly ? 'Click chart to view your full Attendance Logs' : 'Click chart to view full Attendance Analytics'}
               </p>
             </div>
             <span className="text-xs font-bold text-zinc-950  bg-zinc-100  px-2.5 py-1 rounded-md border border-zinc-200 ">
@@ -748,9 +871,52 @@ export const Dashboard = () => {
           </div>
         </div>
 
-        {/* Right Column: Employee Status (Management only) OR Quick Self-Service (Employees) */}
+        {/* Right Column: Financial Quick Access (Accountant) OR Employee Status (Management only) OR Quick Self-Service (Employees) */}
         <div className="space-y-4">
-          {!isEmployee ? (
+          {isAccountantStrict ? (
+            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950">Financial Quick Access</h3>
+                <span className="text-[10px] font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200 uppercase">
+                  Accountant
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <Link
+                  to="/attendance"
+                  className="p-3 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg transition-all flex flex-col items-center text-center group"
+                >
+                  <Clock className="w-5 h-5 text-zinc-900 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-zinc-900">Punch Clock</span>
+                  <span className="text-[10px] text-zinc-400">My Attendance</span>
+                </Link>
+                <Link
+                  to="/payroll"
+                  className="p-3 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg transition-all flex flex-col items-center text-center group"
+                >
+                  <Banknote className="w-5 h-5 text-zinc-900 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-zinc-900">Payroll</span>
+                  <span className="text-[10px] text-zinc-400">Run Salary</span>
+                </Link>
+                <Link
+                  to="/cashbook"
+                  className="p-3 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg transition-all flex flex-col items-center text-center group"
+                >
+                  <Receipt className="w-5 h-5 text-zinc-900 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-zinc-900">Expenses</span>
+                  <span className="text-[10px] text-zinc-400">Petty Cash</span>
+                </Link>
+                <Link
+                  to="/advances"
+                  className="p-3 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg transition-all flex flex-col items-center text-center group"
+                >
+                  <TrendingUp className="w-5 h-5 text-zinc-900 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-zinc-900">Advances</span>
+                  <span className="text-[10px] text-zinc-400">Loans &amp; Adv.</span>
+                </Link>
+              </div>
+            </div>
+          ) : !isEmployee ? (
             <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 ">Employee Status &amp; Type</h3>
@@ -818,65 +984,149 @@ export const Dashboard = () => {
             </div>
           )}
 
-          <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 ">Leave Type Distribution</h3>
-              <Link to="/leaves" className="text-[11px] font-bold text-zinc-900  hover:underline">
-                Leaves &rarr;
-              </Link>
-            </div>
-            {leaveDist.length === 0 ? (
-              <p className="text-xs text-zinc-400">No leave requests recorded.</p>
-            ) : (
-              <div className="space-y-2">
-                {leaveDist.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between text-xs">
-                    <span className="text-zinc-600  font-medium">{item.name}</span>
-                    <span className="font-bold text-zinc-950  px-2 py-0.5 bg-zinc-100  border border-zinc-200/60  rounded">{item.count}</span>
-                  </div>
-                ))}
+          {isAccountantStrict ? (
+            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950">Pending Approvals</h3>
+                <Link to="/advances" className="text-[11px] font-bold text-zinc-900 hover:underline">
+                  Advances &rarr;
+                </Link>
               </div>
-            )}
-          </div>
+              <div className="space-y-2.5">
+                <Link
+                  to="/advances"
+                  className="p-3 bg-zinc-50 hover:bg-zinc-100 rounded-lg border border-zinc-200/80 flex items-center justify-between transition-colors block"
+                >
+                  <div>
+                    <span className="text-xs font-bold text-zinc-900 block">Pending Advances</span>
+                    <span className="text-[11px] text-zinc-500">
+                      {stats?.financials?.pending_advances_amount
+                        ? `${formatINR(stats?.financials?.pending_advances_amount)} total`
+                        : 'Awaiting disbursement'}
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-xs bg-zinc-950 text-white px-2.5 py-1 rounded-md">
+                    {stats?.pending_advances_count ?? 0}
+                  </span>
+                </Link>
+                <Link
+                  to="/leaves"
+                  className="p-3 bg-zinc-50 hover:bg-zinc-100 rounded-lg border border-zinc-200/80 flex items-center justify-between transition-colors block"
+                >
+                  <div>
+                    <span className="text-xs font-bold text-zinc-900 block">Pending Leaves</span>
+                    <span className="text-[11px] text-zinc-500">Workforce leave requests</span>
+                  </div>
+                  <span className="font-mono font-bold text-xs bg-zinc-200 text-zinc-900 px-2.5 py-1 rounded-md">
+                    {stats?.pending_leaves_count ?? 0}
+                  </span>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 ">Leave Type Distribution</h3>
+                <Link to="/leaves" className="text-[11px] font-bold text-zinc-900  hover:underline">
+                  Leaves &rarr;
+                </Link>
+              </div>
+              {leaveDist.length === 0 ? (
+                <p className="text-xs text-zinc-400">No leave requests recorded.</p>
+              ) : (
+                <div className="space-y-2">
+                  {leaveDist.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-600  font-medium">{item.name}</span>
+                      <span className="font-bold text-zinc-950  px-2 py-0.5 bg-zinc-100  border border-zinc-200/60  rounded">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 5. Bottom Row: Branch Statistics & Recent Activity */}
+      {/* 5. Bottom Row: Branch Statistics (Management) OR Financial Controller Summary (Accountant) & Recent Activity */}
       {!isEmployee && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-          {/* Branch Statistics */}
-          <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950  flex items-center gap-2">
-                <Building className="w-4 h-4 text-zinc-900 " />
-                <span>Branch Statistics</span>
-              </h3>
-              <Link to="/organization" className="text-[11px] font-bold text-zinc-900  hover:underline">
-                Manage Branches &rarr;
-              </Link>
-            </div>
-            {branchStats.length === 0 ? (
-              <p className="text-xs text-zinc-400">No branches configured.</p>
-            ) : (
-              <div className="space-y-2">
-                {branchStats.map((br) => (
-                  <Link
-                    key={br.id}
-                    to="/organization"
-                    className="flex items-center justify-between p-3 bg-zinc-50  hover:bg-zinc-100 :bg-zinc-800/70 rounded-lg border border-zinc-200/80  transition-all"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-zinc-950 ">{br.name}</p>
-                      <p className="text-[11px] text-zinc-500 ">{br.city || 'Operational Site'}</p>
-                    </div>
-                    <span className="text-xs font-bold text-zinc-950  bg-zinc-200  border border-zinc-300  px-2.5 py-1 rounded-md">
-                      {br.employee_count} Staff
-                    </span>
-                  </Link>
-                ))}
+          {/* Branch Statistics OR Financial Controller Summary */}
+          {!isAccountantStrict ? (
+            <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950  flex items-center gap-2">
+                  <Building className="w-4 h-4 text-zinc-900 " />
+                  <span>Branch Statistics</span>
+                </h3>
+                <Link to="/organization" className="text-[11px] font-bold text-zinc-900  hover:underline">
+                  Manage Branches &rarr;
+                </Link>
               </div>
-            )}
-          </div>
+              {branchStats.length === 0 ? (
+                <p className="text-xs text-zinc-400">No branches configured.</p>
+              ) : (
+                <div className="space-y-2">
+                  {branchStats.map((br) => (
+                    <Link
+                      key={br.id}
+                      to="/organization"
+                      className="flex items-center justify-between p-3 bg-zinc-50  hover:bg-zinc-100 :bg-zinc-800/70 rounded-lg border border-zinc-200/80  transition-all"
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-zinc-950 ">{br.name}</p>
+                        <p className="text-[11px] text-zinc-500 ">{br.city || 'Operational Site'}</p>
+                      </div>
+                      <span className="text-xs font-bold text-zinc-950  bg-zinc-200  border border-zinc-300  px-2.5 py-1 rounded-md">
+                        {br.employee_count} Staff
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 flex items-center gap-2">
+                  <Banknote className="w-4 h-4 text-zinc-900" />
+                  <span>Financial Controller Summary</span>
+                </h3>
+                <Link to="/payroll" className="text-[11px] font-bold text-zinc-900 hover:underline">
+                  Run Payroll &rarr;
+                </Link>
+              </div>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80">
+                  <div>
+                    <p className="text-xs font-bold text-zinc-950">Monthly Payroll Expenditure</p>
+                    <p className="text-[11px] text-zinc-500">Gross disbursement for active workforce</p>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-zinc-950 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
+                    {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80">
+                  <div>
+                    <p className="text-xs font-bold text-zinc-950">Monthly Operational Expenses</p>
+                    <p className="text-[11px] text-zinc-500">Approved vouchers &amp; vendor bills</p>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-zinc-950 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
+                    {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80">
+                  <div>
+                    <p className="text-xs font-bold text-zinc-950">Available Cashbook Balance</p>
+                    <p className="text-[11px] text-zinc-500">Current liquid petty cash register</p>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-zinc-950 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
+                    {formatINR(stats?.financials?.cash_balance ?? 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Recent Activity */}
           <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">

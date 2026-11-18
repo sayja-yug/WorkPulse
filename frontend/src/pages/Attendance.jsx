@@ -31,7 +31,7 @@ import { formatDate, formatTime } from '../utils/formatters';
 import { calculateWorkHoursSummary } from '../utils/workHours';
 
 export const Attendance = () => {
-  const { isEmployee, isFieldEmployee } = usePermissions();
+  const { isEmployee, isFieldEmployee, isSelfAttendanceOnly } = usePermissions();
   const { toast } = useNotification();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -105,7 +105,7 @@ export const Attendance = () => {
 
   useEffect(() => {
     fetchAttendance();
-    if (!isEmployee) {
+    if (!isSelfAttendanceOnly) {
       fetchBranches();
       fetchEmployeesList(selectedBranch);
     }
@@ -125,7 +125,7 @@ export const Attendance = () => {
       setGeoCoords({ lat: 28.6280, lng: 77.3649 });
       setGeoStatus('Geolocation default coordinates active');
     }
-  }, [isEmployee, selectedBranch]);
+  }, [isSelfAttendanceOnly, selectedBranch]);
 
   // Branch filter change handler
   const handleBranchChange = (newBranchId) => {
@@ -233,16 +233,16 @@ export const Attendance = () => {
         <div>
           <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
             <CalendarCheck2 className="w-5 h-5 text-zinc-900" />
-            <span>{isEmployee ? 'My Punch In / Punch Out' : 'Attendance & Punch Sheet'}</span>
+            <span>{isSelfAttendanceOnly ? 'My Punch In / Punch Out' : 'Attendance & Punch Sheet'}</span>
           </h2>
           <p className="text-xs text-zinc-500 mt-0.5">
-            {isEmployee
-              ? 'Record your daily clock-in and clock-out punches and review activity logs'
+            {isSelfAttendanceOnly
+              ? 'Record your personal daily punch in / out and track your cumulative work hours'
               : 'Live workforce punch-in (PI) & punch-out (PO) sheet with branch filtering'}
           </p>
         </div>
 
-        {!isEmployee && (
+        {!isSelfAttendanceOnly && (
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Branch Filter Selector */}
             <div className="flex items-center gap-1.5 bg-white border border-zinc-200 rounded-lg px-2.5 py-1 shadow-2xs">
@@ -300,7 +300,7 @@ export const Attendance = () => {
       </div>
 
       {/* 2. Active Branch Filter Banner (When navigating from Organization or dropdown) */}
-      {!isEmployee && activeBranchObj && (
+      {!isSelfAttendanceOnly && activeBranchObj && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-zinc-950 text-white rounded-xl shadow-xs">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 text-white flex items-center justify-center font-bold text-sm shrink-0">
@@ -333,8 +333,8 @@ export const Attendance = () => {
         </div>
       )}
 
-      {/* 3. Employee Cumulative Work Hours Summary */}
-      {isEmployee && (() => {
+      {/* 3. Employee & Accountant Cumulative Work Hours Summary */}
+      {isSelfAttendanceOnly && (() => {
         const todayRec = records.find((r) => r.date === todayStr);
         const summary = calculateWorkHoursSummary(records, todayRec);
         return (
@@ -432,18 +432,22 @@ export const Attendance = () => {
         <CardHeader className="justify-between">
           <div>
             <CardTitle>
-              {!isEmployee && activeTab === 'today'
+              {!isSelfAttendanceOnly && activeTab === 'today'
                 ? `Today's Punch Sheet (${formatDate(todayStr)})`
+                : isSelfAttendanceOnly
+                ? 'My Personal Punch In / Punch Out Logs'
                 : 'Punch In / Punch Out Logs'}
             </CardTitle>
             <CardDescription>
-              {selectedBranch && activeBranchObj
+              {isSelfAttendanceOnly
+                ? 'Your personal attendance history and recorded duty hours'
+                : selectedBranch && activeBranchObj
                 ? `Filtered by location: ${activeBranchObj.name}`
                 : 'Displaying complete company roster and duty hours'}
             </CardDescription>
           </div>
           <span className="text-xs font-bold text-zinc-700 bg-zinc-100 px-2.5 py-1 rounded-full border border-zinc-200">
-            {!isEmployee && activeTab === 'today'
+            {!isSelfAttendanceOnly && activeTab === 'today'
               ? `${todaySheet.length} Employees`
               : `${filteredRecords.length} Logs`}
           </span>
@@ -451,7 +455,7 @@ export const Attendance = () => {
 
         {loading ? (
           <Loader message="Loading punch logs..." />
-        ) : !isEmployee && activeTab === 'today' ? (
+        ) : !isSelfAttendanceOnly && activeTab === 'today' ? (
           todaySheet.length === 0 ? (
             <div className="p-12 text-center text-zinc-500 text-xs space-y-2">
               <Users className="w-8 h-8 text-zinc-300 mx-auto" />
@@ -553,12 +557,12 @@ export const Attendance = () => {
               <thead>
                 <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-bold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Date</th>
-                  {!isEmployee && <th className="py-3 px-4">Employee &amp; Punch Logs</th>}
-                  {isEmployee && <th className="py-3 px-4">Punch Logs</th>}
+                  {!isSelfAttendanceOnly && <th className="py-3 px-4">Employee &amp; Punch Logs</th>}
+                  {isSelfAttendanceOnly && <th className="py-3 px-4">Punch Logs</th>}
                   <th className="py-3 px-4">Punch In</th>
                   <th className="py-3 px-4">Punch Out</th>
                   <th className="py-3 px-4">Working Hours</th>
-                  {!isEmployee && <th className="py-3 px-4 text-right">Punch Action</th>}
+                  {!isSelfAttendanceOnly && <th className="py-3 px-4 text-right">Punch Action</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
@@ -568,7 +572,7 @@ export const Attendance = () => {
                       {formatDate(r.date)}
                     </td>
                     <td className="py-3.5 px-4">
-                      {!isEmployee && (
+                      {!isSelfAttendanceOnly && (
                         <p className="font-bold text-zinc-900">{r.employee_name || 'Team Associate'}</p>
                       )}
                       <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
@@ -584,7 +588,7 @@ export const Attendance = () => {
                     <td className="py-3.5 px-4 font-bold text-zinc-950 whitespace-nowrap">
                       {r.working_hours ? `${r.working_hours} hrs` : '-'}
                     </td>
-                    {!isEmployee && (
+                    {!isSelfAttendanceOnly && (
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
                           {!(r.check_in && !r.check_out) ? (

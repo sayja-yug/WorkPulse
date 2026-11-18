@@ -112,6 +112,12 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
         if business and not request.user.is_superuser:
             from apps.accounts.services import PermissionService
+            roles = PermissionService.get_user_roles(request.user, business)
+            if not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN'} for r in roles):
+                return Response(
+                    {'success': False, 'error': {'message': 'Accountants cannot mark attendance for other employees. Attendance is self-service only.'}},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             if PermissionService.is_branch_scoped(request.user, business):
                 branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
                 if employee.branch_id not in branch_ids:
@@ -173,6 +179,22 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
                 employee = Employee.objects.get(id=employee_id)
         except Employee.DoesNotExist:
             return Response({'success': False, 'error': {'message': 'Employee not found.'}}, status=status.HTTP_404_NOT_FOUND)
+
+        if business and not request.user.is_superuser:
+            from apps.accounts.services import PermissionService
+            roles = PermissionService.get_user_roles(request.user, business)
+            if not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN'} for r in roles):
+                return Response(
+                    {'success': False, 'error': {'message': 'Accountants cannot punch for other employees. Attendance is self-service only.'}},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            if PermissionService.is_branch_scoped(request.user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
+                if employee.branch_id not in branch_ids:
+                    return Response(
+                        {'success': False, 'error': {'message': 'You can only punch for employees in your assigned branch.'}},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
 
         if punch_action == 'OUT':
             record = AttendanceService.check_out(
@@ -274,6 +296,12 @@ class AttendanceCorrectionViewSet(viewsets.ModelViewSet):
         business = get_business_context(request)
         if business and not request.user.is_superuser:
             from apps.accounts.services import PermissionService
+            roles = PermissionService.get_user_roles(request.user, business)
+            if not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN'} for r in roles):
+                return Response(
+                    {'success': False, 'error': {'message': 'You do not have permission to approve attendance corrections.'}},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             if PermissionService.is_branch_scoped(request.user, business):
                 branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
                 if corr.attendance.employee.branch_id not in branch_ids:

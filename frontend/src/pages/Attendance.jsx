@@ -31,7 +31,7 @@ import { formatDate, formatTime } from '../utils/formatters';
 import { calculateWorkHoursSummary } from '../utils/workHours';
 
 export const Attendance = () => {
-  const { isEmployee, isFieldEmployee, isSelfAttendanceOnly } = usePermissions();
+  const { isEmployee, isFieldEmployee, isSelfAttendanceOnly, isBranchManagerStrict } = usePermissions();
   const { toast } = useNotification();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -65,8 +65,10 @@ export const Attendance = () => {
       const data = res.data?.data || res.data?.results || res.data || [];
       const list = Array.isArray(data) ? data : [];
       setBranches(list);
-      if (list.length === 1) {
-        setSelectedBranch(list[0].id);
+      if (list.length === 1 || isBranchManagerStrict) {
+        if (list.length > 0) {
+          setSelectedBranch(list[0].id);
+        }
       }
     } catch (err) {
       console.warn('Could not load branches', err);
@@ -129,6 +131,9 @@ export const Attendance = () => {
 
   // Branch filter change handler
   const handleBranchChange = (newBranchId) => {
+    if (isBranchManagerStrict && !newBranchId && branches.length > 0) {
+      return;
+    }
     setSelectedBranch(newBranchId);
     if (newBranchId) {
       const found = branches.find((b) => String(b.id) === String(newBranchId));
@@ -139,6 +144,7 @@ export const Attendance = () => {
   };
 
   const clearBranchFilter = () => {
+    if (isBranchManagerStrict) return;
     handleBranchChange('');
   };
 
@@ -247,9 +253,9 @@ export const Attendance = () => {
             {/* Branch Filter Selector */}
             <div className="flex items-center gap-1.5 bg-white border border-zinc-200 rounded-lg px-2.5 py-1 shadow-2xs">
               <Building2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-              {branches.length === 1 ? (
+              {branches.length === 1 || isBranchManagerStrict ? (
                 <span className="text-xs font-semibold text-zinc-900 pr-1 select-none">
-                  {branches[0].name}
+                  {branches.find((b) => String(b.id) === String(selectedBranch))?.name || branches[0]?.name || 'My Assigned Branch'}
                 </span>
               ) : (
                 <select
@@ -314,6 +320,11 @@ export const Attendance = () => {
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-200 border border-zinc-700 font-bold">
                   {activeBranchObj.code}
                 </span>
+                {isBranchManagerStrict && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
+                    Assigned Branch Only
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-zinc-400 mt-0.5">
                 Filtered strictly to {employees.length} employees assigned to this location.
@@ -321,15 +332,17 @@ export const Attendance = () => {
             </div>
           </div>
 
-          <Button
-            size="xs"
-            variant="outline"
-            leftIcon={RotateCcw}
-            onClick={clearBranchFilter}
-            className="bg-white text-zinc-950 hover:bg-zinc-100 border-white shrink-0 self-start sm:self-auto"
-          >
-            Show Whole Company
-          </Button>
+          {!isBranchManagerStrict && (
+            <Button
+              size="xs"
+              variant="outline"
+              leftIcon={RotateCcw}
+              onClick={clearBranchFilter}
+              className="bg-white text-zinc-950 hover:bg-zinc-100 border-white shrink-0 self-start sm:self-auto"
+            >
+              Show Whole Company
+            </Button>
+          )}
         </div>
       )}
 
@@ -464,7 +477,7 @@ export const Attendance = () => {
                   ? `No employees assigned to ${activeBranchObj?.name || 'this branch'}.`
                   : 'No employees found in this company yet.'}
               </p>
-              {selectedBranch && (
+              {selectedBranch && !isBranchManagerStrict && (
                 <Button size="xs" variant="outline" onClick={clearBranchFilter}>
                   Clear Branch Filter
                 </Button>
@@ -545,7 +558,7 @@ export const Attendance = () => {
           <div className="p-12 text-center text-zinc-500 text-xs space-y-2">
             <History className="w-8 h-8 text-zinc-300 mx-auto" />
             <p className="font-semibold text-zinc-700">No punch logs found for this period.</p>
-            {selectedBranch && (
+            {selectedBranch && !isBranchManagerStrict && (
               <Button size="xs" variant="outline" onClick={clearBranchFilter}>
                 Clear Branch Filter
               </Button>

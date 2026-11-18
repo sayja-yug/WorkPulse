@@ -65,7 +65,7 @@ const INITIAL_FORM = () => ({
 });
 
 export const Employees = () => {
-  const { canCreateEmployee, isOwner, isHR } = usePermissions();
+  const { canCreateEmployee, isOwner, isHR, isBranchManagerStrict } = usePermissions();
   const { toast, confirm } = useNotification();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -603,13 +603,15 @@ export const Employees = () => {
           </div>
 
           {/* 2. Filter by Branch */}
-          {branches.length === 1 ? (
+          {branches.length === 1 || isBranchManagerStrict ? (
             <div
               className="px-3 py-2 text-xs border border-zinc-200 rounded-lg bg-zinc-50 text-zinc-700 font-medium flex items-center gap-1.5 cursor-not-allowed select-none"
               title="Directory scoped strictly to your assigned branch"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span className="font-semibold text-zinc-900 truncate">{branches[0].name}</span>
+              <span className="font-semibold text-zinc-900 truncate">
+                {branches.find((b) => String(b.id) === String(branchFilter))?.name || branches[0]?.name || 'Assigned Branch'}
+              </span>
             </div>
           ) : (
             <select

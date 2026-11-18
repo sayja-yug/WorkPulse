@@ -15,6 +15,12 @@ import {
   ChevronRight,
   MoreHorizontal,
   User,
+  UserPlus,
+  Calendar,
+  CreditCard,
+  FileText,
+  Send,
+  Sparkles,
   Edit2,
   CheckCircle2,
   XCircle,
@@ -1522,50 +1528,69 @@ export const Employees = () => {
         </form>
       </Modal>
 
-      {/* MODAL 4: Add Employee Modal (9 Sections & 4 Action Buttons) */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Onboard New Employee">
+      {/* MODAL 4: Add Employee Modal (Professional Multi-Section Form) */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Onboard New Employee"
+        subtitle="Fill in candidate credentials, designate role & branch, and configure compensation."
+        maxWidth="max-w-2xl sm:max-w-3xl"
+      >
         {(() => {
           const onboardAgeInfo = getAgeInfo(formData.date_of_birth);
           const isUnderage = Boolean(formData.date_of_birth && onboardAgeInfo.isUnderage);
 
           return (
             <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1 text-xs">
-              {/* 1. Personal Information */}
-              <div>
-                <p className="text-[10px] font-bold text-zinc-900  uppercase mb-2">1. Personal Information</p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <input
-                    type="text"
-                    placeholder="First Name *"
-                    required
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-                  />
-                  <input
-                    type="text"
-                    placeholder="Last Name"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-                  />
-                  <select
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
-                  >
-                    <option value="PREFER_NOT_TO_SAY">Gender (Optional)</option>
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                    <option value="OTHER">Other</option>
-                  </select>
+              {/* 1. Personal & Identity */}
+              <div className="p-3.5 bg-zinc-50/70 border border-zinc-200/80 rounded-xl space-y-3">
+                <div className="flex items-center gap-1.5 text-zinc-900 font-bold text-[11px] uppercase tracking-wider">
+                  <UserPlus className="w-3.5 h-3.5 text-zinc-700" />
+                  <span>1. Personal &amp; Demographics</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">First Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Anjali"
+                      required
+                      value={formData.first_name}
+                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Last Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sharma"
+                      value={formData.last_name}
+                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Gender</label>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
+                    >
+                      <option value="PREFER_NOT_TO_SAY">Prefer Not to Say</option>
+                      <option value="FEMALE">Female</option>
+                      <option value="MALE">Male</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Date of Birth *</label>
                     <input
                       type="date"
                       title="Date of Birth"
                       value={formData.date_of_birth}
                       onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                      className={`w-full px-3 py-1.5 border rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 ${
+                      className={`w-full px-3 py-1.5 border rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 transition-colors ${
                         isUnderage
                           ? 'border-rose-400 focus:ring-rose-500 bg-rose-50/20'
                           : 'border-zinc-200 focus:ring-zinc-900'
@@ -1574,31 +1599,37 @@ export const Employees = () => {
                   </div>
                 </div>
 
-                {/* Live Age Display & Legal Working Age Validation Banner */}
+                {/* Live Age Display & Legal Working Age Validation Card */}
                 {formData.date_of_birth && (
-                  <div className="mt-2.5">
+                  <div className="pt-1">
                     {onboardAgeInfo.isUnderage ? (
-                      <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-2 shadow-xs">
-                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                        <div>
-                          <div className="font-bold flex items-center gap-1.5">
-                            <span>{onboardAgeInfo.label}</span>
-                            <span className="px-1.5 py-0.5 bg-rose-200 text-rose-800 text-[10px] rounded font-bold uppercase tracking-wide">
-                              Illegal Underage Worker
-                            </span>
+                      <div className="p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-950 text-xs shadow-xs">
+                        <div className="flex items-start gap-2.5">
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-rose-950 text-xs">
+                                Age: {onboardAgeInfo.age !== null ? `${onboardAgeInfo.age} years old` : 'Invalid Date'}
+                              </span>
+                              <span className="px-2 py-0.5 bg-rose-200 text-rose-800 text-[9px] rounded font-bold uppercase tracking-wider">
+                                Underage &bull; Illegal to Employ
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-rose-700 leading-relaxed">
+                              Employing workers under 18 years of age is strictly prohibited under child labor prevention laws. Candidate cannot be onboarded into the organization.
+                            </p>
                           </div>
-                          <p className="mt-0.5 text-[11px] text-rose-700 leading-snug">
-                            {onboardAgeInfo.text} Onboarding minors under 18 years of age is strictly prohibited under child labor prevention laws.
-                          </p>
                         </div>
                       </div>
                     ) : (
-                      <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between shadow-xs">
-                        <div className="flex items-center gap-1.5 font-medium">
+                      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-50/90 border border-emerald-200 text-emerald-900 text-xs shadow-xs">
+                        <div className="flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>{onboardAgeInfo.label}</span>
+                          <span className="font-semibold text-emerald-950">
+                            Candidate Age: <strong>{onboardAgeInfo.age} years old</strong>
+                          </span>
                         </div>
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded-full font-bold uppercase tracking-wider">
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded-md font-bold uppercase tracking-wider">
                           Legal Working Age (18+)
                         </span>
                       </div>
@@ -1607,246 +1638,317 @@ export const Employees = () => {
                 )}
               </div>
 
-          {/* 2. Contact Information */}
-          <div>
-            <p className="text-[10px] font-bold text-zinc-900  uppercase mb-2">2. Contact Information</p>
-            <div className="grid grid-cols-2 gap-2.5">
-              <input
-                type="email"
-                placeholder="Email Address *"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-              <input
-                type="tel"
-                placeholder="Phone Number"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-              <input
-                type="text"
-                placeholder="City"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-              <input
-                type="text"
-                placeholder="Address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-            </div>
-          </div>
+              {/* 2. Contact Information */}
+              <div className="p-3.5 bg-zinc-50/70 border border-zinc-200/80 rounded-xl space-y-3">
+                <div className="flex items-center gap-1.5 text-zinc-900 font-bold text-[11px] uppercase tracking-wider">
+                  <Mail className="w-3.5 h-3.5 text-zinc-700" />
+                  <span>2. Contact Details</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Work Email Address *</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. anjali.sharma@trinetra.com"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      placeholder="+91 98765 43210"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">City</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Noida / Mumbai"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Residential Address</label>
+                    <input
+                      type="text"
+                      placeholder="Street address, building, locality"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
 
-          {/* 3. Employment Information */}
-          <div>
-            <p className="text-[10px] font-bold text-zinc-900  uppercase mb-2">3. Employment Information</p>
-            <div className="grid grid-cols-3 gap-2">
-              <select
-                value={formData.employment_type}
-                onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
-                className="px-2.5 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
-              >
-                <option value="FULL_TIME">Full Time</option>
-                <option value="PART_TIME">Part Time</option>
-                <option value="CONTRACT">Contract</option>
-                <option value="INTERN">Intern</option>
-              </select>
-              <select
-                value={formData.salary_type}
-                onChange={(e) => setFormData({ ...formData, salary_type: e.target.value })}
-                className="px-2.5 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
-              >
-                <option value="MONTHLY">Monthly Salary</option>
-                <option value="HOURLY">Hourly Wage</option>
-                <option value="DAILY">Daily Wage</option>
-                <option value="WEEKLY">Weekly Wage</option>
-              </select>
-              <input
-                type="date"
-                required
-                value={formData.joining_date}
-                onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
-                className="px-2.5 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-            </div>
-          </div>
+              {/* 3. Role & Organizational Placement */}
+              <div className="p-3.5 bg-zinc-50/70 border border-zinc-200/80 rounded-xl space-y-3">
+                <div className="flex items-center gap-1.5 text-zinc-900 font-bold text-[11px] uppercase tracking-wider">
+                  <Briefcase className="w-3.5 h-3.5 text-zinc-700" />
+                  <span>3. Employment &amp; Placement</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Employment Type</label>
+                    <select
+                      value={formData.employment_type}
+                      onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
+                    >
+                      <option value="FULL_TIME">Full Time</option>
+                      <option value="PART_TIME">Part Time</option>
+                      <option value="CONTRACT">Contract</option>
+                      <option value="INTERN">Intern</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Salary Type</label>
+                    <select
+                      value={formData.salary_type}
+                      onChange={(e) => setFormData({ ...formData, salary_type: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
+                    >
+                      <option value="MONTHLY">Monthly Salary</option>
+                      <option value="HOURLY">Hourly Wage</option>
+                      <option value="DAILY">Daily Wage</option>
+                      <option value="WEEKLY">Weekly Wage</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Joining Date *</label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.joining_date}
+                      onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-colors"
+                    />
+                  </div>
+                </div>
 
-          {/* 4 & 5. Branch, Department & Designation */}
-          <div>
-            <p className="text-[10px] font-bold text-zinc-900  uppercase mb-2">
-              4 &amp; 5. Branch, Department &amp; Designation
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              <select
-                value={formData.branch}
-                onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                className="px-2.5 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
-              >
-                <option value="">Default Branch</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                className="px-2.5 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
-              >
-                <option value="">Department</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={formData.designation}
-                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                className="px-2.5 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
-              >
-                <option value="">Designation</option>
-                {designations.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Branch</label>
+                    <select
+                      value={formData.branch}
+                      onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
+                    >
+                      <option value="">Default Branch</option>
+                      {branches.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Department</label>
+                    <select
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Designation</label>
+                    <select
+                      value={formData.designation}
+                      onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
+                    >
+                      <option value="">Select Designation</option>
+                      {designations.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-          {/* 6 & 7. Salary / Wage Configuration & Shift Assignment */}
-          <div>
-            <p className="text-[10px] font-bold text-zinc-900  uppercase mb-2">
-              {formData.salary_type === 'HOURLY'
-                ? '6 & 7. Hourly Wage & Shift Assignment'
-                : formData.salary_type === 'DAILY'
-                ? '6 & 7. Daily Wage & Shift Assignment'
-                : formData.salary_type === 'WEEKLY'
-                ? '6 & 7. Weekly Wage & Shift Assignment'
-                : '6 & 7. Salary Configuration & Shift'}
-            </p>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder={
-                    formData.salary_type === 'HOURLY'
-                      ? 'Hourly Wage Rate (₹/hr) *'
+              {/* 4. Compensation & Shift Assignment */}
+              <div className="p-3.5 bg-zinc-50/70 border border-zinc-200/80 rounded-xl space-y-3">
+                <div className="flex items-center gap-1.5 text-zinc-900 font-bold text-[11px] uppercase tracking-wider">
+                  <CreditCard className="w-3.5 h-3.5 text-zinc-700" />
+                  <span>
+                    4.{' '}
+                    {formData.salary_type === 'HOURLY'
+                      ? 'Hourly Wage Rate & Shift Assignment'
                       : formData.salary_type === 'DAILY'
-                      ? 'Daily Wage Rate (₹/day) *'
+                      ? 'Daily Wage Rate & Shift Assignment'
                       : formData.salary_type === 'WEEKLY'
-                      ? 'Weekly Wage Rate (₹/wk) *'
-                      : 'Base Monthly Salary (₹) *'
-                  }
-                  value={formData.base_salary}
-                  onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
-                  className="w-full px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-                />
-                <span className="block text-[10px] text-zinc-500 mt-1">
-                  {formData.salary_type === 'HOURLY' && 'Enter wage per hour (e.g. ₹250/hr). Pay is calculated from tracked punch hours.'}
-                  {formData.salary_type === 'DAILY' && 'Enter wage per day (e.g. ₹800/day). Pay is calculated from present days.'}
-                  {formData.salary_type === 'WEEKLY' && 'Enter wage per week (₹ / week). Pay is calculated weekly.'}
-                  {formData.salary_type === 'MONTHLY' && 'Enter fixed gross base monthly salary (₹ / month).'}
-                </span>
+                      ? 'Weekly Wage Rate & Shift Assignment'
+                      : 'Salary Structure & Shift Assignment'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">
+                      {formData.salary_type === 'HOURLY'
+                        ? 'Hourly Wage Rate (₹/hr) *'
+                        : formData.salary_type === 'DAILY'
+                        ? 'Daily Wage Rate (₹/day) *'
+                        : formData.salary_type === 'WEEKLY'
+                        ? 'Weekly Wage Rate (₹/wk) *'
+                        : 'Base Monthly Salary (₹) *'}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder={
+                        formData.salary_type === 'HOURLY'
+                          ? 'e.g. 250.00'
+                          : formData.salary_type === 'DAILY'
+                          ? 'e.g. 800.00'
+                          : formData.salary_type === 'WEEKLY'
+                          ? 'e.g. 8500.00'
+                          : 'e.g. 45000.00'
+                      }
+                      value={formData.base_salary}
+                      onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-colors"
+                    />
+                    <span className="block text-[10px] text-zinc-500 mt-1">
+                      {formData.salary_type === 'HOURLY' &&
+                        'Wage per hour (₹ / hr). Payroll is dynamically computed from tracked shift hours.'}
+                      {formData.salary_type === 'DAILY' &&
+                        'Wage per day (₹ / day). Payroll is computed from total present days.'}
+                      {formData.salary_type === 'WEEKLY' &&
+                        'Wage per week (₹ / wk). Payroll is computed weekly.'}
+                      {formData.salary_type === 'MONTHLY' &&
+                        'Fixed gross base monthly salary for official monthly payroll.'}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Work Shift Assignment</label>
+                    <select
+                      value={formData.shift_id}
+                      onChange={(e) => setFormData({ ...formData, shift_id: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
+                    >
+                      <option value="">Assign Shift (Optional)</option>
+                      {shifts.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="block text-[10px] text-zinc-500 mt-1">
+                      Assign morning, evening or general rotational shift policy.
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <select
-                  value={formData.shift_id}
-                  onChange={(e) => setFormData({ ...formData, shift_id: e.target.value })}
-                  className="w-full px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium h-[33px]"
+
+              {/* 5. Statutory Documents & Account Provisioning */}
+              <div className="p-3.5 bg-zinc-50/70 border border-zinc-200/80 rounded-xl space-y-3">
+                <div className="flex items-center gap-1.5 text-zinc-900 font-bold text-[11px] uppercase tracking-wider">
+                  <FileText className="w-3.5 h-3.5 text-zinc-700" />
+                  <span>5. Identification &amp; Account Provisioning</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">PAN Card Number</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ABCDE1234F"
+                      value={formData.pan_number}
+                      onChange={(e) => setFormData({ ...formData, pan_number: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 uppercase transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Aadhaar Card Number</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 1234 5678 9012"
+                      value={formData.aadhaar_number}
+                      onChange={(e) => setFormData({ ...formData, aadhaar_number: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2.5 p-2.5 bg-white rounded-lg cursor-pointer border border-zinc-200 hover:bg-zinc-50/80 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.send_invite}
+                    onChange={(e) => setFormData({ ...formData, send_invite: e.target.checked })}
+                    className="rounded accent-zinc-900 w-4 h-4 cursor-pointer"
+                  />
+                  <div>
+                    <span className="font-semibold text-zinc-900 text-xs block">
+                      Send Login Invitation &amp; Provision Employee Account
+                    </span>
+                    <span className="text-[10px] text-zinc-500 block">
+                      Sends credentials to the candidate email allowing them to clock in and access self-service.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* 4 Action Buttons */}
+              <div className="pt-3 border-t border-zinc-200 flex flex-wrap items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-3.5 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer"
                 >
-                  <option value="">Assign Shift (Optional)</option>
-                  {shifts.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={submitting || isUnderage}
+                  onClick={() => submitEmployee('draft')}
+                  className="px-3.5 py-2 text-xs font-semibold border border-zinc-300 text-zinc-800 hover:bg-zinc-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  Save as Draft
+                </button>
+                <button
+                  type="button"
+                  disabled={submitting || isUnderage}
+                  onClick={() => submitEmployee('another')}
+                  className="px-3.5 py-2 text-xs font-semibold border border-zinc-300 text-zinc-800 hover:bg-zinc-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  Save &amp; Add Another
+                </button>
+                <button
+                  type="button"
+                  disabled={submitting || isUnderage}
+                  onClick={() => submitEmployee('save')}
+                  className="px-5 py-2 text-xs font-bold bg-zinc-950 hover:bg-black text-white rounded-lg shadow-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {submitting ? (
+                    'Saving Employee...'
+                  ) : (
+                    <>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Save Employee</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-          </div>
-
-          {/* 8. Documents */}
-          <div>
-            <p className="text-[10px] font-bold text-zinc-900  uppercase mb-2">8. Documents</p>
-            <div className="grid grid-cols-2 gap-2.5">
-              <input
-                type="text"
-                placeholder="PAN Number"
-                value={formData.pan_number}
-                onChange={(e) => setFormData({ ...formData, pan_number: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900  uppercase"
-              />
-              <input
-                type="text"
-                placeholder="Aadhaar Number"
-                value={formData.aadhaar_number}
-                onChange={(e) => setFormData({ ...formData, aadhaar_number: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-            </div>
-          </div>
-
-          {/* 9. Login Invitation */}
-          <label className="flex items-center gap-2 p-2.5 bg-zinc-50  rounded-lg cursor-pointer border border-zinc-200 ">
-            <input
-              type="checkbox"
-              checked={formData.send_invite}
-              onChange={(e) => setFormData({ ...formData, send_invite: e.target.checked })}
-              className="rounded accent-zinc-900 "
-            />
-            <span className="font-semibold text-zinc-800 ">
-              9. Send Login Invitation &amp; Provision Employee Account
-            </span>
-          </label>
-
-          {/* 4 Action Buttons */}
-          <div className="pt-3 border-t border-zinc-200  flex flex-wrap items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setShowModal(false)}
-              className="px-3 py-1.5 text-xs font-semibold text-zinc-600  hover:bg-zinc-100  rounded-lg"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={submitting || isUnderage}
-              onClick={() => submitEmployee('draft')}
-              className="px-3 py-1.5 text-xs font-semibold border border-zinc-300 text-zinc-800 hover:bg-zinc-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Save as Draft
-            </button>
-            <button
-              type="button"
-              disabled={submitting || isUnderage}
-              onClick={() => submitEmployee('another')}
-              className="px-3 py-1.5 text-xs font-semibold border border-zinc-300 text-zinc-800 hover:bg-zinc-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Save &amp; Add Another
-            </button>
-            <button
-              type="button"
-              disabled={submitting || isUnderage}
-              onClick={() => submitEmployee('save')}
-              className="px-4 py-1.5 text-xs font-bold bg-zinc-950 hover:bg-black text-white rounded-lg shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? 'Saving...' : 'Save Employee'}
-            </button>
-          </div>
-        </div>
-      );
-    })()}
-  </Modal>
+          );
+        })()}
+      </Modal>
     </div>
   );
 };

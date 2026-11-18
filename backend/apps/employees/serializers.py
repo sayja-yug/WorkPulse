@@ -9,6 +9,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
     designation_name = serializers.CharField(source='designation.name', read_only=True)
     age = serializers.SerializerMethodField()
+    base_salary = serializers.SerializerMethodField()
+
+    def get_base_salary(self, obj):
+        struct = obj.salary_structures.filter(is_current=True).first()
+        return float(struct.base_salary) if struct else None
 
     def get_age(self, obj):
         if obj.date_of_birth:
@@ -35,14 +40,14 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'id', 'business', 'user', 'employee_code', 'first_name', 'last_name',
             'full_name', 'email', 'phone', 'branch', 'branch_name',
             'department', 'department_name', 'designation', 'designation_name',
-            'employment_type', 'salary_type', 'joining_date', 'probation_end_date',
+            'employment_type', 'salary_type', 'base_salary', 'joining_date', 'probation_end_date',
             'reporting_manager', 'date_of_birth', 'age', 'gender', 'blood_group',
             'emergency_contact_name', 'emergency_contact_phone', 'address',
             'city', 'state', 'country', 'zip_code', 'bank_name',
             'bank_account_number', 'bank_ifsc_code', 'pan_number',
             'aadhaar_number', 'is_field_employee', 'status', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'business', 'age', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'business', 'age', 'base_salary', 'created_at', 'updated_at']
         extra_kwargs = {
             'employee_code': {'required': False, 'allow_blank': True},
         }
@@ -59,6 +64,11 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     last_punch_date = serializers.SerializerMethodField()
     unpunched_days = serializers.SerializerMethodField()
     age = serializers.SerializerMethodField()
+    base_salary = serializers.SerializerMethodField()
+
+    def get_base_salary(self, obj):
+        struct = obj.salary_structures.filter(is_current=True).first()
+        return float(struct.base_salary) if struct else None
 
     def get_age(self, obj):
         if obj.date_of_birth:
@@ -119,7 +129,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'employee_code', 'first_name', 'last_name', 'full_name',
             'email', 'phone', 'branch', 'branch_name', 'department', 'department_name',
-            'designation', 'designation_name', 'employment_type', 'salary_type',
+            'designation', 'designation_name', 'employment_type', 'salary_type', 'base_salary',
             'status', 'duty_status', 'is_punched_in', 'check_in_time',
             'last_punch_date', 'unpunched_days', 'date_of_birth', 'age',
             'joining_date', 'emergency_contact_name', 'emergency_contact_phone',

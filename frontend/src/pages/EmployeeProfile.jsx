@@ -52,6 +52,8 @@ export const EmployeeProfile = () => {
     address: '',
     city: '',
     date_of_birth: '',
+    salary_type: 'MONTHLY',
+    base_salary: '',
   });
 
   const fetchEmployee = async () => {
@@ -67,6 +69,8 @@ export const EmployeeProfile = () => {
         address: emp.address || '',
         city: emp.city || '',
         date_of_birth: emp.date_of_birth || '',
+        salary_type: emp.salary_type || 'MONTHLY',
+        base_salary: emp.base_salary ?? '',
       });
 
       // Preload attendance so weekly & monthly hours are immediately available on overview tab
@@ -402,7 +406,24 @@ export const EmployeeProfile = () => {
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">Branch</p><p className="font-semibold mt-1">{employee.branch_name || '-'}</p></div>
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">Department</p><p className="font-semibold mt-1">{employee.department_name || '-'}</p></div>
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">Designation</p><p className="font-semibold mt-1">{employee.designation_name || '-'}</p></div>
-            <div><p className="text-slate-400 font-bold text-[10px] uppercase">Salary Type</p><p className="font-semibold mt-1">{employee.salary_type}</p></div>
+            <div>
+              <p className="text-slate-400 font-bold text-[10px] uppercase">Salary Type &amp; Rate</p>
+              <div className="font-semibold mt-1 flex items-center gap-2 flex-wrap">
+                <Badge variant="neutral">{employee.salary_type || 'MONTHLY'}</Badge>
+                {employee.base_salary ? (
+                  <span className="text-xs font-mono font-bold text-zinc-900">
+                    {formatINR(employee.base_salary)}
+                    {employee.salary_type === 'HOURLY'
+                      ? ' / hr'
+                      : employee.salary_type === 'DAILY'
+                      ? ' / day'
+                      : employee.salary_type === 'WEEKLY'
+                      ? ' / wk'
+                      : ' / mo'}
+                  </span>
+                ) : null}
+              </div>
+            </div>
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">Field Staff</p><p className="font-semibold mt-1">{employee.is_field_employee ? 'Yes' : 'No'}</p></div>
           </div>
         ) : activeTab === 'attendance' ? (
@@ -616,6 +637,46 @@ export const EmployeeProfile = () => {
                       </div>
                     );
                   })()}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 text-zinc-800 ">Salary Type</label>
+                    <select
+                      value={editForm.salary_type || 'MONTHLY'}
+                      onChange={(e) => setEditForm({ ...editForm, salary_type: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white text-zinc-900"
+                    >
+                      <option value="MONTHLY">Monthly Salary</option>
+                      <option value="HOURLY">Hourly Wage</option>
+                      <option value="DAILY">Daily Wage</option>
+                      <option value="WEEKLY">Weekly Wage</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 text-zinc-800 ">
+                      {editForm.salary_type === 'HOURLY'
+                        ? 'Hourly Wage Rate (₹/hr)'
+                        : editForm.salary_type === 'DAILY'
+                        ? 'Daily Wage Rate (₹/day)'
+                        : editForm.salary_type === 'WEEKLY'
+                        ? 'Weekly Wage Rate (₹/wk)'
+                        : 'Base Monthly Salary (₹)'}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder={
+                        editForm.salary_type === 'HOURLY'
+                          ? 'e.g. 250'
+                          : editForm.salary_type === 'DAILY'
+                          ? 'e.g. 800'
+                          : 'e.g. 45000'
+                      }
+                      value={editForm.base_salary ?? ''}
+                      onChange={(e) => setEditForm({ ...editForm, base_salary: e.target.value })}
+                      className="w-full px-3 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white text-zinc-900"
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <button

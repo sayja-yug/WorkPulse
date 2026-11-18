@@ -312,6 +312,8 @@ export const Employees = () => {
       status: emp.status || 'ACTIVE',
       joining_date: emp.joining_date || '',
       date_of_birth: emp.date_of_birth || '',
+      salary_type: emp.salary_type || 'MONTHLY',
+      base_salary: emp.base_salary ?? '',
     });
     setActiveMenuId(null);
   };
@@ -337,6 +339,7 @@ export const Employees = () => {
       if (!payload.department) delete payload.department;
       if (!payload.designation) delete payload.designation;
       if (!payload.date_of_birth) delete payload.date_of_birth;
+      if (payload.base_salary === '' || payload.base_salary === null) delete payload.base_salary;
 
       await api.patch(`/employees/${editModalEmp.id}/`, payload);
       setEditModalEmp(null);
@@ -1359,6 +1362,47 @@ export const Employees = () => {
             );
           })()}
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Salary Type</label>
+              <select
+                value={editFormData.salary_type || 'MONTHLY'}
+                onChange={(e) => setEditFormData({ ...editFormData, salary_type: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white"
+              >
+                <option value="MONTHLY">Monthly Salary</option>
+                <option value="HOURLY">Hourly Wage</option>
+                <option value="DAILY">Daily Wage</option>
+                <option value="WEEKLY">Weekly Wage</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                {editFormData.salary_type === 'HOURLY'
+                  ? 'Hourly Wage Rate (₹/hr)'
+                  : editFormData.salary_type === 'DAILY'
+                  ? 'Daily Wage Rate (₹/day)'
+                  : editFormData.salary_type === 'WEEKLY'
+                  ? 'Weekly Wage Rate (₹/wk)'
+                  : 'Base Monthly Salary (₹)'}
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder={
+                  editFormData.salary_type === 'HOURLY'
+                    ? 'e.g. 250'
+                    : editFormData.salary_type === 'DAILY'
+                    ? 'e.g. 800'
+                    : 'e.g. 45000'
+                }
+                value={editFormData.base_salary ?? ''}
+                onChange={(e) => setEditFormData({ ...editFormData, base_salary: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg"
+              />
+            </div>
+          </div>
+
           <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
             {isOwner && (
               <button
@@ -1618,9 +1662,10 @@ export const Employees = () => {
                 onChange={(e) => setFormData({ ...formData, salary_type: e.target.value })}
                 className="px-2.5 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
               >
-                <option value="MONTHLY">Monthly</option>
-                <option value="DAILY">Daily</option>
-                <option value="HOURLY">Hourly</option>
+                <option value="MONTHLY">Monthly Salary</option>
+                <option value="HOURLY">Hourly Wage</option>
+                <option value="DAILY">Daily Wage</option>
+                <option value="WEEKLY">Weekly Wage</option>
               </select>
               <input
                 type="date"
@@ -1677,31 +1722,56 @@ export const Employees = () => {
             </div>
           </div>
 
-          {/* 6 & 7. Salary Configuration & Shift Assignment */}
+          {/* 6 & 7. Salary / Wage Configuration & Shift Assignment */}
           <div>
             <p className="text-[10px] font-bold text-zinc-900  uppercase mb-2">
-              6 &amp; 7. Salary Configuration &amp; Shift
+              {formData.salary_type === 'HOURLY'
+                ? '6 & 7. Hourly Wage & Shift Assignment'
+                : formData.salary_type === 'DAILY'
+                ? '6 & 7. Daily Wage & Shift Assignment'
+                : formData.salary_type === 'WEEKLY'
+                ? '6 & 7. Weekly Wage & Shift Assignment'
+                : '6 & 7. Salary Configuration & Shift'}
             </p>
             <div className="grid grid-cols-2 gap-2.5">
-              <input
-                type="number"
-                placeholder="Base Monthly Salary (₹)"
-                value={formData.base_salary}
-                onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-              <select
-                value={formData.shift_id}
-                onChange={(e) => setFormData({ ...formData, shift_id: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
-              >
-                <option value="">Assign Shift (Optional)</option>
-                {shifts.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder={
+                    formData.salary_type === 'HOURLY'
+                      ? 'Hourly Wage Rate (₹/hr) *'
+                      : formData.salary_type === 'DAILY'
+                      ? 'Daily Wage Rate (₹/day) *'
+                      : formData.salary_type === 'WEEKLY'
+                      ? 'Weekly Wage Rate (₹/wk) *'
+                      : 'Base Monthly Salary (₹) *'
+                  }
+                  value={formData.base_salary}
+                  onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
+                  className="w-full px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
+                />
+                <span className="block text-[10px] text-zinc-500 mt-1">
+                  {formData.salary_type === 'HOURLY' && 'Enter wage per hour (e.g. ₹250/hr). Pay is calculated from tracked punch hours.'}
+                  {formData.salary_type === 'DAILY' && 'Enter wage per day (e.g. ₹800/day). Pay is calculated from present days.'}
+                  {formData.salary_type === 'WEEKLY' && 'Enter wage per week (₹ / week). Pay is calculated weekly.'}
+                  {formData.salary_type === 'MONTHLY' && 'Enter fixed gross base monthly salary (₹ / month).'}
+                </span>
+              </div>
+              <div>
+                <select
+                  value={formData.shift_id}
+                  onChange={(e) => setFormData({ ...formData, shift_id: e.target.value })}
+                  className="w-full px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium h-[33px]"
+                >
+                  <option value="">Assign Shift (Optional)</option>
+                  {shifts.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

@@ -87,10 +87,22 @@ class PayrollService:
 
             base_salary = salary_struct.base_salary if salary_struct else Decimal('30000.00')
 
-            # Daily rate and hourly wage rate based on company rules
-            daily_rate = (base_salary / total_days_in_period).quantize(Decimal('0.01'))
             effective_daily_hours = standard_daily_hours if standard_daily_hours > Decimal('0.00') else Decimal('8.0')
-            hourly_rate = (daily_rate / effective_daily_hours).quantize(Decimal('0.01'))
+            salary_type = getattr(emp, 'salary_type', 'MONTHLY') or 'MONTHLY'
+
+            if salary_type == 'HOURLY':
+                hourly_rate = base_salary.quantize(Decimal('0.01'))
+                daily_rate = (hourly_rate * effective_daily_hours).quantize(Decimal('0.01'))
+            elif salary_type == 'DAILY':
+                daily_rate = base_salary.quantize(Decimal('0.01'))
+                hourly_rate = (daily_rate / effective_daily_hours).quantize(Decimal('0.01'))
+            elif salary_type == 'WEEKLY':
+                daily_rate = (base_salary / Decimal('7.0')).quantize(Decimal('0.01'))
+                hourly_rate = (daily_rate / effective_daily_hours).quantize(Decimal('0.01'))
+            else:
+                # MONTHLY
+                daily_rate = (base_salary / total_days_in_period).quantize(Decimal('0.01'))
+                hourly_rate = (daily_rate / effective_daily_hours).quantize(Decimal('0.01'))
 
             # Fetch monthly attendance records
             att_records = AttendanceRecord.objects.filter(
@@ -101,6 +113,7 @@ class PayrollService:
 
             total_overtime_hours = Decimal('0.00')
             total_shortfall_hours = Decimal('0.00')
+            total_worked_hours = Decimal('0.00')
             unpaid_leave_days = Decimal('0.00')
             present_days = Decimal('0.00')
             paid_leave_days = Decimal('0.00')
@@ -113,6 +126,7 @@ class PayrollService:
                         if hrs == Decimal('0.00') and rec.check_in and rec.check_out:
                             diff = (rec.check_out - rec.check_in).total_seconds() / 3600.0
                             hrs = Decimal(str(round(diff, 2)))
+                        total_worked_hours += hrs
 
                         if hrs > Decimal('0.00'):
                             if hrs > standard_daily_hours:
@@ -123,6 +137,7 @@ class PayrollService:
                     elif rec.status == AttendanceRecord.Status.HALF_DAY:
                         present_days += Decimal('0.5')
                         hrs = Decimal(str(rec.working_hours or 0.0))
+                        total_worked_hours += hrs
                         target = (standard_daily_hours / Decimal('2.0')).quantize(Decimal('0.01'))
                         if hrs > target:
                             total_overtime_hours += (hrs - target)
@@ -142,7 +157,19 @@ class PayrollService:
                 present_days = total_days_in_period
 
             # EARNINGS
-            basic_earning = base_salary
+            if salary_type == 'HOURLY':
+                effective_hours = total_worked_hours if att_records.exists() else (present_days * effective_daily_hours)
+                basic_earning = (effective_hours * hourly_rate).quantize(Decimal('0.01'))
+                basic_component_name = f'Hourly Wages ({effective_hours} hrs @ ₹{hourly_rate}/hr)'
+            elif salary_type == 'DAILY':
+                basic_earning = (present_days * daily_rate).quantize(Decimal('0.01'))
+                basic_component_name = f'Daily Wages ({present_days} days @ ₹{daily_rate}/day)'
+            elif salary_type == 'WEEKLY':
+                basic_earning = (base_salary * (total_days_in_period / Decimal('7.0'))).quantize(Decimal('0.01'))
+                basic_component_name = 'Weekly Wage Basic'
+            else:
+                basic_earning = base_salary
+                basic_component_name = 'Basic Salary'
 
             # Overtime pay
             overtime_pay = Decimal('0.00')
@@ -202,10 +229,10 @@ class PayrollService:
             # Record item components
             PayrollItemComponent.objects.create(
                 payroll_item=item,
-                component_name='Basic Salary',
+                component_name=basic_component_name,
                 component_type=SalaryComponent.Type.EARNING,
                 amount=basic_earning,
-                calculation_details={'base_salary': float(base_salary), 'days': float(total_days_in_period)}
+                calculation_details={'base_salary': float(base_salary), 'salary_type': salary_type, 'days': float(total_days_in_period)}
             )
 
             if overtime_pay > Decimal('0.00'):

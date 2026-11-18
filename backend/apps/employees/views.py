@@ -118,6 +118,29 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
                 exclude_user=self.request.user
             )
 
+    def perform_update(self, serializer):
+        employee = serializer.save()
+        base_salary = self.request.data.get('base_salary')
+        if base_salary is not None and str(base_salary).strip() != '':
+            try:
+                from decimal import Decimal
+                from apps.payroll.models import EmployeeSalaryStructure
+                val = Decimal(str(base_salary))
+                struct = EmployeeSalaryStructure.objects.filter(employee=employee, is_current=True).first()
+                if struct:
+                    struct.base_salary = val
+                    struct.save(update_fields=['base_salary', 'updated_at'])
+                elif employee.business:
+                    EmployeeSalaryStructure.objects.create(
+                        employee=employee,
+                        business=employee.business,
+                        base_salary=val,
+                        effective_from=timezone.now().date(),
+                        is_current=True
+                    )
+            except Exception:
+                pass
+
     @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):
         employee = self.get_object()

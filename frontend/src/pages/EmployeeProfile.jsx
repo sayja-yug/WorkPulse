@@ -18,10 +18,12 @@ import {
   Settings as SettingsIcon,
   LayoutDashboard,
   Trash2,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
 import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
-import { formatDate, formatINR, formatTime } from '../utils/formatters';
+import { formatDate, formatINR, formatTime, calculateAge, getAgeInfo } from '../utils/formatters';
 import { calculateWorkHoursSummary } from '../utils/workHours';
 import { calculateEmployeeInactivity } from '../utils/employeeInactivity';
 
@@ -43,7 +45,14 @@ export const EmployeeProfile = () => {
   const [tabLoading, setTabLoading] = useState(false);
 
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', phone: '', address: '', city: '' });
+  const [editForm, setEditForm] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    address: '',
+    city: '',
+    date_of_birth: '',
+  });
 
   const fetchEmployee = async () => {
     try {
@@ -57,6 +66,7 @@ export const EmployeeProfile = () => {
         phone: emp.phone || '',
         address: emp.address || '',
         city: emp.city || '',
+        date_of_birth: emp.date_of_birth || '',
       });
 
       // Preload attendance so weekly & monthly hours are immediately available on overview tab
@@ -141,6 +151,17 @@ export const EmployeeProfile = () => {
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
+    if (editForm.date_of_birth) {
+      const ageInfo = getAgeInfo(editForm.date_of_birth);
+      if (ageInfo.isUnderage) {
+        toast.error(
+          ageInfo.isFuture
+            ? 'Date of birth cannot be in the future.'
+            : `Cannot update employee: Candidate is ${ageInfo.age ?? 'under'} years old. Minimum legal working age is 18 under labor laws.`
+        );
+        return;
+      }
+    }
     try {
       await api.patch(`/employees/${id}/`, editForm);
       setEditing(false);
@@ -358,7 +379,20 @@ export const EmployeeProfile = () => {
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">First Name</p><p className="font-semibold mt-1">{employee.first_name}</p></div>
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">Last Name</p><p className="font-semibold mt-1">{employee.last_name || '-'}</p></div>
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">Gender</p><p className="font-semibold mt-1">{employee.gender || '-'}</p></div>
-            <div><p className="text-slate-400 font-bold text-[10px] uppercase">Date of Birth</p><p className="font-semibold mt-1">{employee.date_of_birth ? formatDate(employee.date_of_birth) : '-'}</p></div>
+            <div>
+              <p className="text-slate-400 font-bold text-[10px] uppercase">Date of Birth &amp; Age</p>
+              <div className="font-semibold mt-1 flex items-center gap-2 flex-wrap">
+                <span>{employee.date_of_birth ? formatDate(employee.date_of_birth) : '-'}</span>
+                {employee.date_of_birth && (() => {
+                  const age = calculateAge(employee.date_of_birth);
+                  return age !== null ? (
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                      {age} years old
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+            </div>
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">City</p><p className="font-semibold mt-1">{employee.city || '-'}</p></div>
             <div><p className="text-slate-400 font-bold text-[10px] uppercase">Address</p><p className="font-semibold mt-1">{employee.address || '-'}</p></div>
           </div>
@@ -548,8 +582,49 @@ export const EmployeeProfile = () => {
                 </div>
                 <div><label className="block text-xs font-semibold mb-1 text-zinc-800 ">Phone</label><input type="text" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900 " /></div>
                 <div><label className="block text-xs font-semibold mb-1 text-zinc-800 ">City</label><input type="text" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900 " /></div>
-                <div className="flex gap-2">
-                  <button type="submit" className="px-4 py-1.5 bg-zinc-950 hover:bg-black text-white    rounded-lg text-xs font-bold">Save Changes</button>
+                <div>
+                  <label className="block text-xs font-semibold mb-1 text-zinc-800 ">Date of Birth</label>
+                  <input
+                    type="date"
+                    value={editForm.date_of_birth}
+                    onChange={(e) => setEditForm({ ...editForm, date_of_birth: e.target.value })}
+                    className={`w-full px-3 py-1.5 text-xs border rounded-lg bg-white text-zinc-900 ${
+                      editForm.date_of_birth && getAgeInfo(editForm.date_of_birth).isUnderage
+                        ? 'border-rose-400 bg-rose-50/20'
+                        : 'border-zinc-200'
+                    }`}
+                  />
+                  {editForm.date_of_birth && (() => {
+                    const ageInfo = getAgeInfo(editForm.date_of_birth);
+                    return ageInfo.isUnderage ? (
+                      <div className="mt-1.5 p-2 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 text-[11px] flex items-start gap-1.5 shadow-xs">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="block font-bold">{ageInfo.label}</strong>
+                          <span className="text-rose-700">{ageInfo.text}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-1.5 p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{ageInfo.label}</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">
+                          Legal Working Age
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="submit"
+                    disabled={Boolean(editForm.date_of_birth && getAgeInfo(editForm.date_of_birth).isUnderage)}
+                    className="px-4 py-1.5 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                  >
+                    Save Changes
+                  </button>
                   <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 bg-zinc-100  text-zinc-700  rounded-lg text-xs font-semibold">Cancel</button>
                 </div>
               </form>

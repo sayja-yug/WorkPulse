@@ -33,7 +33,7 @@ import {
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
-import { formatDate } from '../utils/formatters';
+import { formatDate, calculateAge, getAgeInfo } from '../utils/formatters';
 import { calculateEmployeeInactivity } from '../utils/employeeInactivity';
 
 const INITIAL_FORM = () => ({
@@ -235,6 +235,17 @@ export const Employees = () => {
       toast.warning('First Name and Email are required.');
       return;
     }
+    if (formData.date_of_birth) {
+      const ageInfo = getAgeInfo(formData.date_of_birth);
+      if (ageInfo.isUnderage) {
+        toast.error(
+          ageInfo.isFuture
+            ? 'Date of birth cannot be in the future.'
+            : `Cannot onboard employee: Candidate is ${ageInfo.age ?? 'under'} years old. Employing workers under 18 years of age is illegal under child labor prevention laws.`
+        );
+        return;
+      }
+    }
     try {
       setSubmitting(true);
       const payload = {
@@ -300,6 +311,7 @@ export const Employees = () => {
       designation: emp.designation || '',
       status: emp.status || 'ACTIVE',
       joining_date: emp.joining_date || '',
+      date_of_birth: emp.date_of_birth || '',
     });
     setActiveMenuId(null);
   };
@@ -307,12 +319,24 @@ export const Employees = () => {
   const handleUpdateEmployee = async (e) => {
     e.preventDefault();
     if (!editModalEmp) return;
+    if (editFormData.date_of_birth) {
+      const ageInfo = getAgeInfo(editFormData.date_of_birth);
+      if (ageInfo.isUnderage) {
+        toast.error(
+          ageInfo.isFuture
+            ? 'Date of birth cannot be in the future.'
+            : `Cannot update employee: Candidate is ${ageInfo.age ?? 'under'} years old. Minimum legal working age is 18.`
+        );
+        return;
+      }
+    }
     try {
       setSubmitting(true);
       const payload = { ...editFormData };
       if (!payload.branch) delete payload.branch;
       if (!payload.department) delete payload.department;
       if (!payload.designation) delete payload.designation;
+      if (!payload.date_of_birth) delete payload.date_of_birth;
 
       await api.patch(`/employees/${editModalEmp.id}/`, payload);
       setEditModalEmp(null);
@@ -1274,13 +1298,13 @@ export const Employees = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2.5">
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">Status</label>
               <select
                 value={editFormData.status || 'ACTIVE'}
                 onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg bg-white"
+                className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white"
               >
                 <option value="ACTIVE">ACTIVE</option>
                 <option value="INACTIVE">INACTIVE</option>
@@ -1289,15 +1313,51 @@ export const Employees = () => {
               </select>
             </div>
             <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Date of Birth</label>
+              <input
+                type="date"
+                value={editFormData.date_of_birth || ''}
+                onChange={(e) => setEditFormData({ ...editFormData, date_of_birth: e.target.value })}
+                className={`w-full px-2.5 py-1.5 border rounded-lg ${
+                  editFormData.date_of_birth && getAgeInfo(editFormData.date_of_birth).isUnderage
+                    ? 'border-rose-400 bg-rose-50/30'
+                    : 'border-slate-300'
+                }`}
+              />
+            </div>
+            <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">Joining Date</label>
               <input
                 type="date"
                 value={editFormData.joining_date || ''}
                 onChange={(e) => setEditFormData({ ...editFormData, joining_date: e.target.value })}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg"
+                className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg"
               />
             </div>
           </div>
+
+          {editFormData.date_of_birth && (() => {
+            const ageInfo = getAgeInfo(editFormData.date_of_birth);
+            return ageInfo.isUnderage ? (
+              <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-2 shadow-xs">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">{ageInfo.label}</span>
+                  <p className="mt-0.5 text-[11px] text-rose-700">{ageInfo.text}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{ageInfo.label}</span>
+                </div>
+                <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">
+                  Legal Working Age (18+)
+                </span>
+              </div>
+            );
+          })()}
 
           <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
             {isOwner && (
@@ -1325,8 +1385,8 @@ export const Employees = () => {
               </button>
               <button
                 type="submit"
-                disabled={submitting}
-                className="px-4 py-1.5 bg-zinc-950 hover:bg-black text-white    rounded-lg font-bold"
+                disabled={submitting || (editFormData.date_of_birth && getAgeInfo(editFormData.date_of_birth).isUnderage)}
+                className="px-4 py-1.5 bg-zinc-950 hover:bg-black text-white    rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Saving...' : 'Save Changes'}
               </button>
@@ -1420,45 +1480,88 @@ export const Employees = () => {
 
       {/* MODAL 4: Add Employee Modal (9 Sections & 4 Action Buttons) */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Onboard New Employee">
-        <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1 text-xs">
-          {/* 1. Personal Information */}
-          <div>
-            <p className="text-[10px] font-bold text-zinc-900  uppercase mb-2">1. Personal Information</p>
-            <div className="grid grid-cols-2 gap-2.5">
-              <input
-                type="text"
-                placeholder="First Name *"
-                required
-                value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-              <input
-                type="text"
-                placeholder="Last Name"
-                value={formData.last_name}
-                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-              <select
-                value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
-              >
-                <option value="PREFER_NOT_TO_SAY">Gender (Optional)</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </select>
-              <input
-                type="date"
-                title="Date of Birth"
-                value={formData.date_of_birth}
-                onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900 "
-              />
-            </div>
-          </div>
+        {(() => {
+          const onboardAgeInfo = getAgeInfo(formData.date_of_birth);
+          const isUnderage = Boolean(formData.date_of_birth && onboardAgeInfo.isUnderage);
+
+          return (
+            <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1 text-xs">
+              {/* 1. Personal Information */}
+              <div>
+                <p className="text-[10px] font-bold text-zinc-900  uppercase mb-2">1. Personal Information</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <input
+                    type="text"
+                    placeholder="First Name *"
+                    required
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                    className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
+                  />
+                  <input
+                    type="text"
+                    placeholder="Last Name"
+                    value={formData.last_name}
+                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                    className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 "
+                  />
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    className="px-3 py-1.5 border border-zinc-200  rounded-lg bg-white  text-zinc-900  focus:outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
+                  >
+                    <option value="PREFER_NOT_TO_SAY">Gender (Optional)</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                  <div>
+                    <input
+                      type="date"
+                      title="Date of Birth"
+                      value={formData.date_of_birth}
+                      onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                      className={`w-full px-3 py-1.5 border rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 ${
+                        isUnderage
+                          ? 'border-rose-400 focus:ring-rose-500 bg-rose-50/20'
+                          : 'border-zinc-200 focus:ring-zinc-900'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Live Age Display & Legal Working Age Validation Banner */}
+                {formData.date_of_birth && (
+                  <div className="mt-2.5">
+                    {onboardAgeInfo.isUnderage ? (
+                      <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-2 shadow-xs">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="font-bold flex items-center gap-1.5">
+                            <span>{onboardAgeInfo.label}</span>
+                            <span className="px-1.5 py-0.5 bg-rose-200 text-rose-800 text-[10px] rounded font-bold uppercase tracking-wide">
+                              Illegal Underage Worker
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-rose-700 leading-snug">
+                            {onboardAgeInfo.text} Onboarding minors under 18 years of age is strictly prohibited under child labor prevention laws.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between shadow-xs">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>{onboardAgeInfo.label}</span>
+                        </div>
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded-full font-bold uppercase tracking-wider">
+                          Legal Working Age (18+)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
           {/* 2. Contact Information */}
           <div>
@@ -1647,31 +1750,33 @@ export const Employees = () => {
             </button>
             <button
               type="button"
-              disabled={submitting}
+              disabled={submitting || isUnderage}
               onClick={() => submitEmployee('draft')}
-              className="px-3 py-1.5 text-xs font-semibold border border-zinc-300  text-zinc-800  hover:bg-zinc-100  rounded-lg"
+              className="px-3 py-1.5 text-xs font-semibold border border-zinc-300 text-zinc-800 hover:bg-zinc-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save as Draft
             </button>
             <button
               type="button"
-              disabled={submitting}
+              disabled={submitting || isUnderage}
               onClick={() => submitEmployee('another')}
-              className="px-3 py-1.5 text-xs font-semibold border border-zinc-300  text-zinc-800  hover:bg-zinc-100  rounded-lg"
+              className="px-3 py-1.5 text-xs font-semibold border border-zinc-300 text-zinc-800 hover:bg-zinc-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save &amp; Add Another
             </button>
             <button
               type="button"
-              disabled={submitting}
+              disabled={submitting || isUnderage}
               onClick={() => submitEmployee('save')}
-              className="px-4 py-1.5 text-xs font-bold bg-zinc-950 hover:bg-black text-white    rounded-lg shadow-xs"
+              className="px-4 py-1.5 text-xs font-bold bg-zinc-950 hover:bg-black text-white rounded-lg shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Saving...' : 'Save Employee'}
             </button>
           </div>
         </div>
-      </Modal>
+      );
+    })()}
+  </Modal>
     </div>
   );
 };

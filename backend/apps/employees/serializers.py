@@ -8,6 +8,26 @@ class EmployeeSerializer(serializers.ModelSerializer):
     branch_name = serializers.CharField(source='branch.name', read_only=True)
     department_name = serializers.CharField(source='department.name', read_only=True)
     designation_name = serializers.CharField(source='designation.name', read_only=True)
+    age = serializers.SerializerMethodField()
+
+    def get_age(self, obj):
+        if obj.date_of_birth:
+            today = timezone.now().date()
+            dob = obj.date_of_birth
+            return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        return None
+
+    def validate_date_of_birth(self, value):
+        if value:
+            today = timezone.now().date()
+            if value > today:
+                raise serializers.ValidationError("Date of birth cannot be in the future.")
+            age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+            if age < 18:
+                raise serializers.ValidationError(
+                    f"Candidate is {age} years old. Employing workers under 18 years of age is illegal under labor laws."
+                )
+        return value
 
     class Meta:
         model = Employee
@@ -16,13 +36,13 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'full_name', 'email', 'phone', 'branch', 'branch_name',
             'department', 'department_name', 'designation', 'designation_name',
             'employment_type', 'salary_type', 'joining_date', 'probation_end_date',
-            'reporting_manager', 'date_of_birth', 'gender', 'blood_group',
+            'reporting_manager', 'date_of_birth', 'age', 'gender', 'blood_group',
             'emergency_contact_name', 'emergency_contact_phone', 'address',
             'city', 'state', 'country', 'zip_code', 'bank_name',
             'bank_account_number', 'bank_ifsc_code', 'pan_number',
             'aadhaar_number', 'is_field_employee', 'status', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'business', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'business', 'age', 'created_at', 'updated_at']
         extra_kwargs = {
             'employee_code': {'required': False, 'allow_blank': True},
         }
@@ -38,6 +58,14 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     duty_status = serializers.SerializerMethodField()
     last_punch_date = serializers.SerializerMethodField()
     unpunched_days = serializers.SerializerMethodField()
+    age = serializers.SerializerMethodField()
+
+    def get_age(self, obj):
+        if obj.date_of_birth:
+            today = timezone.now().date()
+            dob = obj.date_of_birth
+            return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        return None
 
     def _get_today_record(self, obj):
         if not hasattr(obj, '_cached_today_record'):
@@ -93,7 +121,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
             'email', 'phone', 'branch', 'branch_name', 'department', 'department_name',
             'designation', 'designation_name', 'employment_type', 'salary_type',
             'status', 'duty_status', 'is_punched_in', 'check_in_time',
-            'last_punch_date', 'unpunched_days',
+            'last_punch_date', 'unpunched_days', 'date_of_birth', 'age',
             'joining_date', 'emergency_contact_name', 'emergency_contact_phone',
             'address', 'city'
         ]

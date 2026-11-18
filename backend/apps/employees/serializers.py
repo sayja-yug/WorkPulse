@@ -34,6 +34,44 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 )
         return value
 
+    is_branch_manager = serializers.SerializerMethodField()
+    managed_branch_id = serializers.SerializerMethodField()
+    managed_branch_name = serializers.SerializerMethodField()
+
+    def get_is_branch_manager(self, obj):
+        if not obj.user:
+            return False
+        from apps.accounts.models import UserRole
+        return UserRole.objects.filter(
+            user=obj.user,
+            business=obj.business,
+            role__code='BRANCH_MANAGER'
+        ).exists()
+
+    def get_managed_branch_id(self, obj):
+        if not obj.user:
+            return None
+        from apps.accounts.models import UserRole
+        ur = UserRole.objects.filter(
+            user=obj.user,
+            business=obj.business,
+            role__code='BRANCH_MANAGER',
+            branch__isnull=False
+        ).first()
+        return str(ur.branch_id) if ur else None
+
+    def get_managed_branch_name(self, obj):
+        if not obj.user:
+            return None
+        from apps.accounts.models import UserRole
+        ur = UserRole.objects.filter(
+            user=obj.user,
+            business=obj.business,
+            role__code='BRANCH_MANAGER',
+            branch__isnull=False
+        ).select_related('branch').first()
+        return ur.branch.name if ur and ur.branch else None
+
     class Meta:
         model = Employee
         fields = [
@@ -45,7 +83,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'emergency_contact_name', 'emergency_contact_phone', 'address',
             'city', 'state', 'country', 'zip_code', 'bank_name',
             'bank_account_number', 'bank_ifsc_code', 'pan_number',
-            'aadhaar_number', 'is_field_employee', 'status', 'created_at', 'updated_at'
+            'aadhaar_number', 'is_field_employee', 'status', 'created_at', 'updated_at',
+            'is_branch_manager', 'managed_branch_id', 'managed_branch_name'
         ]
         read_only_fields = ['id', 'business', 'age', 'base_salary', 'created_at', 'updated_at']
         extra_kwargs = {
@@ -65,6 +104,43 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     unpunched_days = serializers.SerializerMethodField()
     age = serializers.SerializerMethodField()
     base_salary = serializers.SerializerMethodField()
+    is_branch_manager = serializers.SerializerMethodField()
+    managed_branch_id = serializers.SerializerMethodField()
+    managed_branch_name = serializers.SerializerMethodField()
+
+    def get_is_branch_manager(self, obj):
+        if not obj.user:
+            return False
+        from apps.accounts.models import UserRole
+        return UserRole.objects.filter(
+            user=obj.user,
+            business=obj.business,
+            role__code='BRANCH_MANAGER'
+        ).exists()
+
+    def get_managed_branch_id(self, obj):
+        if not obj.user:
+            return None
+        from apps.accounts.models import UserRole
+        ur = UserRole.objects.filter(
+            user=obj.user,
+            business=obj.business,
+            role__code='BRANCH_MANAGER',
+            branch__isnull=False
+        ).first()
+        return str(ur.branch_id) if ur else None
+
+    def get_managed_branch_name(self, obj):
+        if not obj.user:
+            return None
+        from apps.accounts.models import UserRole
+        ur = UserRole.objects.filter(
+            user=obj.user,
+            business=obj.business,
+            role__code='BRANCH_MANAGER',
+            branch__isnull=False
+        ).select_related('branch').first()
+        return ur.branch.name if ur and ur.branch else None
 
     def get_base_salary(self, obj):
         struct = obj.salary_structures.filter(is_current=True).first()
@@ -133,7 +209,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
             'status', 'duty_status', 'is_punched_in', 'check_in_time',
             'last_punch_date', 'unpunched_days', 'date_of_birth', 'age',
             'joining_date', 'emergency_contact_name', 'emergency_contact_phone',
-            'address', 'city'
+            'address', 'city', 'is_branch_manager', 'managed_branch_id', 'managed_branch_name'
         ]
 
 

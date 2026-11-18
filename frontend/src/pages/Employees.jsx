@@ -88,6 +88,7 @@ export const Employees = () => {
   const [deptFilter, setDeptFilter] = useState('');
   const [desigFilter, setDesigFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [managerOnlyFilter, setManagerOnlyFilter] = useState(false);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
 
   // Modals & Popups
@@ -174,6 +175,9 @@ export const Employees = () => {
   const getInactivity = (emp) => calculateEmployeeInactivity(emp, attendanceRecords);
 
   const displayedEmployees = employees.filter((emp) => {
+    if (managerOnlyFilter && !emp.is_branch_manager) {
+      return false;
+    }
     const inact = getInactivity(emp);
     if (statusFilter === 'INACTIVE_3_DAYS') {
       return inact.isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED';
@@ -203,11 +207,12 @@ export const Employees = () => {
     setDeptFilter('');
     setDesigFilter('');
     setStatusFilter('');
+    setManagerOnlyFilter(false);
     setPage(1);
     navigate('/employees', { replace: true });
   };
 
-  const hasActiveFilters = Boolean(search || branchFilter || deptFilter || desigFilter || statusFilter);
+  const hasActiveFilters = Boolean(search || branchFilter || deptFilter || desigFilter || statusFilter || managerOnlyFilter);
 
   // Copy helper
   const copyToClipboard = (text, label) => {
@@ -513,8 +518,23 @@ export const Employees = () => {
           </p>
         </div>
 
-        {/* Top Actions: Import Excel, Export Excel, Add Employee */}
+        {/* Top Actions: Import Excel, Export Excel, Branch Managers, Add Employee */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Branch Managers quick filter toggle */}
+          <button
+            type="button"
+            onClick={() => setManagerOnlyFilter(!managerOnlyFilter)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+              managerOnlyFilter
+                ? 'bg-zinc-950 text-white border-zinc-950 shadow-xs'
+                : 'bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-800 shadow-2xs'
+            }`}
+            title="Filter directory to view designated Branch Managers"
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Branch Managers</span>
+          </button>
+
           {canCreateEmployee && (
             <button
               type="button"
@@ -707,6 +727,12 @@ export const Employees = () => {
                   </button>
                 </span>
               )}
+              {managerOnlyFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-900 text-white">
+                  Role: Branch Managers Only
+                  <button onClick={() => setManagerOnlyFilter(false)} className="hover:text-zinc-300 font-bold ml-0.5 cursor-pointer">×</button>
+                </span>
+              )}
             </div>
 
             <button
@@ -809,10 +835,20 @@ export const Employees = () => {
                           {emp.last_name?.[0] || ''}
                         </div>
                         <div>
-                          <p className="font-semibold text-zinc-900  group-hover:underline leading-tight">
+                          <p className="font-semibold text-zinc-900 group-hover:underline leading-tight">
                             {emp.first_name} {emp.last_name}
                           </p>
-                          <p className="text-[11px] text-zinc-500 ">{emp.designation_name || 'Staff'}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className="text-[11px] text-zinc-500">{emp.designation_name || 'Staff'}</span>
+                            {emp.is_branch_manager && (
+                              <span
+                                className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-zinc-900 text-white tracking-wide"
+                                title={`Branch Manager for ${emp.managed_branch_name || emp.branch_name}`}
+                              >
+                                Branch Manager
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </Link>
                     </td>
@@ -1116,8 +1152,13 @@ export const Employees = () => {
                 <p className="text-sm font-bold text-zinc-900 ">
                   {contactModalEmp.first_name} {contactModalEmp.last_name}
                 </p>
-                <p className="text-xs text-zinc-600  font-semibold">{contactModalEmp.designation_name || 'Staff'}</p>
-                <p className="text-[11px] text-zinc-400 font-mono">{contactModalEmp.employee_code}</p>
+                <p className="text-xs text-zinc-600 font-semibold">{contactModalEmp.designation_name || 'Staff'}</p>
+                {contactModalEmp.is_branch_manager && (
+                  <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white">
+                    Branch Manager • {contactModalEmp.managed_branch_name || contactModalEmp.branch_name}
+                  </span>
+                )}
+                <p className="text-[11px] text-zinc-400 font-mono mt-0.5">{contactModalEmp.employee_code}</p>
               </div>
             </div>
 

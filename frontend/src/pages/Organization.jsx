@@ -51,6 +51,7 @@ export const Organization = () => {
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [holidays, setHolidays] = useState([]);
+  const [allEmployees, setAllEmployees] = useState([]);
   const [workingDays, setWorkingDays] = useState(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
 
   // Modals & form states
@@ -59,7 +60,7 @@ export const Organization = () => {
 
   const [showBranchModal, setShowBranchModal] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
-  const [branchForm, setBranchForm] = useState({ name: '', code: '', address: '', city: '', state: '', geofence_radius: 200 });
+  const [branchForm, setBranchForm] = useState({ name: '', code: '', address: '', city: '', state: '', geofence_radius: 200, manager_id: '' });
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [branchEmployees, setBranchEmployees] = useState([]);
   const [showBranchEmployees, setShowBranchEmployees] = useState(false);
@@ -111,6 +112,7 @@ export const Organization = () => {
         api.get('/branches/departments/'),
         api.get('/branches/designations/'),
         api.get('/attendance/holidays/'),
+        api.get('/employees/'),
       ];
       if (business?.id) {
         calls.push(api.get(`/businesses/${business.id}/`));
@@ -134,7 +136,11 @@ export const Organization = () => {
         setHolidays(Array.isArray(d) ? d : []);
       }
       if (results[4] && results[4].status === 'fulfilled') {
-        const b = results[4].value.data?.data || results[4].value.data;
+        const d = results[4].value.data?.data || results[4].value.data?.results || [];
+        setAllEmployees(Array.isArray(d) ? d : []);
+      }
+      if (results[5] && results[5].status === 'fulfilled') {
+        const b = results[5].value.data?.data || results[5].value.data;
         setBizDetail(b);
         if (Array.isArray(b?.working_days)) {
           setWorkingDays(b.working_days);
@@ -183,7 +189,15 @@ export const Organization = () => {
   // 2. Branch Actions
   const openAddBranch = () => {
     setEditingBranch(null);
-    setBranchForm({ name: '', code: '', address: '', city: '', state: '', geofence_radius: 200 });
+    setBranchForm({
+      name: '',
+      code: '',
+      address: '',
+      city: '',
+      state: '',
+      geofence_radius: 200,
+      manager_id: '',
+    });
     setShowBranchModal(true);
   };
 
@@ -196,6 +210,7 @@ export const Organization = () => {
       city: b.city || '',
       state: b.state || '',
       geofence_radius: b.geofence_radius || 200,
+      manager_id: b.manager?.user_id || b.manager?.employee_id || '',
     });
     setShowBranchModal(true);
   };
@@ -204,10 +219,14 @@ export const Organization = () => {
     e.preventDefault();
     try {
       setSubmitting(true);
+      const payload = { ...branchForm };
+      if (!payload.manager_id) {
+        payload.manager_id = null;
+      }
       if (editingBranch) {
-        await api.patch(`/branches/${editingBranch.id}/`, branchForm);
+        await api.patch(`/branches/${editingBranch.id}/`, payload);
       } else {
-        await api.post('/branches/', branchForm);
+        await api.post('/branches/', payload);
       }
       setShowBranchModal(false);
       await fetchAll();
@@ -532,6 +551,9 @@ export const Organization = () => {
                     <div>
                       <p className="text-xs font-bold text-zinc-900">{b.name}</p>
                       <p className="text-[11px] text-zinc-500">{b.city ? `${b.city}, ${b.state || ''}` : b.code}</p>
+                      <p className="text-[10px] text-zinc-600 font-medium mt-0.5">
+                        Manager: <span className={b.manager ? 'font-bold text-zinc-900' : 'text-zinc-400 italic'}>{b.manager?.name || 'Unassigned'}</span>
+                      </p>
                     </div>
                     <Badge variant={b.is_active !== false ? 'inverted' : 'outline'} size="xs">
                       {b.code}
@@ -615,8 +637,9 @@ export const Organization = () => {
                 <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-bold uppercase text-[11px] tracking-wider">
                   <th className="py-3 px-4">Branch Name</th>
                   <th className="py-3 px-4">Branch Code</th>
+                  <th className="py-3 px-4">Branch Manager</th>
                   <th className="py-3 px-4">Location</th>
-                  <th className="py-3 px-4">Geofence Radius</th>
+                  <th className="py-3 px-4">Staff</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -634,14 +657,46 @@ export const Organization = () => {
                       </button>
                     </td>
                     <td className="py-3.5 px-4 font-mono font-bold text-zinc-700">{b.code}</td>
+                    <td className="py-3.5 px-4">
+                      {b.manager ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                            {b.manager.name ? b.manager.name[0].toUpperCase() : 'M'}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-zinc-900 text-xs block truncate leading-tight">
+                              {b.manager.name}
+                            </span>
+                            <span className="text-[10px] text-zinc-500 block truncate leading-tight">
+                              {b.manager.email}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-500 border border-zinc-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
+                          Unassigned
+                        </span>
+                      )}
+                    </td>
                     <td className="py-3.5 px-4 text-zinc-600">{b.city ? `${b.city}, ${b.state || ''}` : '-'}</td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-zinc-800">{b.geofence_radius || 200}m</td>
+                    <td className="py-3.5 px-4 font-mono font-bold text-zinc-800">{b.employee_count ?? '-'}</td>
                     <td className="py-3.5 px-4">
                       <Badge variant={b.is_active !== false ? 'inverted' : 'outline'}>
                         {b.is_active !== false ? 'ACTIVE' : 'INACTIVE'}
                       </Badge>
                     </td>
                     <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                      {canManageBranches && (
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => openEditBranch(b)}
+                          title="Edit branch and manager assignment"
+                        >
+                          Edit
+                        </Button>
+                      )}
                       <Button
                         size="xs"
                         variant="primary"
@@ -978,6 +1033,27 @@ export const Organization = () => {
             />
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-zinc-900 mb-1.5">
+              Branch Manager (Site Supervisor)
+            </label>
+            <select
+              value={branchForm.manager_id || ''}
+              onChange={(e) => setBranchForm({ ...branchForm, manager_id: e.target.value })}
+              className="w-full px-3 py-2 text-xs border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium"
+            >
+              <option value="">No Manager Assigned (Unassigned)</option>
+              {allEmployees.map((emp) => (
+                <option key={emp.id} value={emp.user || emp.id}>
+                  {emp.full_name} ({emp.employee_code}) {emp.email ? `— ${emp.email}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-zinc-500 mt-1">
+              Designate which manager leads this branch. The Branch Manager will only have authority over candidates in this branch.
+            </p>
+          </div>
+
           <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-2.5">
             <Button
               variant="outline"
@@ -1020,6 +1096,37 @@ export const Organization = () => {
                 <p className="font-bold text-zinc-950 mt-1">
                   {[selectedBranch.address, selectedBranch.city, selectedBranch.state].filter(Boolean).join(', ') || '-'}
                 </p>
+              </div>
+
+              {/* Branch Manager Card */}
+              <div className="p-3 bg-zinc-50/80 rounded-xl border border-zinc-200 col-span-2">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">
+                  Designated Branch Manager
+                </span>
+                {selectedBranch.manager ? (
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {selectedBranch.manager.name ? selectedBranch.manager.name[0].toUpperCase() : 'M'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-zinc-950 text-xs block">
+                        {selectedBranch.manager.name}
+                      </span>
+                      <span className="text-[11px] text-zinc-500 block">
+                        {selectedBranch.manager.email} {selectedBranch.manager.phone ? `• ${selectedBranch.manager.phone}` : ''}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500 italic">No Branch Manager assigned to this site</span>
+                    {canManageBranches && (
+                      <Button size="xs" variant="outline" onClick={() => openEditBranch(selectedBranch)}>
+                        Assign Manager
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

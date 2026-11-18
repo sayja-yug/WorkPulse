@@ -30,7 +30,44 @@ class BranchViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         if business and not user.is_superuser and PermissionService.is_branch_scoped(user, business):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Branch managers cannot create new branches.")
+        manager_id = serializer.validated_data.pop('manager_id', None)
         super().perform_create(serializer)
+        if manager_id and business:
+            self._assign_branch_manager(serializer.instance, manager_id, business)
+
+    def perform_update(self, serializer):
+        business = getattr(self.request, 'business', None)
+        manager_id = serializer.validated_data.pop('manager_id', None)
+        super().perform_update(serializer)
+        if manager_id is not None and business:
+            self._assign_branch_manager(serializer.instance, manager_id, business)
+
+    def _assign_branch_manager(self, branch, manager_id, business):
+        from apps.accounts.models import User, Role, UserRole
+        from apps.employees.models import Employee
+        bm_role = Role.objects.filter(code='BRANCH_MANAGER', is_system=True).first()
+        if not bm_role:
+            return
+
+        if not manager_id:
+            UserRole.objects.filter(branch=branch, role=bm_role).delete()
+            return
+
+        mgr_user = User.objects.filter(id=manager_id).first()
+        if not mgr_user:
+            emp = Employee.objects.filter(id=manager_id, business=business).first()
+            if emp and emp.user:
+                mgr_user = emp.user
+
+        if mgr_user:
+            UserRole.objects.filter(branch=branch, role=bm_role).exclude(user=mgr_user).delete()
+            UserRole.objects.update_or_create(
+                user=mgr_user,
+                business=business,
+                role=bm_role,
+                defaults={'branch': branch}
+            )
+            Employee.objects.filter(user=mgr_user, business=business).update(branch=branch)
 
     def perform_destroy(self, instance):
         user = self.request.user

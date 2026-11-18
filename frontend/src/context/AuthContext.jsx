@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [businesses, setBusinesses] = useState([]);
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
+  const [assignedBranch, setAssignedBranch] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [needsBusinessSelection, setNeedsBusinessSelection] = useState(false);
 
@@ -46,6 +47,7 @@ export const AuthProvider = ({ children }) => {
         const permRes = await api.get('/auth/me/permissions/');
         setRoles(permRes.data.data.roles || []);
         setPermissions(permRes.data.data.permissions || []);
+        setAssignedBranch(permRes.data.data.assigned_branch || userData?.assigned_branch || null);
       }
     } catch (err) {
       console.error('Session load failed', err);
@@ -110,6 +112,7 @@ export const AuthProvider = ({ children }) => {
     setBusinesses([]);
     setRoles([]);
     setPermissions([]);
+    setAssignedBranch(null);
     setNeedsBusinessSelection(false);
   };
 
@@ -172,6 +175,7 @@ export const AuthProvider = ({ children }) => {
         businesses,
         roles,
         permissions,
+        assignedBranch,
         activeRole,
         isAuthenticated: !!user,
         isLoading,

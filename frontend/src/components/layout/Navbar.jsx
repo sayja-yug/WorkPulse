@@ -19,7 +19,7 @@ import { ROLE_LABELS, ROLE_BADGE_COLORS } from '../../utils/constants';
 import { Modal } from '../ui/Modal';
 
 export const Navbar = ({ onToggleSidebar = () => {} }) => {
-  const { user, business, businesses, switchBusiness, createBusiness, logout, activeRole } = useAuth();
+  const { user, business, businesses, switchBusiness, createBusiness, logout, activeRole, assignedBranch } = useAuth();
   const [showNewBizModal, setShowNewBizModal] = useState(false);
   const [creatingBiz, setCreatingBiz] = useState(false);
   const [bizForm, setBizForm] = useState({
@@ -190,8 +190,8 @@ export const Navbar = ({ onToggleSidebar = () => {} }) => {
 
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {/* Dynamic Role Badge (hidden on extra small screens to save header space) */}
-        <span className={`text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border ${roleColor} hidden xs:inline-block truncate max-w-[120px] sm:max-w-none`}>
-          {roleLabel}
+        <span className={`text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border ${roleColor} hidden xs:inline-block truncate max-w-[150px] sm:max-w-none`}>
+          {roleLabel}{activeRole === 'BRANCH_MANAGER' && (assignedBranch?.name || user?.branch_name) ? ` • ${assignedBranch?.name || user?.branch_name}` : ''}
         </span>
 
         {/* Notification Bell Button & Popover Dropdown */}

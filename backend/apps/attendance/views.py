@@ -87,7 +87,10 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             from apps.accounts.services import PermissionService
             roles = PermissionService.get_user_roles(user, business) if business else []
             manager_roles = {'BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'AUDITOR', 'SUPER_ADMIN'}
-            if not any(r in manager_roles for r in roles) and not self.request.query_params.get('employee'):
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                qs = qs.filter(employee__branch_id__in=branch_ids)
+            elif not any(r in manager_roles for r in roles) and not self.request.query_params.get('employee'):
                 qs = qs.filter(employee__user=user)
         return qs.order_by('-date', '-check_in')
 
@@ -106,6 +109,16 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
                 employee = Employee.objects.get(id=employee_id)
         except Employee.DoesNotExist:
             return Response({'success': False, 'error': {'message': 'Employee not found.'}}, status=status.HTTP_404_NOT_FOUND)
+
+        if business and not request.user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(request.user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
+                if employee.branch_id not in branch_ids:
+                    return Response(
+                        {'success': False, 'error': {'message': 'You can only mark attendance for employees in your assigned branch.'}},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
 
         if not business:
             business = employee.business
@@ -240,8 +253,17 @@ class AttendanceCorrectionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        business = getattr(self.request, 'business', None)
-        return AttendanceCorrection.objects.filter(attendance__business=business)
+        business = getattr(self.request, 'business', None) or get_business_context(self.request)
+        qs = AttendanceCorrection.objects.filter(attendance__business=business)
+        user = self.request.user
+        if business and not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                qs = qs.filter(attendance__employee__branch_id__in=branch_ids)
+            elif not user.user_roles.filter(role__code__in=['BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN']).exists():
+                qs = qs.filter(attendance__employee__user=user)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(requested_by=self.request.user)
@@ -249,6 +271,17 @@ class AttendanceCorrectionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'])
     def approve(self, request, pk=None):
         corr = self.get_object()
+        business = get_business_context(request)
+        if business and not request.user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(request.user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
+                if corr.attendance.employee.branch_id not in branch_ids:
+                    return Response(
+                        {'success': False, 'error': {'message': 'You can only approve regularizations for employees in your branch.'}},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
         corr.status = AttendanceCorrection.Status.APPROVED
         corr.reviewed_by = request.user
         corr.reviewed_at = timezone.now()

@@ -63,7 +63,11 @@ export const Attendance = () => {
     try {
       const res = await api.get('/branches/');
       const data = res.data?.data || res.data?.results || res.data || [];
-      setBranches(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setBranches(list);
+      if (list.length === 1) {
+        setSelectedBranch(list[0].id);
+      }
     } catch (err) {
       console.warn('Could not load branches', err);
     }
@@ -240,22 +244,28 @@ export const Attendance = () => {
 
         {!isEmployee && (
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Branch Filter Selector for Owner */}
+            {/* Branch Filter Selector */}
             <div className="flex items-center gap-1.5 bg-white border border-zinc-200 rounded-lg px-2.5 py-1 shadow-2xs">
               <Building2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-              <select
-                aria-label="Filter Attendance by Branch"
-                value={selectedBranch}
-                onChange={(e) => handleBranchChange(e.target.value)}
-                className="text-xs font-semibold text-zinc-900 bg-transparent outline-none cursor-pointer pr-1"
-              >
-                <option value="">All Branches (Whole Company)</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} ({b.code})
-                  </option>
-                ))}
-              </select>
+              {branches.length === 1 ? (
+                <span className="text-xs font-semibold text-zinc-900 pr-1 select-none">
+                  {branches[0].name}
+                </span>
+              ) : (
+                <select
+                  aria-label="Filter Attendance by Branch"
+                  value={selectedBranch}
+                  onChange={(e) => handleBranchChange(e.target.value)}
+                  className="text-xs font-semibold text-zinc-900 bg-transparent outline-none cursor-pointer pr-1"
+                >
+                  <option value="">All Branches (Whole Company)</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} ({b.code})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Tab Pills */}

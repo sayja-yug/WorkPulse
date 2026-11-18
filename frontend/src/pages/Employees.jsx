@@ -157,7 +157,13 @@ export const Employees = () => {
       api.get('/shifts/'),
       api.get('/attendance/'),
     ]).then(([bRes, dRes, gRes, sRes, aRes]) => {
-      if (bRes.status === 'fulfilled') setBranches(bRes.value.data?.results || bRes.value.data?.data || []);
+      if (bRes.status === 'fulfilled') {
+        const brList = bRes.value.data?.results || bRes.value.data?.data || [];
+        setBranches(brList);
+        if (brList.length === 1) {
+          setFormData((prev) => ({ ...prev, branch: brList[0].id }));
+        }
+      }
       if (dRes.status === 'fulfilled') setDepartments(dRes.value.data?.results || dRes.value.data?.data || []);
       if (gRes.status === 'fulfilled') setDesignations(gRes.value.data?.results || gRes.value.data?.data || []);
       if (sRes.status === 'fulfilled') setShifts(sRes.value.data?.results || sRes.value.data?.data || []);
@@ -496,6 +502,11 @@ export const Employees = () => {
           <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2 mt-1">
             <Users className="w-5 h-5 text-zinc-900" />
             <span>Employees ({totalCount})</span>
+            {branches.length === 1 && (
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-800 border border-zinc-200">
+                Branch: {branches[0].name}
+              </span>
+            )}
           </h2>
           <p className="text-xs text-zinc-500 mt-0.5">
             Search, filter, view contact details, import/export, and manage organizational directory
@@ -572,21 +583,31 @@ export const Employees = () => {
           </div>
 
           {/* 2. Filter by Branch */}
-          <select
-            value={branchFilter}
-            onChange={(e) => {
-              setBranchFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-2 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
-          >
-            <option value="">Filter by Branch (All)</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+          {branches.length === 1 ? (
+            <div
+              className="px-3 py-2 text-xs border border-zinc-200 rounded-lg bg-zinc-50 text-zinc-700 font-medium flex items-center gap-1.5 cursor-not-allowed select-none"
+              title="Directory scoped strictly to your assigned branch"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span className="font-semibold text-zinc-900 truncate">{branches[0].name}</span>
+            </div>
+          ) : (
+            <select
+              value={branchFilter}
+              onChange={(e) => {
+                setBranchFilter(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
+            >
+              <option value="">Filter by Branch (All)</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* 3. Filter by Department */}
           <select
@@ -1263,11 +1284,12 @@ export const Employees = () => {
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">Branch</label>
               <select
-                value={editFormData.branch || ''}
+                value={editFormData.branch || (branches[0] ? branches[0].id : '')}
+                disabled={branches.length === 1}
                 onChange={(e) => setEditFormData({ ...editFormData, branch: e.target.value })}
-                className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white"
+                className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white disabled:bg-zinc-100 disabled:text-zinc-600 font-medium"
               >
-                <option value="">Default Branch</option>
+                {branches.length > 1 && <option value="">Default Branch</option>}
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
@@ -1738,11 +1760,12 @@ export const Employees = () => {
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Branch</label>
                     <select
-                      value={formData.branch}
+                      value={formData.branch || (branches[0] ? branches[0].id : '')}
+                      disabled={branches.length === 1}
                       onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
+                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white disabled:bg-zinc-100 disabled:text-zinc-600 text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
                     >
-                      <option value="">Default Branch</option>
+                      {branches.length > 1 && <option value="">Default Branch</option>}
                       {branches.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.name}

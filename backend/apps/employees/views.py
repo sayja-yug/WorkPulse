@@ -33,6 +33,16 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+        business = getattr(self.request, 'business', None)
+
+        # Enforce strict branch isolation for Branch Managers
+        if business and not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                qs = qs.filter(branch_id__in=branch_ids)
+
         status_param = self.request.query_params.get('status')
         if not status_param:
             return qs
@@ -102,6 +112,18 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
                 mem = BusinessMembership.objects.filter(user=self.request.user, is_active=True).first()
                 if mem:
                     business = mem.business
+        # Auto-enforce branch for Branch Managers
+        user = self.request.user
+        if business and not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                target_branch = serializer.validated_data.get('branch')
+                if not target_branch or target_branch.id not in branch_ids:
+                    from apps.branches.models import Branch
+                    if branch_ids:
+                        serializer.validated_data['branch'] = Branch.objects.filter(id=branch_ids[0]).first()
+
         serializer.instance = EmployeeService.create_employee(
             business=business,
             validated_data=serializer.validated_data,
@@ -395,6 +417,15 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         depts_map = {d.name.lower(): d for d in Department.objects.filter(business=business)}
         desigs_map = {g.name.lower(): g for g in Designation.objects.filter(business=business)}
         default_branch = Branch.objects.filter(business=business).first()
+        is_branch_scoped = False
+        manager_branch = None
+        if not request.user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(request.user, business):
+                is_branch_scoped = True
+                bids = PermissionService.get_accessible_branch_ids(request.user, business)
+                if bids:
+                    manager_branch = Branch.objects.filter(id__in=bids).first()
 
         created_count = 0
         skipped_errors = []
@@ -415,7 +446,7 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             dept_name = str(row.get('department') or row.get('department name') or '').strip().lower()
             desig_name = str(row.get('designation') or row.get('designation name') or row.get('role') or '').strip().lower()
 
-            branch_obj = branches_map.get(branch_name, default_branch)
+            branch_obj = manager_branch if (is_branch_scoped and manager_branch) else branches_map.get(branch_name, default_branch)
             dept_obj = depts_map.get(dept_name)
             desig_obj = desigs_map.get(desig_name)
 
@@ -472,8 +503,25 @@ class EmployeeDocumentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None)
-        return EmployeeDocument.objects.filter(employee__business=business)
+        qs = EmployeeDocument.objects.filter(employee__business=business)
+        user = self.request.user
+        if business and not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                qs = qs.filter(employee__branch_id__in=branch_ids)
+        return qs
 
     def perform_create(self, serializer):
+        user = self.request.user
+        business = getattr(self.request, 'business', None)
+        if business and not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                emp = serializer.validated_data.get('employee')
+                if emp and emp.branch_id not in branch_ids:
+                    from rest_framework.exceptions import PermissionDenied
+                    raise PermissionDenied("Cannot upload documents for employees outside your branch.")
         serializer.save(uploaded_by=self.request.user)
 

@@ -412,13 +412,30 @@ class UserPermissionsView(views.APIView):
 
         roles = PermissionService.get_user_roles(request.user, business)
         permissions_list = list(PermissionService.get_user_permissions(request.user, business))
+        scope = PermissionService.get_user_scope(request.user, business)
+        is_branch_scoped = PermissionService.is_branch_scoped(request.user, business)
+        accessible_branch_ids = [str(bid) for bid in PermissionService.get_accessible_branch_ids(request.user, business)]
+
+        assigned_branch = None
+        from apps.accounts.models import UserRole
+        ur = UserRole.objects.filter(user=request.user, business=business, branch__isnull=False).select_related('branch').first()
+        if ur and ur.branch:
+            assigned_branch = {'id': str(ur.branch.id), 'name': ur.branch.name, 'city': ur.branch.city}
+        else:
+            from apps.employees.models import Employee
+            emp = Employee.objects.filter(user=request.user, business=business, branch__isnull=False).select_related('branch').first()
+            if emp and emp.branch:
+                assigned_branch = {'id': str(emp.branch.id), 'name': emp.branch.name, 'city': emp.branch.city}
 
         return Response({
             'success': True,
             'data': {
                 'roles': roles,
                 'permissions': permissions_list,
-                'scope': PermissionService.get_user_scope(request.user, business),
+                'scope': scope,
+                'is_branch_scoped': is_branch_scoped,
+                'accessible_branch_ids': accessible_branch_ids,
+                'assigned_branch': assigned_branch,
             },
         })
 

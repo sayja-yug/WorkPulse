@@ -12,6 +12,7 @@ export const usePermissions = () => {
   const isHR = hasRole(ROLES.HR_MANAGER) || isOwner;
   const isAccountant = hasRole(ROLES.ACCOUNTANT) || isOwner;
   const isBranchManager = hasRole(ROLES.BRANCH_MANAGER) || isOwner;
+  const isBranchManagerStrict = activeRole === ROLES.BRANCH_MANAGER || (!isOwner && !isSuperAdmin && !isHR && roles.includes(ROLES.BRANCH_MANAGER));
   const isSupervisor = hasRole(ROLES.SUPERVISOR) || isHR || isOwner;
   const isAuditor = hasRole(ROLES.AUDITOR);
   const isEmployee = activeRole === ROLES.EMPLOYEE || activeRole === ROLES.FIELD_EMPLOYEE;
@@ -32,12 +33,14 @@ export const usePermissions = () => {
     isHR,
     isAccountant,
     isBranchManager,
+    isBranchManagerStrict,
     isSupervisor,
     isAuditor,
     isEmployee,
     isFieldEmployee,
     canManageEmployees: isHR || isBranchManager || isOwner,
     canCreateEmployee: hasPermission('employee.create') || isOwner,
+    canManageBranches: !isBranchManagerStrict && (isOwner || isSuperAdmin),
     canManagePayroll: isAccountant || isOwner,
     canApprovePayroll: hasPermission('payroll.approve') || isOwner,
     canManageExpenses: isAccountant || isOwner,

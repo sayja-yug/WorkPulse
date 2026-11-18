@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { formatDate } from '../utils/formatters';
 import {
   Card,
@@ -39,6 +40,7 @@ const ALL_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'S
 
 export const Organization = () => {
   const { business } = useAuth();
+  const { canManageBranches, isBranchManagerStrict } = usePermissions();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(true);
@@ -588,17 +590,23 @@ export const Organization = () => {
         <Card>
           <CardHeader className="justify-between">
             <div>
-              <CardTitle>Company Branches ({branches.length})</CardTitle>
-              <CardDescription>Manage your company locations, codes, and geofence tracking radii</CardDescription>
+              <CardTitle>{isBranchManagerStrict ? 'Your Managed Branch' : 'Company Branches'} ({branches.length})</CardTitle>
+              <CardDescription>
+                {isBranchManagerStrict
+                  ? 'Overview of your assigned operating branch, geofence radius, and location details'
+                  : 'Manage your company locations, codes, and geofence tracking radii'}
+              </CardDescription>
             </div>
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={Plus}
-              onClick={openAddBranch}
-            >
-              Add Branch
-            </Button>
+            {canManageBranches && (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={Plus}
+                onClick={openAddBranch}
+              >
+                Add Branch
+              </Button>
+            )}
           </CardHeader>
 
           <div className="overflow-x-auto">
@@ -650,13 +658,15 @@ export const Organization = () => {
                       >
                         Details
                       </Button>
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        onClick={() => handleDeactivateBranch(b)}
-                      >
-                        {b.is_active !== false ? 'Deactivate' : 'Activate'}
-                      </Button>
+                      {canManageBranches && (
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => handleDeactivateBranch(b)}
+                        >
+                          {b.is_active !== false ? 'Deactivate' : 'Activate'}
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}

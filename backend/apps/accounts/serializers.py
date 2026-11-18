@@ -11,6 +11,9 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializer for user details."""
     full_name = serializers.ReadOnlyField()
     role = serializers.SerializerMethodField()
+    branch_id = serializers.SerializerMethodField()
+    branch_name = serializers.SerializerMethodField()
+    assigned_branch = serializers.SerializerMethodField()
 
     def get_role(self, obj):
         from .services import PermissionService
@@ -25,14 +28,37 @@ class UserSerializer(serializers.ModelSerializer):
             return fallback_role
         return 'EMPLOYEE'
 
+    def get_assigned_branch(self, obj):
+        business = obj.active_business
+        if not business:
+            return None
+        from apps.accounts.models import UserRole
+        ur = UserRole.objects.filter(user=obj, business=business, branch__isnull=False).select_related('branch').first()
+        if ur and ur.branch:
+            return {'id': str(ur.branch.id), 'name': ur.branch.name, 'city': ur.branch.city}
+        from apps.employees.models import Employee
+        emp = Employee.objects.filter(user=obj, business=business, branch__isnull=False).select_related('branch').first()
+        if emp and emp.branch:
+            return {'id': str(emp.branch.id), 'name': emp.branch.name, 'city': emp.branch.city}
+        return None
+
+    def get_branch_id(self, obj):
+        b = self.get_assigned_branch(obj)
+        return b['id'] if b else None
+
+    def get_branch_name(self, obj):
+        b = self.get_assigned_branch(obj)
+        return b['name'] if b else None
+
     class Meta:
         model = User
         fields = [
             'id', 'email', 'phone', 'first_name', 'last_name', 'full_name',
             'avatar', 'is_active', 'email_verified', 'phone_verified',
             'active_business', 'date_joined', 'last_login', 'role',
+            'branch_id', 'branch_name', 'assigned_branch',
         ]
-        read_only_fields = ['id', 'email', 'is_active', 'email_verified', 'phone_verified', 'date_joined', 'last_login', 'role']
+        read_only_fields = ['id', 'email', 'is_active', 'email_verified', 'phone_verified', 'date_joined', 'last_login', 'role', 'branch_id', 'branch_name', 'assigned_branch']
 
 
 class UserCreateSerializer(serializers.ModelSerializer):

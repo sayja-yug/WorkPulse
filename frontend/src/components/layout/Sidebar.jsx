@@ -46,6 +46,7 @@ export const Sidebar = ({
     switchBusiness,
     createBusiness,
     logout,
+    assignedBranch,
   } = useAuth();
 
   // Company Switcher State
@@ -558,6 +559,11 @@ export const Sidebar = ({
                   <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 leading-tight">
                     {roleLabel}
                   </span>
+                  {activeRole === 'BRANCH_MANAGER' && (assignedBranch?.name || user?.branch_name) && (
+                    <span className="text-[10px] font-medium text-zinc-400 truncate max-w-[120px]" title={assignedBranch?.name || user?.branch_name}>
+                      • {assignedBranch?.name || user?.branch_name}
+                    </span>
+                  )}
                 </div>
               </div>
             )}

@@ -124,9 +124,52 @@ class PermissionService:
         return highest_scope
 
     @classmethod
+    def is_branch_scoped(cls, user, business):
+        """Check if the user is scoped strictly to specific branches (e.g. Branch Manager)."""
+        if not user or not user.is_authenticated or user.is_superuser:
+            return False
+        if not business:
+            return False
+
+        from apps.accounts.models import Role, UserRole
+        user_roles = set(
+            UserRole.objects.filter(
+                user=user,
+                business=business,
+            ).values_list('role__code', flat=True)
+        )
+
+        business_wide_roles = {
+            Role.RoleCode.BUSINESS_OWNER,
+            Role.RoleCode.HR_MANAGER,
+            Role.RoleCode.ACCOUNTANT,
+            Role.RoleCode.AUDITOR,
+            Role.RoleCode.SUPER_ADMIN,
+        }
+        if any(code in business_wide_roles for code in user_roles):
+            return False
+
+        if Role.RoleCode.BRANCH_MANAGER in user_roles:
+            return True
+
+        scope = cls.get_user_scope(user, business)
+        return scope == 'BRANCH'
+
+    @classmethod
     def get_accessible_branch_ids(cls, user, business):
         """Get branch IDs the user can access."""
         from apps.accounts.models import Role, UserRole
+
+        if not business:
+            return []
+
+        if not user or not user.is_authenticated or user.is_superuser:
+            from apps.branches.models import Branch
+            return list(
+                Branch.objects.filter(
+                    business=business, is_active=True
+                ).values_list('id', flat=True)
+            )
 
         user_roles = UserRole.objects.filter(
             user=user,
@@ -139,6 +182,7 @@ class PermissionService:
             Role.RoleCode.HR_MANAGER,
             Role.RoleCode.ACCOUNTANT,
             Role.RoleCode.AUDITOR,
+            Role.RoleCode.SUPER_ADMIN,
         }
 
         for user_role in user_roles:
@@ -159,10 +203,10 @@ class PermissionService:
         # Also include the employee's own branch
         from apps.employees.models import Employee
         try:
-            employee = Employee.objects.get(user=user, business=business)
-            if employee.branch_id:
+            employee = Employee.objects.filter(user=user, business=business).first()
+            if employee and employee.branch_id:
                 branch_ids.add(employee.branch_id)
-        except Employee.DoesNotExist:
+        except Exception:
             pass
 
         return list(branch_ids)

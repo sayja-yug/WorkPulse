@@ -12,6 +12,35 @@ class BranchViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     filterset_fields = ['is_active', 'is_head_office', 'city']
     search_fields = ['name', 'code', 'city']
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        business = getattr(self.request, 'business', None)
+        if business and not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                qs = qs.filter(id__in=branch_ids)
+        return qs
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        business = getattr(self.request, 'business', None)
+        from apps.accounts.services import PermissionService
+        if business and not user.is_superuser and PermissionService.is_branch_scoped(user, business):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Branch managers cannot create new branches.")
+        super().perform_create(serializer)
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        business = getattr(self.request, 'business', None)
+        from apps.accounts.services import PermissionService
+        if business and not user.is_superuser and PermissionService.is_branch_scoped(user, business):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Branch managers cannot delete branches.")
+        super().perform_destroy(instance)
+
 
 class DepartmentViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer

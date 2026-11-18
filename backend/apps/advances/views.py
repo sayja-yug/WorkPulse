@@ -26,11 +26,17 @@ class AdvanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         if business:
             qs = qs.filter(business=business)
 
-        is_admin_or_owner = user.is_superuser or user.user_roles.filter(
-            role__code__in=['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'SUPER_ADMIN']
-        ).exists()
-        if not is_admin_or_owner:
-            qs = qs.filter(employee__user=user)
+        if not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                qs = qs.filter(employee__branch_id__in=branch_ids)
+            else:
+                is_admin_or_owner = user.user_roles.filter(
+                    role__code__in=['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'SUPER_ADMIN']
+                ).exists()
+                if not is_admin_or_owner:
+                    qs = qs.filter(employee__user=user)
 
         return qs.order_by('-requested_at')
 

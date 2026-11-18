@@ -66,6 +66,18 @@ class BusinessViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated, IsBusinessMember])
     def stats(self, request, pk=None):
         business = self.get_object()
+        if not request.user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(request.user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
+                stats = {
+                    'branches_count': len(branch_ids),
+                    'departments_count': business.departments.count(),
+                    'employees_count': business.employees.filter(branch_id__in=branch_ids, status='ACTIVE').count(),
+                    'total_employees': business.employees.filter(branch_id__in=branch_ids).count()
+                }
+                return Response({'success': True, 'data': stats})
+
         stats = {
             'branches_count': business.branches.count(),
             'departments_count': business.departments.count(),

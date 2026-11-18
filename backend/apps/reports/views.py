@@ -40,12 +40,28 @@ class BusinessOverviewView(views.APIView):
 
         today = timezone.now().date()
 
+        # Check for branch-scoped manager
+        is_branch_scoped = False
+        branch_ids = []
+        if request.user and not request.user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(request.user, business):
+                is_branch_scoped = True
+                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
+
         # Employee counts
-        total_employees = Employee.objects.filter(business=business).count()
-        active_employees = Employee.objects.filter(business=business, status=Employee.Status.ACTIVE).count()
+        emp_base = Employee.objects.filter(business=business)
+        if is_branch_scoped:
+            emp_base = emp_base.filter(branch_id__in=branch_ids)
+
+        total_employees = emp_base.count()
+        active_employees = emp_base.filter(status=Employee.Status.ACTIVE).count()
 
         # Today's attendance
         today_att = AttendanceRecord.objects.filter(business=business, date=today)
+        if is_branch_scoped:
+            today_att = today_att.filter(employee__branch_id__in=branch_ids)
+
         present_count = today_att.filter(status=AttendanceRecord.Status.PRESENT).count()
         absent_count = today_att.filter(status=AttendanceRecord.Status.ABSENT).count()
         half_day_count = today_att.filter(status=AttendanceRecord.Status.HALF_DAY).count()
@@ -53,15 +69,21 @@ class BusinessOverviewView(views.APIView):
         late_count = today_att.filter(is_late=True).count()
 
         # Employment type breakdown
-        emp_types_qs = Employee.objects.filter(business=business, status=Employee.Status.ACTIVE).values('employment_type').annotate(count=Count('id'))
+        emp_types_qs = emp_base.filter(status=Employee.Status.ACTIVE).values('employment_type').annotate(count=Count('id'))
         employment_types = {item['employment_type']: item['count'] for item in emp_types_qs}
 
         # Leave distribution
-        leave_dist_qs = LeaveRequest.objects.filter(business=business).values('leave_type__name').annotate(count=Count('id'))
+        leave_dist_base = LeaveRequest.objects.filter(business=business)
+        if is_branch_scoped:
+            leave_dist_base = leave_dist_base.filter(employee__branch_id__in=branch_ids)
+        leave_dist_qs = leave_dist_base.values('leave_type__name').annotate(count=Count('id'))
         leave_distribution = [{'name': item['leave_type__name'] or 'Leave', 'count': item['count']} for item in leave_dist_qs]
 
         # Branch statistics
-        branches_qs = Branch.objects.filter(business=business, is_active=True).annotate(
+        branches_base = Branch.objects.filter(business=business, is_active=True)
+        if is_branch_scoped:
+            branches_base = branches_base.filter(id__in=branch_ids)
+        branches_qs = branches_base.annotate(
             employee_count=Count('employees')
         )
         branch_stats = [
@@ -71,7 +93,10 @@ class BusinessOverviewView(views.APIView):
 
         # Recent activity feed
         recent_activity = []
-        for lr in LeaveRequest.objects.filter(business=business).select_related('employee', 'leave_type').order_by('-created_at')[:3]:
+        recent_leaves = LeaveRequest.objects.filter(business=business)
+        if is_branch_scoped:
+            recent_leaves = recent_leaves.filter(employee__branch_id__in=branch_ids)
+        for lr in recent_leaves.select_related('employee', 'leave_type').order_by('-created_at')[:3]:
             recent_activity.append({
                 'id': f'leave-{lr.id}',
                 'title': f'Leave Request: {lr.employee.full_name}',
@@ -79,15 +104,21 @@ class BusinessOverviewView(views.APIView):
                 'link': '/leaves',
                 'date': str(lr.start_date),
             })
-        for exp in Expense.objects.filter(business=business).order_by('-created_at')[:2]:
-            recent_activity.append({
-                'id': f'exp-{exp.id}',
-                'title': f'Expense: {exp.description}',
-                'subtitle': f'₹{exp.amount} ({exp.status})',
-                'link': '/expenses',
-                'date': str(exp.date),
-            })
-        for att in AttendanceRecord.objects.filter(business=business).select_related('employee').order_by('-updated_at')[:3]:
+
+        if not is_branch_scoped:
+            for exp in Expense.objects.filter(business=business).order_by('-created_at')[:2]:
+                recent_activity.append({
+                    'id': f'exp-{exp.id}',
+                    'title': f'Expense: {exp.description}',
+                    'subtitle': f'₹{exp.amount} ({exp.status})',
+                    'link': '/expenses',
+                    'date': str(exp.date),
+                })
+
+        recent_punches = AttendanceRecord.objects.filter(business=business)
+        if is_branch_scoped:
+            recent_punches = recent_punches.filter(employee__branch_id__in=branch_ids)
+        for att in recent_punches.select_related('employee').order_by('-updated_at')[:3]:
             recent_activity.append({
                 'id': f'att-{att.id}',
                 'title': f'Punch: {att.employee.full_name}',
@@ -97,7 +128,10 @@ class BusinessOverviewView(views.APIView):
             })
 
         # Pending approvals
-        pending_leaves = LeaveRequest.objects.filter(business=business, status=LeaveRequest.Status.PENDING).count()
+        pending_leaves_base = LeaveRequest.objects.filter(business=business, status=LeaveRequest.Status.PENDING)
+        if is_branch_scoped:
+            pending_leaves_base = pending_leaves_base.filter(employee__branch_id__in=branch_ids)
+        pending_leaves = pending_leaves_base.count()
 
         # Financial overview (Current Month)
         cur_month_start = today.replace(day=1)
@@ -150,17 +184,24 @@ class AttendanceReportView(views.APIView):
         date_from = request.query_params.get('date_from', str(timezone.now().date().replace(day=1)))
         date_to = request.query_params.get('date_to', str(timezone.now().date()))
 
-        records = AttendanceRecord.objects.filter(
-            business=business,
-            date__gte=date_from,
-            date__lte=date_to
-        ).values('status').annotate(count=Count('id'))
+        is_branch_scoped = False
+        branch_ids = []
+        if request.user and not request.user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(request.user, business):
+                is_branch_scoped = True
+                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
 
-        by_date = AttendanceRecord.objects.filter(
+        base_qs = AttendanceRecord.objects.filter(
             business=business,
             date__gte=date_from,
             date__lte=date_to
-        ).values('date', 'status').annotate(count=Count('id')).order_by('date')
+        )
+        if is_branch_scoped:
+            base_qs = base_qs.filter(employee__branch_id__in=branch_ids)
+
+        records = base_qs.values('status').annotate(count=Count('id'))
+        by_date = base_qs.values('date', 'status').annotate(count=Count('id')).order_by('date')
 
         return Response({
             'success': True,

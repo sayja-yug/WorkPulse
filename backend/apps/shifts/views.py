@@ -25,6 +25,14 @@ class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             .select_related('employee', 'employee__branch', 'employee__department')
             .order_by('-effective_from')
         )
+        user = request.user
+        business = getattr(request, 'business', None)
+        if business and not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                assignments = assignments.filter(employee__branch_id__in=branch_ids)
+
         data = [
             {
                 'id': str(a.id),
@@ -50,6 +58,19 @@ class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
                 {'success': False, 'error': {'message': 'employee_id is required'}},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        emp = Employee.objects.filter(id=employee_id).first()
+        business = getattr(request, 'business', None)
+        if business and not request.user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(request.user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
+                if not emp or emp.branch_id not in branch_ids:
+                    return Response(
+                        {'success': False, 'error': {'message': 'You can only assign employees from your own branch.'}},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
         effective_from = request.data.get('effective_from') or timezone.now().date()
         assignment, created = ShiftAssignment.objects.update_or_create(
             employee_id=employee_id,
@@ -60,7 +81,6 @@ class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             }
         )
 
-        emp = Employee.objects.filter(id=employee_id).first()
         if emp:
             time_str = f"{shift.start_time.strftime('%I:%M %p')} - {shift.end_time.strftime('%I:%M %p')}"
             notify_employee(
@@ -81,6 +101,18 @@ class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         """Remove an employee assignment from this shift roster."""
         shift = self.get_object()
         employee_id = request.data.get('employee_id')
+        business = getattr(request, 'business', None)
+        if business and not request.user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(request.user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
+                emp = Employee.objects.filter(id=employee_id).first()
+                if not emp or emp.branch_id not in branch_ids:
+                    return Response(
+                        {'success': False, 'error': {'message': 'You can only modify employees from your own branch.'}},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
         ShiftAssignment.objects.filter(shift=shift, employee_id=employee_id).delete()
         return Response({
             'success': True,
@@ -94,7 +126,14 @@ class ShiftAssignmentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None)
-        return ShiftAssignment.objects.filter(employee__business=business).select_related('employee', 'shift')
+        qs = ShiftAssignment.objects.filter(employee__business=business).select_related('employee', 'shift')
+        user = self.request.user
+        if business and not user.is_superuser:
+            from apps.accounts.services import PermissionService
+            if PermissionService.is_branch_scoped(user, business):
+                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
+                qs = qs.filter(employee__branch_id__in=branch_ids)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(assigned_by=self.request.user)

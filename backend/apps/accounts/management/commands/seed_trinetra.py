@@ -143,6 +143,7 @@ class Command(BaseCommand):
             ('owner@trinetra.com', 'Vikram', 'Aditya', Role.RoleCode.BUSINESS_OWNER, False, False, True, br_hq, dept_eng, desig_dir, False),
             ('hr@trinetra.com', 'Pooja', 'Sharma', Role.RoleCode.HR_MANAGER, False, False, False, br_hq, dept_hr, desig_hr, False),
             ('branchmanager@trinetra.com', 'Rahul', 'Verma', Role.RoleCode.BRANCH_MANAGER, False, False, False, br_blr, dept_ops, desig_mgr, False),
+            ('bm.mumbai@trinetra.com', 'Kunal', 'Shah', Role.RoleCode.BRANCH_MANAGER, False, False, False, br_mum, dept_ops, desig_mgr, False),
             ('accountant@trinetra.com', 'Amit', 'Singhal', Role.RoleCode.ACCOUNTANT, False, False, False, br_hq, dept_fin, desig_sr, False),
             ('supervisor@trinetra.com', 'Suresh', 'Nair', Role.RoleCode.SUPERVISOR, False, False, False, br_mum, dept_ops, desig_lead, False),
             ('employee@trinetra.com', 'Ananya', 'Patel', Role.RoleCode.EMPLOYEE, False, False, False, br_hq, dept_eng, desig_sr, False),
@@ -187,12 +188,14 @@ class Command(BaseCommand):
                 )
 
             # Create employee profile for all Trinetra members
+            existing_emp = Employee.objects.filter(business=business, email=email).first()
+            emp_code = existing_emp.employee_code if existing_emp else f'TRIN-{Employee.objects.filter(business=business).count() + 1:04d}'
             emp, _ = Employee.objects.update_or_create(
                 business=business,
                 email=email,
                 defaults={
                     'user': user,
-                    'employee_code': f'TRIN-{idx+1:04d}',
+                    'employee_code': emp_code,
                     'first_name': fn,
                     'last_name': ln,
                     'branch': branch,
@@ -247,12 +250,14 @@ class Command(BaseCommand):
             if emp_role:
                 UserRole.objects.update_or_create(user=user, role=emp_role, business=business, defaults={'branch': branch})
 
+            existing_emp = Employee.objects.filter(business=business, email=emp_email).first()
+            emp_code = existing_emp.employee_code if existing_emp else f'TRIN-{Employee.objects.filter(business=business).count() + 1:04d}'
             emp, _ = Employee.objects.update_or_create(
                 business=business,
                 email=emp_email,
                 defaults={
                     'user': user,
-                    'employee_code': f'TRIN-{len(created_employees)+1:04d}',
+                    'employee_code': emp_code,
                     'first_name': fn,
                     'last_name': ln,
                     'branch': branch,
@@ -433,7 +438,7 @@ class Command(BaseCommand):
                 defaults={
                     'employee': emp,
                     'business': business,
-                    'payslip_number': f'PS-TRIN-202610-{i+1:04d}',
+                    'payslip_number': f'PS-TRIN-202610-{emp.employee_code}',
                     'period_display': 'October 2026'
                 }
             )

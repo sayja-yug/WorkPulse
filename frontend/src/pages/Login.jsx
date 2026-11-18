@@ -16,7 +16,132 @@ import {
   Users,
   Eye,
   EyeOff,
+  Sparkles,
+  MapPin,
 } from 'lucide-react';
+
+const DEMO_ACCOUNTS = [
+  {
+    id: 'owner',
+    category: 'management',
+    roleName: 'Business Owner',
+    icon: '👑',
+    name: 'Vikram Aditya',
+    email: 'owner@trinetra.com',
+    companyKey: 'trinetra',
+    branchName: 'All Branches (Company-Wide)',
+    branchCode: 'HQ / BLR / MUM',
+    desc: 'Full org control, all 3 branches, settings & financials',
+  },
+  {
+    id: 'hr',
+    category: 'management',
+    roleName: 'HR Manager',
+    icon: '💼',
+    name: 'Pooja Sharma',
+    email: 'hr@trinetra.com',
+    companyKey: 'trinetra',
+    branchName: 'Corporate Campus (HQ Noida)',
+    branchCode: 'HQ Noida',
+    desc: 'Org-wide HR, employee directory, leaves & policies',
+  },
+  {
+    id: 'bm_blr',
+    category: 'branch',
+    roleName: 'Branch Manager (BLR)',
+    icon: '🏢',
+    name: 'Rahul Verma',
+    email: 'branchmanager@trinetra.com',
+    companyKey: 'trinetra',
+    branchName: 'Innovation Center (Bengaluru)',
+    branchCode: 'Bengaluru Hub',
+    desc: 'Scoped to Bengaluru branch employees, shifts & local ops',
+  },
+  {
+    id: 'bm_mum',
+    category: 'branch',
+    roleName: 'Branch Manager (MUM)',
+    icon: '🏢',
+    name: 'Kunal Shah',
+    email: 'bm.mumbai@trinetra.com',
+    companyKey: 'trinetra',
+    branchName: 'Western Hub (Mumbai BKC)',
+    branchCode: 'Mumbai Hub',
+    desc: 'Scoped to Mumbai branch team, attendance & roster ops',
+  },
+  {
+    id: 'accountant',
+    category: 'management',
+    roleName: 'Accountant',
+    icon: '💰',
+    name: 'Amit Singhal',
+    email: 'accountant@trinetra.com',
+    companyKey: 'trinetra',
+    branchName: 'Corporate Campus (Finance Dept)',
+    branchCode: 'Finance HQ',
+    desc: 'Payroll runs, salary structures, cashbook & advances',
+  },
+  {
+    id: 'supervisor',
+    category: 'staff',
+    roleName: 'Shift Supervisor',
+    icon: '📋',
+    name: 'Suresh Nair',
+    email: 'supervisor@trinetra.com',
+    companyKey: 'trinetra',
+    branchName: 'Western Hub (Operations)',
+    branchCode: 'Mumbai Hub',
+    desc: 'Daily shift roster, team approvals & check-ins',
+  },
+  {
+    id: 'employee',
+    category: 'staff',
+    roleName: 'Employee (HQ)',
+    icon: '👤',
+    name: 'Ananya Patel',
+    email: 'employee@trinetra.com',
+    companyKey: 'trinetra',
+    branchName: 'Corporate Campus (Noida HQ)',
+    branchCode: 'HQ Noida',
+    desc: 'Self-service portal, check-in punch, leaves & payslips',
+  },
+  {
+    id: 'field',
+    category: 'staff',
+    roleName: 'Field Staff (Sales)',
+    icon: '📍',
+    name: 'Rajesh Kumar',
+    email: 'field@trinetra.com',
+    companyKey: 'trinetra',
+    branchName: 'Western Hub (Enterprise Sales)',
+    branchCode: 'Mumbai Hub',
+    desc: 'Field punch, client visits, GPS tracking & expense claims',
+  },
+  {
+    id: 'superadmin',
+    category: 'platform',
+    roleName: 'Super Admin',
+    icon: '🛡️',
+    name: 'Alexander Pierce',
+    email: 'superadmin@workpulse.com',
+    companyId: 'PLATFORM_ADMIN',
+    branchName: 'WorkPulse Platform Governance',
+    branchCode: 'SaaS Platform',
+    desc: 'Platform master admin, tenant accounts & subscriptions',
+  },
+  {
+    id: 'apex_emp',
+    category: 'platform',
+    roleName: 'Apex Global Employee',
+    icon: '🌐',
+    name: 'Ananya Patel (Apex)',
+    email: 'employee@apexglobal.com',
+    companyKey: 'apex',
+    branchName: 'Apex Global R&D Hub',
+    branchCode: 'Separate Tenant',
+    desc: 'Test multi-tenant isolation in a completely separate business',
+  },
+];
 
 export const Login = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -26,6 +151,10 @@ export const Login = () => {
   const [companies, setCompanies] = useState([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [autoDetectedCompany, setAutoDetectedCompany] = useState(null);
+
+  // Demo account quick selector
+  const [selectedDemoAcc, setSelectedDemoAcc] = useState(null);
+  const [demoCategory, setDemoCategory] = useState('all');
 
   // Login / Account state
   const [email, setEmail] = useState('');
@@ -218,33 +347,25 @@ export const Login = () => {
     navigate('/');
   };
 
-  const handleQuickFill = (roleType, companyKey = 'trinetra') => {
+  const handleQuickFill = (acc) => {
     setError('');
-    setAutoDetectedCompany(null);
+    setSelectedDemoAcc(acc);
 
-    const targetCompany = companies.find((c) =>
-      c.name.toLowerCase().includes(companyKey === 'trinetra' ? 'trinetra' : 'apex')
-    );
-
-    if (roleType === 'EMPLOYEE') {
-      if (companyKey === 'trinetra') {
-        if (targetCompany) setSelectedCompanyId(targetCompany.id);
-        setEmail('employee@trinetra.com');
-        setPassword('WorkPulse@2026');
-      } else {
-        if (targetCompany) setSelectedCompanyId(targetCompany.id);
-        setEmail('employee@apexglobal.com');
-        setPassword('WorkPulse@2026');
-      }
-    } else if (roleType === 'OWNER') {
-      if (targetCompany) setSelectedCompanyId(targetCompany.id);
-      setEmail('owner@trinetra.com');
-      setPassword('WorkPulse@2026');
-    } else if (roleType === 'SUPER_ADMIN') {
+    if (acc.companyId === 'PLATFORM_ADMIN') {
       setSelectedCompanyId('PLATFORM_ADMIN');
-      setEmail('superadmin@workpulse.com');
-      setPassword('WorkPulse@2026');
+      setAutoDetectedCompany({ name: 'WorkPulse Platform Governance (Super Admin)' });
+    } else {
+      const targetCompany = companies.find((c) =>
+        c.name.toLowerCase().includes(acc.companyKey === 'apex' ? 'apex' : 'trinetra')
+      );
+      if (targetCompany) {
+        setSelectedCompanyId(targetCompany.id);
+        setAutoDetectedCompany(targetCompany);
+      }
     }
+
+    setEmail(acc.email);
+    setPassword('WorkPulse@2026');
   };
 
   const selectedCompanyName =
@@ -317,7 +438,7 @@ export const Login = () => {
         </div>
 
         {/* Right: Auth Forms */}
-        <div className="p-6 sm:p-8 flex flex-col justify-center bg-white text-zinc-900 transition-colors">
+        <div className="p-6 sm:p-8 flex flex-col justify-center bg-white text-zinc-900 transition-colors max-h-[92vh] overflow-y-auto">
           {/* Form Selector Tabs */}
           <div className="flex items-center border-b border-zinc-200 mb-6">
             <button
@@ -467,10 +588,26 @@ export const Login = () => {
                   </div>
                 </div>
 
+                {/* Selected demo account preview pill */}
+                {selectedDemoAcc && (
+                  <div className="mt-2 p-2 rounded-lg bg-zinc-50 border border-zinc-200 text-[11px] text-zinc-800 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="text-sm shrink-0">{selectedDemoAcc.icon}</span>
+                      <span className="truncate">
+                        <strong>{selectedDemoAcc.roleName}:</strong> {selectedDemoAcc.name} &bull;{' '}
+                        <span className="text-zinc-500">{selectedDemoAcc.branchName}</span>
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded shrink-0">
+                      Auto-Filled
+                    </span>
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full mt-2.5 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isLoading ? (
                     <span>Verifying Company &amp; Credentials...</span>
@@ -484,41 +621,88 @@ export const Login = () => {
               </form>
 
               {/* Demo quick credential helper */}
-              <div className="mt-4 pt-3 border-t border-zinc-100">
-                <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block mb-1.5">
-                  Demo Quick-Fill Accounts:
-                </span>
-                <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('EMPLOYEE', 'trinetra')}
-                    className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[10px] font-semibold text-zinc-800 transition-colors text-left truncate cursor-pointer"
-                  >
-                    👤 Trinetra Employee
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('OWNER', 'trinetra')}
-                    className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[10px] font-semibold text-zinc-800 transition-colors text-left truncate cursor-pointer"
-                  >
-                    👑 Trinetra Owner
-                  </button>
+              <div className="mt-4 pt-3 border-t border-zinc-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] uppercase font-bold text-zinc-900 tracking-wider flex items-center gap-1">
+                    <span>⚡ Demo Accounts by Role &amp; Branch</span>
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-medium">Click any to test role &amp; branch view</span>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('EMPLOYEE', 'apex-global')}
-                    className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[10px] font-semibold text-zinc-800 transition-colors text-left truncate cursor-pointer"
-                  >
-                    🏢 Apex Global Emp
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('SUPER_ADMIN')}
-                    className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[10px] font-semibold text-zinc-800 transition-colors text-left truncate cursor-pointer"
-                  >
-                    🛡️ Super Admin
-                  </button>
+
+                {/* Filter category pills */}
+                <div className="flex items-center gap-1 mb-2 overflow-x-auto pb-1 text-[10px]">
+                  {[
+                    { id: 'all', label: `All Roles (${DEMO_ACCOUNTS.length})` },
+                    { id: 'management', label: 'HQ & Leaders' },
+                    { id: 'branch', label: 'Branch Managers' },
+                    { id: 'staff', label: 'Staff & Field' },
+                    { id: 'platform', label: 'Other Tenants' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setDemoCategory(cat.id)}
+                      className={`px-2 py-0.5 rounded-md font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                        demoCategory === cat.id
+                          ? 'bg-zinc-950 text-white'
+                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Grid of demo quick accounts */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[220px] overflow-y-auto pr-1">
+                  {DEMO_ACCOUNTS.filter(
+                    (acc) => demoCategory === 'all' || acc.category === demoCategory
+                  ).map((acc) => {
+                    const isSelected = email === acc.email;
+                    return (
+                      <button
+                        key={acc.id}
+                        type="button"
+                        onClick={() => handleQuickFill(acc)}
+                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-zinc-950 text-white border-zinc-950 shadow-xs ring-1 ring-zinc-950'
+                            : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-900 border-zinc-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 w-full">
+                          <span className="font-bold text-[11px] truncate flex items-center gap-1">
+                            <span>{acc.icon}</span>
+                            <span>{acc.roleName}</span>
+                          </span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-medium shrink-0 ${
+                              isSelected
+                                ? 'bg-zinc-800 text-zinc-200'
+                                : 'bg-zinc-200 text-zinc-700'
+                            }`}
+                          >
+                            {acc.branchCode}
+                          </span>
+                        </div>
+                        <div className="mt-1">
+                          <p className={`text-[10px] font-semibold truncate ${isSelected ? 'text-zinc-200' : 'text-zinc-800'}`}>
+                            {acc.name}
+                          </p>
+                          <p className={`text-[9px] font-mono truncate ${isSelected ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                            {acc.email}
+                          </p>
+                        </div>
+                        <p
+                          className={`text-[9px] mt-1 pt-1 border-t truncate ${
+                            isSelected ? 'border-zinc-800 text-zinc-300' : 'border-zinc-200 text-zinc-500'
+                          }`}
+                        >
+                          📍 {acc.branchName}
+                        </p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </>

@@ -110,8 +110,14 @@ DATABASES = {
 # Auto-parse DATABASE_URL if provided by cloud platforms (Render, Neon, Supabase, Railway)
 DATABASE_URL = config('DATABASE_URL', default=None)
 if DATABASE_URL:
-    from urllib.parse import urlparse, unquote
+    from urllib.parse import urlparse, unquote, parse_qs
     parsed = urlparse(DATABASE_URL)
+    db_options = {'connect_timeout': 15}
+    # Enable SSL for cloud PostgreSQL (Render, Neon, Supabase, AWS, etc.)
+    hostname = (parsed.hostname or '').lower()
+    if 'render.com' in hostname or 'neon.tech' in hostname or 'supabase.co' in hostname or 'sslmode=require' in parsed.query:
+        db_options['sslmode'] = 'require'
+
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': parsed.path.lstrip('/'),
@@ -119,9 +125,8 @@ if DATABASE_URL:
         'PASSWORD': unquote(parsed.password) if parsed.password else '',
         'HOST': parsed.hostname or 'localhost',
         'PORT': str(parsed.port or 5432),
-        'OPTIONS': {
-            'connect_timeout': 10,
-        },
+        'CONN_MAX_AGE': config('CONN_MAX_AGE', default=60, cast=int),
+        'OPTIONS': db_options,
     }
 
 # Custom user model

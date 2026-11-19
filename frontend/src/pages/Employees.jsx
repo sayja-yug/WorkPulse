@@ -41,6 +41,8 @@ import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import { formatDate, calculateAge, getAgeInfo } from '../utils/formatters';
 import { calculateEmployeeInactivity } from '../utils/employeeInactivity';
+import { HelpButton } from '../components/ui/HelpButton';
+import { Button } from '../components/ui/Button';
 
 const INITIAL_FORM = () => ({
   first_name: '',
@@ -572,6 +574,13 @@ export const Employees = () => {
               <span>Add Employee</span>
             </button>
           )}
+
+          <HelpButton
+            title="Employee Directory"
+            whereAmI="Your workforce roster and team records."
+            whatCanIDo="Add new employees, manage contact cards, inspect branch designations, and filter active staff."
+            whatHappensNext="Employees added here can clock in for work and appear automatically on payroll."
+          />
         </div>
       </div>
 
@@ -783,18 +792,38 @@ export const Employees = () => {
         {loading ? (
           <Loader message="Loading workforce directory..." />
         ) : displayedEmployees.length === 0 ? (
-          <div className="p-12 text-center text-zinc-500  text-xs space-y-2">
-            <Users className="w-8 h-8 text-zinc-300  mx-auto" />
-            <p className="font-semibold text-zinc-700 ">No employees found matching your filter criteria.</p>
-            {hasActiveFilters && (
+          <div className="p-12 text-center text-zinc-500 text-xs space-y-3">
+            <div className="w-12 h-12 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center mx-auto">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="font-bold text-zinc-950 text-sm">
+                {hasActiveFilters ? 'No employees match your filter criteria' : 'No employees added yet'}
+              </p>
+              <p className="text-zinc-500 text-xs mt-0.5">
+                {hasActiveFilters
+                  ? 'Try clearing your filters to view all workers.'
+                  : 'Click "Add Employee" to onboard your first team member.'}
+              </p>
+            </div>
+            {hasActiveFilters ? (
               <button
                 type="button"
                 onClick={resetFilters}
-                className="text-zinc-900  hover:underline font-semibold text-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 text-white rounded-lg text-xs font-semibold hover:bg-black transition-colors"
               >
-                Clear all filters to see everyone
+                Clear all filters
               </button>
-            )}
+            ) : canCreateEmployee ? (
+              <button
+                type="button"
+                onClick={() => setShowModal(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white rounded-lg text-xs font-bold hover:bg-black transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Employee</span>
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="overflow-x-auto">

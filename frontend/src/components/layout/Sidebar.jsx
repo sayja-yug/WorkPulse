@@ -15,8 +15,6 @@ import {
   CreditCard,
   Settings,
   Terminal,
-  ShieldCheck,
-  UserCheck,
   X,
   Bell,
   CheckCheck,
@@ -29,6 +27,7 @@ import {
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from '../../utils/constants';
+import { UI_LABELS } from '../../constants/labels';
 import { Modal } from '../ui/Modal';
 
 export const Sidebar = ({
@@ -69,8 +68,9 @@ export const Sidebar = ({
   const notifDropdownRef = useRef(null);
 
   const isSuperAdmin = activeRole === 'SUPER_ADMIN' || user?.is_superuser;
+  const isOwner = activeRole === 'BUSINESS_OWNER' || isSuperAdmin;
   const roleLabel = ROLE_LABELS[activeRole] || activeRole;
-  const roleColor = ROLE_BADGE_COLORS[activeRole] || 'bg-zinc-800 text-zinc-100 border-zinc-700';
+  const isEmployeeRole = activeRole === 'EMPLOYEE' || activeRole === 'FIELD_EMPLOYEE';
 
   // Fetch Notifications
   const fetchNotifications = async () => {
@@ -174,96 +174,130 @@ export const Sidebar = ({
     }
   };
 
-  const allNavItems = [
+  // Grouped Navigation: 5 clear headings + top Dashboard
+  const navSections = [
     {
-      name: 'Dashboard',
-      path: '/',
-      icon: LayoutDashboard,
+      group: UI_LABELS.GROUP_PEOPLE,
+      items: [
+        {
+          name: UI_LABELS.NAV_EMPLOYEES,
+          path: '/employees',
+          icon: Users,
+          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
+        },
+        {
+          name: UI_LABELS.NAV_ORGANIZATION,
+          path: '/organization',
+          icon: Building2,
+          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
+        },
+      ],
     },
     {
-      name: 'Organization',
-      path: '/organization',
-      icon: Building2,
-      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
+      group: UI_LABELS.GROUP_TIME,
+      items: [
+        {
+          name: UI_LABELS.NAV_ATTENDANCE,
+          path: '/attendance',
+          icon: CalendarCheck2,
+          // Allowed for all roles
+        },
+        {
+          name: UI_LABELS.NAV_WORK_SCHEDULE,
+          path: '/shifts',
+          icon: Clock,
+          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN'],
+        },
+        {
+          name: UI_LABELS.NAV_LEAVES,
+          path: '/leaves',
+          icon: CalendarOff,
+          employeeName: UI_LABELS.NAV_MY_LEAVES,
+          // Allowed for all roles
+        },
+        {
+          name: UI_LABELS.NAV_FIELD_WORK,
+          path: '/field-management',
+          icon: Navigation,
+          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
+        },
+      ],
     },
     {
-      name: 'Employees',
-      path: '/employees',
-      icon: Users,
-      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
+      group: UI_LABELS.GROUP_MONEY,
+      items: [
+        {
+          name: UI_LABELS.NAV_PAYROLL,
+          path: '/payroll',
+          icon: Banknote,
+          allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'EMPLOYEE', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
+          employeeName: UI_LABELS.NAV_MY_PAYSLIPS,
+        },
+        {
+          name: UI_LABELS.NAV_ADVANCES_LOANS,
+          path: '/advances',
+          icon: HandCoins,
+          allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'EMPLOYEE', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
+        },
+        {
+          name: UI_LABELS.NAV_CASHBOOK_EXPENSES,
+          path: '/cashbook',
+          icon: Wallet,
+          allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'SUPER_ADMIN'],
+        },
+      ],
     },
     {
-      name: 'Attendance',
-      path: '/attendance',
-      icon: CalendarCheck2,
-      employeeName: 'Attendance',
+      group: UI_LABELS.GROUP_REPORTS,
+      items: [
+        {
+          name: UI_LABELS.NAV_REPORTS,
+          path: '/reports',
+          icon: BarChart3,
+          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN'],
+        },
+      ],
     },
     {
-      name: 'Shifts & Roster',
-      path: '/shifts',
-      icon: Clock,
-      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN'],
-    },
-    {
-      name: 'Leave Management',
-      path: '/leaves',
-      icon: CalendarOff,
-      employeeName: 'My Leaves',
-    },
-    {
-      name: 'Payroll',
-      path: '/payroll',
-      icon: Banknote,
-      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'EMPLOYEE', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
-      employeeName: 'My Payslips',
-    },
-    {
-      name: 'Advances & Loans',
-      path: '/advances',
-      icon: HandCoins,
-      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'EMPLOYEE', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
-      employeeName: 'Advances & Loans',
-    },
-    {
-      name: 'Cashbook & Expenses',
-      path: '/cashbook',
-      icon: Wallet,
-      allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'SUPER_ADMIN'],
-    },
-    {
-      name: 'Field Management',
-      path: '/field-management',
-      icon: Navigation,
-      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
-    },
-    {
-      name: 'Reports',
-      path: '/reports',
-      icon: BarChart3,
-      allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN'],
-    },
-    {
-      name: 'Subscription',
-      path: '/subscription',
-      icon: CreditCard,
-      allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
-    },
-    {
-      name: 'Settings',
-      path: '/settings',
-      icon: Settings,
-      allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
+      group: UI_LABELS.GROUP_SETTINGS,
+      items: [
+        {
+          name: UI_LABELS.NAV_SUBSCRIPTION,
+          path: '/subscription',
+          icon: CreditCard,
+          allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
+        },
+        {
+          name: UI_LABELS.NAV_SETTINGS,
+          path: '/settings',
+          icon: Settings,
+          allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
+        },
+        {
+          name: UI_LABELS.NAV_SYSTEM_CHECK, // Replaces 'Diagnostics', shown ONLY to Business Owner & SuperAdmin
+          path: '/testing-panel',
+          icon: Terminal,
+          allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
+        },
+      ],
     },
   ];
 
-  const isEmployeeRole = activeRole === 'EMPLOYEE' || activeRole === 'FIELD_EMPLOYEE';
-
-  const visibleNavItems = allNavItems.filter((item) => {
+  // Helper to check if item is permitted for active role
+  const isItemVisible = (item) => {
     if (!item.allowedRoles && !item.allowedPermissions) return true;
     if (item.allowedRoles && item.allowedRoles.includes(activeRole)) return true;
     if (item.allowedPermissions && item.allowedPermissions.some((p) => hasPermission(p))) return true;
     return false;
-  });
+  };
+
+  // Filter sections and exclude empty headings
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(isItemVisible),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <aside
@@ -294,118 +328,115 @@ export const Sidebar = ({
         <div className="flex items-center gap-1.5 shrink-0">
           {!isCollapsed && (
             <div className="relative" ref={notifDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setShowNotifications(!showNotifications)}
-              className={`p-2 rounded-lg transition-colors cursor-pointer relative ${
-                showNotifications
-                  ? 'bg-zinc-800 text-white'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
-              }`}
-              title="Notifications"
-              aria-label="Open Notifications"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 bg-white text-zinc-950 text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
+              <button
+                type="button"
+                onClick={() => setShowNotifications(!showNotifications)}
+                className={`p-2 rounded-lg transition-colors cursor-pointer relative ${
+                  showNotifications
+                    ? 'bg-zinc-800 text-white'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                }`}
+                title="Notifications"
+                aria-label="Open Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 bg-white text-zinc-950 text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
 
-            {/* Notification Popover Dropdown (Aligned within mobile bounds) */}
-            {showNotifications && (
-              <div className="absolute -right-12 sm:right-0 top-full mt-2 w-[calc(85vw-2rem)] max-w-[300px] sm:max-w-none sm:w-84 bg-white text-zinc-900 rounded-xl shadow-2xl border border-zinc-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                {/* Popover Header */}
-                <div className="p-3 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
-                      Notifications
-                    </h3>
-                    {unreadCount > 0 ? (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white">
-                        {unreadCount} new
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 text-zinc-600">
-                        Caught up
-                      </span>
+              {/* Notification Popover Dropdown */}
+              {showNotifications && (
+                <div className="absolute -right-12 sm:right-0 top-full mt-2 w-[calc(85vw-2rem)] max-w-[300px] sm:max-w-none sm:w-84 bg-white text-zinc-900 rounded-xl shadow-2xl border border-zinc-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  <div className="p-3 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
+                        Notifications
+                      </h3>
+                      {unreadCount > 0 ? (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white">
+                          {unreadCount} new
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 text-zinc-600">
+                          Caught up
+                        </span>
+                      )}
+                    </div>
+
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllRead}
+                        className="text-[11px] font-semibold text-zinc-900 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <CheckCheck className="w-3.5 h-3.5" />
+                        <span>Mark all read</span>
+                      </button>
                     )}
                   </div>
 
-                  {unreadCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleMarkAllRead}
-                      className="text-[11px] font-semibold text-zinc-900 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <CheckCheck className="w-3.5 h-3.5" />
-                      <span>Mark all read</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Popover Content */}
-                <div className="max-h-[320px] overflow-y-auto divide-y divide-zinc-100">
-                  {notifications.length === 0 ? (
-                    <div className="p-6 text-center space-y-1.5">
-                      <div className="w-8 h-8 rounded-full bg-zinc-100 text-zinc-500 flex items-center justify-center mx-auto">
-                        <Bell className="w-4 h-4" />
+                  <div className="max-h-[320px] overflow-y-auto divide-y divide-zinc-100">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center space-y-1.5">
+                        <div className="w-8 h-8 rounded-full bg-zinc-100 text-zinc-500 flex items-center justify-center mx-auto">
+                          <Bell className="w-4 h-4" />
+                        </div>
+                        <p className="text-xs font-bold text-zinc-800">You&apos;re all caught up!</p>
+                        <p className="text-[11px] text-zinc-400">No new notifications in your queue.</p>
                       </div>
-                      <p className="text-xs font-bold text-zinc-800">You&apos;re all caught up!</p>
-                      <p className="text-[11px] text-zinc-400">No new notifications in your queue.</p>
-                    </div>
-                  ) : (
-                    notifications.slice(0, 15).map((n) => {
-                      const isUnread = !n.is_read;
-                      return (
-                        <div
-                          key={n.id}
-                          onClick={() => isUnread && handleMarkRead(n.id)}
-                          className={`p-3 flex items-start gap-2.5 transition-colors cursor-pointer ${
-                            isUnread ? 'bg-zinc-50 hover:bg-zinc-100/70' : 'hover:bg-zinc-50 bg-white'
-                          }`}
-                        >
+                    ) : (
+                      notifications.slice(0, 15).map((n) => {
+                        const isUnread = !n.is_read;
+                        return (
                           <div
-                            className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
-                              isUnread ? 'bg-zinc-200 text-zinc-900' : 'bg-zinc-100 text-zinc-400'
+                            key={n.id}
+                            onClick={() => isUnread && handleMarkRead(n.id)}
+                            className={`p-3 flex items-start gap-2.5 transition-colors cursor-pointer ${
+                              isUnread ? 'bg-zinc-50 hover:bg-zinc-100/70' : 'hover:bg-zinc-50 bg-white'
                             }`}
                           >
-                            {getNotifIcon(n.type)}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-1">
-                              <p className={`text-xs truncate ${isUnread ? 'font-bold text-zinc-950' : 'font-medium text-zinc-700'}`}>
-                                {n.title || 'System Notification'}
-                              </p>
-                              <span className="text-[10px] text-zinc-400 shrink-0 font-mono">
-                                {formatNotifTime(n.created_at)}
-                              </span>
+                            <div
+                              className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
+                                isUnread ? 'bg-zinc-200 text-zinc-900' : 'bg-zinc-100 text-zinc-400'
+                              }`}
+                            >
+                              {getNotifIcon(n.type)}
                             </div>
-                            <p className="text-[11px] text-zinc-600 line-clamp-2 mt-0.5 leading-relaxed">
-                              {n.message || n.body}
-                            </p>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <p className={`text-xs truncate ${isUnread ? 'font-bold text-zinc-950' : 'font-medium text-zinc-700'}`}>
+                                  {n.title || 'System Notification'}
+                                </p>
+                                <span className="text-[10px] text-zinc-400 shrink-0 font-mono">
+                                  {formatNotifTime(n.created_at)}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-zinc-600 line-clamp-2 mt-0.5 leading-relaxed">
+                                {n.message || n.body}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+                        );
+                      })
+                    )}
+                  </div>
 
-                {/* Popover Footer */}
-                <div className="p-2 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between text-[11px]">
-                  <span className="text-[10px] font-medium text-zinc-400">WorkPulse Hub</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowNotifications(false)}
-                    className="font-semibold text-zinc-700 hover:text-black px-2 py-0.5 rounded cursor-pointer"
-                  >
-                    Close
-                  </button>
+                  <div className="p-2 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between text-[11px]">
+                    <span className="text-[10px] font-medium text-zinc-400">WorkPulse Hub</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowNotifications(false)}
+                      className="font-semibold text-zinc-700 hover:text-black px-2 py-0.5 rounded cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
           )}
 
           {/* Mobile close button */}
@@ -492,52 +523,65 @@ export const Sidebar = ({
         )}
       </div>
 
-      {/* 3. Navigation Menu Items */}
-      <nav className={`flex-1 min-h-0 py-3 space-y-1 overflow-y-auto overscroll-contain ${isCollapsed ? 'px-2' : 'px-3'}`}>
-        {visibleNavItems.map((item) => {
-          const displayName = isEmployeeRole && item.employeeName ? item.employeeName : item.name;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === '/'}
-              onClick={onClose}
-              title={isCollapsed ? displayName : undefined}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
-                  isCollapsed ? 'lg:justify-center lg:px-2' : ''
-                } ${
-                  isActive
-                    ? 'bg-white text-zinc-950 font-bold shadow-xs'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
-                }`
-              }
-            >
-              <item.icon className="w-4 h-4 shrink-0" />
-              {!isCollapsed && <span className="truncate">{displayName}</span>}
-            </NavLink>
-          );
-        })}
-
-        <div className="pt-2 mt-2 border-t border-zinc-800/80">
+      {/* 3. Grouped Navigation Menu */}
+      <nav className={`flex-1 min-h-0 py-3 overflow-y-auto overscroll-contain space-y-4 ${isCollapsed ? 'px-2' : 'px-3'}`}>
+        {/* Top-level Dashboard link */}
+        <div className="space-y-1">
           <NavLink
-            to="/testing-panel"
+            to="/"
+            end
             onClick={onClose}
-            title={isCollapsed ? "Diagnostics" : undefined}
+            title={isCollapsed ? UI_LABELS.NAV_DASHBOARD : undefined}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
                 isCollapsed ? 'lg:justify-center lg:px-2' : ''
               } ${
                 isActive
-                  ? 'bg-zinc-800 text-white font-bold'
+                  ? 'bg-white text-zinc-950 font-bold shadow-xs'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`
             }
           >
-            <Terminal className="w-4 h-4 shrink-0" />
-            {!isCollapsed && <span className="truncate">Diagnostics</span>}
+            <LayoutDashboard className="w-4 h-4 shrink-0" />
+            {!isCollapsed && <span className="truncate">{UI_LABELS.NAV_DASHBOARD}</span>}
           </NavLink>
         </div>
+
+        {/* 5 Distinct Headings (Only non-empty rendered) */}
+        {visibleSections.map((section) => (
+          <div key={section.group} className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                {section.group}
+              </p>
+            )}
+            {isCollapsed && <div className="border-t border-zinc-800/60 my-2" />}
+
+            {section.items.map((item) => {
+              const displayName = isEmployeeRole && item.employeeName ? item.employeeName : item.name;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={onClose}
+                  title={isCollapsed ? displayName : undefined}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                      isCollapsed ? 'lg:justify-center lg:px-2' : ''
+                    } ${
+                      isActive
+                        ? 'bg-white text-zinc-950 font-bold shadow-xs'
+                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                    }`
+                  }
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  {!isCollapsed && <span className="truncate">{displayName}</span>}
+                </NavLink>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* 4. Bottom User Profile & Logout Bar */}

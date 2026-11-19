@@ -50,6 +50,8 @@ import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { Loader } from '../components/ui/Loader';
 import { formatINR, formatDate } from '../utils/formatters';
+import { HelpButton } from '../components/ui/HelpButton';
+import { UI_LABELS } from '../constants/labels';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -68,6 +70,7 @@ export const Payroll = () => {
 
   // Modals
   const [showProcessModal, setShowProcessModal] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
   const [disburseRun, setDisburseRun] = useState(null);
   const [viewPayslip, setViewPayslip] = useState(null);
   const [breakdownModalPayslip, setBreakdownModalPayslip] = useState(null);
@@ -423,6 +426,12 @@ export const Payroll = () => {
                 <span>Auditor Mode</span>
               </div>
             )}
+            <HelpButton
+              title="Payroll Guide"
+              whereAmI="Your monthly payroll processing and payslip center."
+              whatCanIDo="Run payroll in 5 simple steps, review salary calculations, and generate official employee payslips."
+              whatHappensNext="Once approved and paid, payslips become available immediately for employees to view."
+            />
           </div>
         </div>
 
@@ -1057,76 +1066,305 @@ export const Payroll = () => {
         </Card>
       )}
 
-      {/* MODAL 1: Process Monthly Payroll Modal */}
+      {/* MODAL 1: Process Monthly Payroll Modal (Step-by-Step Flow with Progress Bar) */}
       <Modal
         isOpen={showProcessModal}
-        onClose={() => setShowProcessModal(false)}
-        title="Initiate & Process Monthly Payroll"
+        onClose={() => {
+          setShowProcessModal(false);
+          setWizardStep(1);
+        }}
+        title="Process Monthly Payroll"
+        maxWidth="max-w-xl"
       >
-        <form onSubmit={handleInitiatePayroll} className="space-y-4 text-xs">
-          <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1">
-            <p className="font-bold text-zinc-950 flex items-center gap-1.5">
-              <Calculator className="w-4 h-4 text-zinc-700" />
-              Automated Rule-Driven Payroll Engine
-            </p>
-            <p className="text-[11px] text-zinc-600 leading-relaxed">
-              Initiating payroll scans active employee base salaries, aggregates monthly attendance punch logs, computes working days, and automatically applies company rules:
-              standard daily hours ({policy.standard_daily_hours}h), overtime multiplier ({policy.overtime_multiplier}x), shortfall deductions, and statutory PF/TDS math.
-            </p>
+        <div className="space-y-4 text-xs">
+          {/* Progress Bar (5 Steps) */}
+          <div className="space-y-2">
+            <div className="grid grid-cols-5 text-center text-[10px] sm:text-[11px] font-bold text-zinc-500">
+              <span className={wizardStep === 1 ? 'text-zinc-950 font-black' : ''}>1. Attendance</span>
+              <span className={wizardStep === 2 ? 'text-zinc-950 font-black' : ''}>2. Leaves</span>
+              <span className={wizardStep === 3 ? 'text-zinc-950 font-black' : ''}>3. Salary Formula</span>
+              <span className={wizardStep === 4 ? 'text-zinc-950 font-black' : ''}>4. Approve</span>
+              <span className={wizardStep === 5 ? 'text-zinc-950 font-black' : ''}>5. Pay</span>
+            </div>
+            <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-zinc-950 h-full rounded-full transition-all duration-300"
+                style={{ width: `${(wizardStep / 5) * 100}%` }}
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Select
-              label="Payroll Month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            >
-              {MONTH_NAMES.map((m, idx) => (
-                <option key={m} value={idx}>{m}</option>
-              ))}
-            </Select>
+          {/* Step 1: Check Attendance */}
+          {wizardStep === 1 && (
+            <div className="space-y-3.5 pt-1">
+              <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-1">
+                <p className="font-bold text-zinc-950 text-xs flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-zinc-900" />
+                  Step 1: Check Attendance
+                </p>
+                <p className="text-[11px] text-zinc-600">
+                  Select the billing month. The system will scan employee punch records, working days, and calculate total hours worked.
+                </p>
+              </div>
 
-            <Select
-              label="Payroll Year"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-            >
-              <option value={2025}>2025</option>
-              <option value={2026}>2026</option>
-              <option value={2027}>2027</option>
-            </Select>
-          </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  label="Payroll Month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                >
+                  {MONTH_NAMES.map((m, idx) => (
+                    <option key={m} value={idx}>{m}</option>
+                  ))}
+                </Select>
 
-          <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80">
-            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Target Cycle</p>
-            <p className="font-bold text-zinc-950 text-sm mt-0.5">
-              {MONTH_NAMES[selectedMonth]} {selectedYear} Monthly Payroll
-            </p>
-            <p className="text-[11px] text-zinc-500 mt-0.5">
-              Period: {selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}-01 to {selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}-{new Date(selectedYear, selectedMonth + 1, 0).getDate()} (30 days)
-            </p>
-          </div>
+                <Select
+                  label="Payroll Year"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                >
+                  <option value={2025}>2025</option>
+                  <option value={2026}>2026</option>
+                  <option value={2027}>2027</option>
+                </Select>
+              </div>
 
-          <div className="pt-3 border-t border-zinc-200 flex items-center justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowProcessModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              loading={processingPayroll}
-              leftIcon={Calculator}
-            >
-              Compute &amp; Generate Payroll
-            </Button>
-          </div>
-        </form>
+              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Payroll Cycle</p>
+                <p className="font-bold text-zinc-950 text-sm mt-0.5">
+                  {MONTH_NAMES[selectedMonth]} {selectedYear}
+                </p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">
+                  Full cycle: 30 days &bull; Standard shift: {policy.standard_daily_hours} hrs/day
+                </p>
+              </div>
+
+              <div className="p-3 bg-zinc-100/70 rounded-xl text-[11px] text-zinc-600">
+                <strong>What happens next:</strong> In Step 2, we will check leaves taken and any advance loans to recover.
+              </div>
+
+              <div className="pt-3 border-t border-zinc-200 flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowProcessModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  rightIcon={ArrowRight}
+                  onClick={() => setWizardStep(2)}
+                >
+                  Next: Check Leaves & Advances
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Check Leaves & Advances */}
+          {wizardStep === 2 && (
+            <div className="space-y-3.5 pt-1">
+              <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-1">
+                <p className="font-bold text-zinc-950 text-xs flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-zinc-800" />
+                  Step 2: Check Leaves & Advances
+                </p>
+                <p className="text-[11px] text-zinc-600">
+                  Verify approved paid and unpaid leaves for this period, along with any active salary advance deductions.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase block">Approved Leaves</span>
+                  <p className="font-bold text-zinc-950 text-sm mt-0.5">Casual & Sick Leaves Checked</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Paid leaves do not cut salary</p>
+                </div>
+                <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase block">Advance Deductions</span>
+                  <p className="font-bold text-zinc-950 text-sm mt-0.5">Monthly Loan Recoveries</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Auto-deducted from net pay</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-zinc-100/70 rounded-xl text-[11px] text-zinc-600">
+                <strong>What happens next:</strong> In Step 3, we calculate each worker's take-home pay using our standard formula.
+              </div>
+
+              <div className="pt-3 border-t border-zinc-200 flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setWizardStep(1)}
+                >
+                  &larr; Back
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  rightIcon={ArrowRight}
+                  onClick={() => setWizardStep(3)}
+                >
+                  Next: Review Salary Calculation
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Review Salary (The Clear Formula) */}
+          {wizardStep === 3 && (
+            <div className="space-y-3.5 pt-1">
+              <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-1">
+                <p className="font-bold text-zinc-950 text-xs flex items-center gap-1.5">
+                  <Calculator className="w-4 h-4 text-zinc-800" />
+                  Step 3: Review Salary Calculation Formula
+                </p>
+                <p className="text-[11px] text-zinc-600">
+                  Every employee's take-home pay is calculated transparently using this exact formula:
+                </p>
+              </div>
+
+              {/* Prominent Formula Card */}
+              <div className="p-4 bg-zinc-950 text-white rounded-xl shadow-xs border border-zinc-800 text-center space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  Standard Calculation Formula
+                </span>
+                <p className="text-base sm:text-lg font-black tracking-tight text-white">
+                  Basic + Allowances − Deductions = Take-Home
+                </p>
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-800 text-[11px] text-zinc-300">
+                  <div>
+                    <span className="text-zinc-400 block font-bold">1. Basic</span>
+                    Base Monthly CTC
+                  </div>
+                  <div>
+                    <span className="text-zinc-400 block font-bold">2. + Allowances</span>
+                    HRA + Overtime Pay
+                  </div>
+                  <div>
+                    <span className="text-zinc-400 block font-bold">3. − Deductions</span>
+                    PF + Tax + Advances
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-zinc-100/70 rounded-xl text-[11px] text-zinc-600">
+                <strong>What happens next:</strong> In Step 4, we generate the payroll batch and lock it for approval.
+              </div>
+
+              <div className="pt-3 border-t border-zinc-200 flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setWizardStep(2)}
+                >
+                  &larr; Back
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  rightIcon={ArrowRight}
+                  onClick={() => setWizardStep(4)}
+                >
+                  Next: Approve Payroll
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Approve & Lock */}
+          {wizardStep === 4 && (
+            <div className="space-y-3.5 pt-1">
+              <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-1">
+                <p className="font-bold text-zinc-950 text-xs flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-emerald-600" />
+                  Step 4: Approve & Lock Payroll
+                </p>
+                <p className="text-[11px] text-zinc-600">
+                  Ready to calculate and lock payroll for <strong>{MONTH_NAMES[selectedMonth]} {selectedYear}</strong>?
+                  Official employee payslips will be generated.
+                </p>
+              </div>
+
+              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 space-y-1 text-[11px]">
+                <p className="font-bold text-zinc-950">Confirmation Checklist:</p>
+                <p className="text-zinc-600">&bull; Attendance punch records evaluated</p>
+                <p className="text-zinc-600">&bull; Paid leaves & unpaid deductions confirmed</p>
+                <p className="text-zinc-600">&bull; Statutory PF (12%) & Tax deductions applied</p>
+              </div>
+
+              <div className="pt-3 border-t border-zinc-200 flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setWizardStep(3)}
+                >
+                  &larr; Back
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  loading={processingPayroll}
+                  leftIcon={CheckCircle2}
+                  onClick={async (e) => {
+                    await handleInitiatePayroll(e);
+                    setWizardStep(5);
+                  }}
+                >
+                  {processingPayroll ? 'Computing...' : 'Approve & Lock Payroll'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Pay & Disburse */}
+          {wizardStep === 5 && (
+            <div className="space-y-3.5 pt-1 text-center">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-zinc-950">
+                  Step 5: Payroll Approved & Ready to Pay!
+                </h4>
+                <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                  Salaries for {MONTH_NAMES[selectedMonth]} {selectedYear} have been computed and payslips generated.
+                </p>
+              </div>
+
+              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 text-left text-xs space-y-1">
+                <p className="font-bold text-zinc-950">Next Action:</p>
+                <p className="text-[11px] text-zinc-600">
+                  You can now disburse payments via NEFT bank transfer, UPI, or cash directly from the Payroll table below.
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-zinc-200 flex items-center justify-center gap-2">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    setShowProcessModal(false);
+                    setWizardStep(1);
+                  }}
+                >
+                  Done (View Payroll Runs)
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </Modal>
 
       {/* MODAL 2: Disburse Payroll Modal */}

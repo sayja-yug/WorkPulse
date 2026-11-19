@@ -3,6 +3,7 @@ import api from '../api/client';
 import { BarChart3, Download, Calendar, TrendingUp, Layers, FileSpreadsheet, ShieldCheck } from 'lucide-react';
 import { formatINR } from '../utils/formatters';
 import { Loader } from '../components/ui/Loader';
+import { HelpButton } from '../components/ui/HelpButton';
 
 export const Reports = () => {
   const [report, setReport] = useState(null);
@@ -37,21 +38,27 @@ export const Reports = () => {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => alert('Exporting complete Excel workforce & payroll register...')}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-zinc-50   border border-zinc-300  text-zinc-800  rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-zinc-50 border border-zinc-300 text-zinc-800 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-zinc-700 " />
+            <FileSpreadsheet className="w-4 h-4 text-zinc-700" />
             <span>Export Excel</span>
           </button>
           <button
             onClick={() => alert('Generating compliance audit PDF summary...')}
-            className="flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950 hover:bg-black text-white    rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Export PDF</span>
           </button>
+          <HelpButton
+            title="Reports Guide"
+            whereAmI="Your executive reports and data exports hub."
+            whatCanIDo="Inspect attendance statistics, branch headcount, and download Excel/PDF reports."
+            whatHappensNext="Downloaded files reflect verified, real-time data from your database."
+          />
         </div>
       </div>
 

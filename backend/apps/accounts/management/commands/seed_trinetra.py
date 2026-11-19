@@ -210,6 +210,12 @@ class Command(BaseCommand):
             )
             created_employees.append(emp)
 
+        # Wire direct reports to Team Supervisor (Suresh Nair) in Trinetra Western Hub
+        sup_emp = next((e for e in created_employees if e.email == 'supervisor@trinetra.com'), None)
+        if sup_emp:
+            for rep_email in ['manoj.tiwari@trinetra.com', 'divya.srivastava@trinetra.com', 'alok.gupta@trinetra.com', 'priya.deshmukh@trinetra.com']:
+                Employee.objects.filter(business=business, email=rep_email).update(reporting_manager=sup_emp)
+
         # 5. Additional Realistic Employees for Trinetra (Total 20+ workforce)
         additional_team = [
             ('Rohan', 'Mehta', br_hq, dept_eng, desig_sr, '48000.00'),
@@ -270,6 +276,12 @@ class Command(BaseCommand):
                 }
             )
             created_employees.append(emp)
+
+        # Wire direct reports to Team Supervisor (Suresh Nair) in Trinetra Western Hub
+        sup_emp = next((e for e in created_employees if e.email == 'supervisor@trinetra.com'), None)
+        if sup_emp:
+            for rep_email in ['manoj.tiwari@trinetra.com', 'divya.srivastava@trinetra.com', 'alok.gupta@trinetra.com', 'priya.deshmukh@trinetra.com']:
+                Employee.objects.filter(business=business, email=rep_email).update(reporting_manager=sup_emp)
 
         # 6. Seed Shifts & Shift Assignments
         self.stdout.write(self.style.NOTICE('Seeding Trinetra shifts and rosters...'))

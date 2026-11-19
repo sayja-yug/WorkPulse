@@ -29,6 +29,7 @@ import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import { formatDate, formatTime } from '../utils/formatters';
 import { calculateWorkHoursSummary } from '../utils/workHours';
+import { HelpButton } from '../components/ui/HelpButton';
 
 export const Attendance = () => {
   const { isEmployee, isFieldEmployee, isSelfAttendanceOnly, isBranchManagerStrict } = usePermissions();
@@ -239,15 +240,22 @@ export const Attendance = () => {
         <div>
           <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
             <CalendarCheck2 className="w-5 h-5 text-zinc-900" />
-            <span>{isSelfAttendanceOnly ? 'My Punch In / Punch Out' : 'Attendance & Punch Sheet'}</span>
+            <span>{isSelfAttendanceOnly ? 'My Work Hours' : 'Attendance Sheet'}</span>
           </h2>
           <p className="text-xs text-zinc-500 mt-0.5">
             {isSelfAttendanceOnly
-              ? 'Record your personal daily punch in / out and track your cumulative work hours'
-              : 'Live workforce punch-in (PI) & punch-out (PO) sheet with branch filtering'}
+              ? 'Start and end your daily work session and track your accumulated hours'
+              : 'Live workforce daily attendance and working hours records'}
           </p>
         </div>
 
+        <div className="flex items-center gap-2.5">
+          <HelpButton
+            title="Attendance Guide"
+            whereAmI="Your daily attendance & work hours tracker."
+            whatCanIDo="Click Start Work at the beginning of your shift, and End Work when you finish. Review daily and monthly working hours."
+            whatHappensNext="Recorded hours calculate automatically and flow straight into monthly payroll."
+          />
         {!isSelfAttendanceOnly && (
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Branch Filter Selector */}
@@ -303,6 +311,7 @@ export const Attendance = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* 2. Active Branch Filter Banner (When navigating from Organization or dropdown) */}
@@ -401,7 +410,7 @@ export const Attendance = () => {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-zinc-900">
-                {isCheckedIn ? 'You are Punched In' : 'My Shift Punch'}
+                {isCheckedIn ? 'You are currently working' : 'Work Status'}
               </span>
               <span className="text-[11px] font-mono text-zinc-400">{formatDate(todayStr)}</span>
             </div>
@@ -412,7 +421,7 @@ export const Attendance = () => {
           </div>
         </div>
 
-        {/* PI / PO Single-Action Toggle */}
+        {/* Start Work / End Work Single-Action Toggle */}
         <div className="flex items-center gap-2.5 w-full sm:w-auto">
           {!isCheckedIn ? (
             <Button
@@ -423,7 +432,7 @@ export const Attendance = () => {
               onClick={handleSelfPunchIn}
               className="w-full sm:w-auto"
             >
-              {punching ? 'Punching In...' : 'Punch In (PI)'}
+              {punching ? 'Starting...' : 'Start Work'}
             </Button>
           ) : (
             <Button
@@ -434,7 +443,7 @@ export const Attendance = () => {
               onClick={handleSelfPunchOut}
               className="w-full sm:w-auto"
             >
-              {punching ? 'Punching Out...' : 'Punch Out (PO)'}
+              {punching ? 'Ending...' : 'End Work'}
             </Button>
           )}
         </div>
@@ -446,10 +455,10 @@ export const Attendance = () => {
           <div>
             <CardTitle>
               {!isSelfAttendanceOnly && activeTab === 'today'
-                ? `Today's Punch Sheet (${formatDate(todayStr)})`
+                ? `Today's Attendance Sheet (${formatDate(todayStr)})`
                 : isSelfAttendanceOnly
-                ? 'My Personal Punch In / Punch Out Logs'
-                : 'Punch In / Punch Out Logs'}
+                ? 'My Daily Attendance Logs'
+                : 'Workforce Attendance Logs'}
             </CardTitle>
             <CardDescription>
               {isSelfAttendanceOnly
@@ -572,10 +581,10 @@ export const Attendance = () => {
                   <th className="py-3 px-4">Date</th>
                   {!isSelfAttendanceOnly && <th className="py-3 px-4">Employee &amp; Punch Logs</th>}
                   {isSelfAttendanceOnly && <th className="py-3 px-4">Punch Logs</th>}
-                  <th className="py-3 px-4">Punch In</th>
-                  <th className="py-3 px-4">Punch Out</th>
+                  <th className="py-3 px-4">Start Work</th>
+                  <th className="py-3 px-4">End Work</th>
                   <th className="py-3 px-4">Working Hours</th>
-                  {!isSelfAttendanceOnly && <th className="py-3 px-4 text-right">Punch Action</th>}
+                  {!isSelfAttendanceOnly && <th className="py-3 px-4 text-right">Action</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
@@ -611,7 +620,7 @@ export const Attendance = () => {
                               disabled={!!punchingId}
                               onClick={() => handleEmployeePunch(r.employee, 'IN')}
                             >
-                              PI
+                              Start
                             </Button>
                           ) : (
                             <Button
@@ -620,7 +629,7 @@ export const Attendance = () => {
                               disabled={!!punchingId}
                               onClick={() => handleEmployeePunch(r.employee, 'OUT')}
                             >
-                              PO
+                              End
                             </Button>
                           )}
                         </div>

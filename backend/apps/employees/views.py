@@ -36,10 +36,18 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         user = self.request.user
         business = getattr(self.request, 'business', None)
 
-        # Enforce strict branch isolation for Branch Managers
+        # Enforce strict branch isolation for Branch Managers and team isolation for Supervisors
         if business and not user.is_superuser:
             from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(user, business):
+            from django.db.models import Q
+            user_roles = PermissionService.get_user_roles(user, business)
+            if 'SUPERVISOR' in user_roles and not any(r in ['BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN'] for r in user_roles):
+                sup_emp = Employee.objects.filter(user=user, business=business).first()
+                if sup_emp:
+                    qs = qs.filter(Q(reporting_manager=sup_emp) | Q(id=sup_emp.id))
+                else:
+                    qs = qs.none()
+            elif PermissionService.is_branch_scoped(user, business):
                 branch_ids = PermissionService.get_accessible_branch_ids(user, business)
                 qs = qs.filter(branch_id__in=branch_ids)
 

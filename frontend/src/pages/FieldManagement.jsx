@@ -4,6 +4,7 @@ import { MapPin, Navigation, Users, Clock } from 'lucide-react';
 import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
 import { formatDate, formatTime } from '../utils/formatters';
+import { HelpButton } from '../components/ui/HelpButton';
 
 export const FieldManagement = () => {
   const [fieldEmployees, setFieldEmployees] = useState([]);
@@ -37,14 +38,23 @@ export const FieldManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
-          <Navigation className="w-5 h-5 text-zinc-900" />
-          <span>Field Management &amp; GPS Operations</span>
-        </h2>
-        <p className="text-xs text-zinc-500 mt-0.5">
-          Monitor field staff, mobile GPS check-ins, and site visit logs
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
+            <Navigation className="w-5 h-5 text-zinc-900" />
+            <span>Field Work &amp; Site Tracking</span>
+          </h2>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Monitor on-site workforce, mobile GPS check-ins, and verified location logs
+          </p>
+        </div>
+
+        <HelpButton
+          title="Field Work Guide"
+          whereAmI="Your mobile GPS and field visit tracking center."
+          whatCanIDo="Review field employees on duty, check GPS coordinates, and see real-time on-site punch locations."
+          whatHappensNext="Verified field visits update duty hours directly and prevent fraudulent off-site attendance."
+        />
       </div>
 
       {/* Summary KPIs */}

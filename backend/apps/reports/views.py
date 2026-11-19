@@ -40,18 +40,30 @@ class BusinessOverviewView(views.APIView):
 
         today = timezone.now().date()
 
-        # Check for branch-scoped manager
+        # Check for branch-scoped manager or supervisor team scope
         is_branch_scoped = False
         branch_ids = []
+        is_supervisor = False
+        team_emp_ids = []
+
         if request.user and not request.user.is_superuser:
             from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(request.user, business):
+            user_roles = PermissionService.get_user_roles(request.user, business) if business else []
+            if 'SUPERVISOR' in user_roles and not any(r in ['BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN'] for r in user_roles):
+                is_supervisor = True
+                sup_emp = Employee.objects.filter(user=request.user, business=business).first()
+                if sup_emp:
+                    direct_report_ids = list(Employee.objects.filter(reporting_manager=sup_emp).values_list('id', flat=True))
+                    team_emp_ids = [sup_emp.id] + direct_report_ids
+            elif PermissionService.is_branch_scoped(request.user, business):
                 is_branch_scoped = True
                 branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
 
         # Employee counts
         emp_base = Employee.objects.filter(business=business)
-        if is_branch_scoped:
+        if is_supervisor:
+            emp_base = emp_base.filter(id__in=team_emp_ids)
+        elif is_branch_scoped:
             emp_base = emp_base.filter(branch_id__in=branch_ids)
 
         total_employees = emp_base.count()
@@ -59,14 +71,18 @@ class BusinessOverviewView(views.APIView):
 
         # Today's attendance
         today_att = AttendanceRecord.objects.filter(business=business, date=today)
-        if is_branch_scoped:
+        if is_supervisor:
+            today_att = today_att.filter(employee_id__in=team_emp_ids)
+        elif is_branch_scoped:
             today_att = today_att.filter(employee__branch_id__in=branch_ids)
 
-        present_count = today_att.filter(status=AttendanceRecord.Status.PRESENT).count()
-        absent_count = today_att.filter(status=AttendanceRecord.Status.ABSENT).count()
         half_day_count = today_att.filter(status=AttendanceRecord.Status.HALF_DAY).count()
+        present_count = today_att.filter(status=AttendanceRecord.Status.PRESENT).count() + half_day_count
+        explicit_absent = today_att.filter(status=AttendanceRecord.Status.ABSENT).count()
         leave_count = today_att.filter(status__in=[AttendanceRecord.Status.PAID_LEAVE, AttendanceRecord.Status.UNPAID_LEAVE]).count()
         late_count = today_att.filter(is_late=True).count()
+        # In consistent HRMS logic, active employees not yet clocked in and not on leave count as absent for today
+        absent_count = max(explicit_absent, max(0, active_employees - present_count - leave_count))
 
         # Employment type breakdown
         emp_types_qs = emp_base.filter(status=Employee.Status.ACTIVE).values('employment_type').annotate(count=Count('id'))
@@ -129,26 +145,44 @@ class BusinessOverviewView(views.APIView):
 
         # Pending approvals
         pending_leaves_base = LeaveRequest.objects.filter(business=business, status=LeaveRequest.Status.PENDING)
-        if is_branch_scoped:
+        if is_supervisor:
+            pending_leaves_base = pending_leaves_base.filter(employee_id__in=team_emp_ids)
+        elif is_branch_scoped:
             pending_leaves_base = pending_leaves_base.filter(employee__branch_id__in=branch_ids)
         pending_leaves = pending_leaves_base.count()
 
-        # Financial overview (Current Month)
-        cur_month_start = today.replace(day=1)
-        latest_payroll = PayrollRun.objects.filter(business=business).order_by('-period_start').first()
-        monthly_payroll_total = str(latest_payroll.total_net) if latest_payroll else '0.00'
+        # Financial overview (restricted strictly to Business Owner, Accountant, Super Admin)
+        user_roles = PermissionService.get_user_roles(request.user, business) if business else []
+        can_view_finance = (
+            request.user.is_superuser or
+            any(r in ['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN'] for r in user_roles)
+        )
 
-        monthly_expenses = Expense.objects.filter(
-            business=business,
-            date__gte=cur_month_start
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        financials = None
+        if can_view_finance:
+            cur_month_start = today.replace(day=1)
+            latest_payroll = PayrollRun.objects.filter(business=business).order_by('-period_start').first()
+            monthly_payroll_total = str(latest_payroll.total_net) if latest_payroll else '0.00'
 
-        cash_balance = CashbookService.get_current_balance(business)
+            monthly_expenses = Expense.objects.filter(
+                business=business,
+                date__gte=cur_month_start
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
-        from apps.advances.models import Advance
-        pending_advances_qs = Advance.objects.filter(business=business, status=Advance.Status.PENDING)
-        pending_advances_count = pending_advances_qs.count()
-        pending_advances_amount = pending_advances_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            cash_balance = CashbookService.get_current_balance(business)
+
+            from apps.advances.models import Advance
+            pending_advances_qs = Advance.objects.filter(business=business, status=Advance.Status.PENDING)
+            pending_advances_count = pending_advances_qs.count()
+            pending_advances_amount = pending_advances_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+            financials = {
+                'monthly_payroll_total': monthly_payroll_total,
+                'monthly_expenses_total': str(monthly_expenses),
+                'cash_balance': str(cash_balance),
+                'pending_advances_count': pending_advances_count,
+                'pending_advances_amount': str(pending_advances_amount)
+            }
 
         return Response({
             'success': True,
@@ -171,13 +205,7 @@ class BusinessOverviewView(views.APIView):
                 'recent_activity': recent_activity[:6],
                 'pending_leaves_count': pending_leaves,
                 'pending_advances_count': pending_advances_count,
-                'financials': {
-                    'monthly_payroll_total': monthly_payroll_total,
-                    'monthly_expenses_total': str(monthly_expenses),
-                    'cash_balance': str(cash_balance),
-                    'pending_advances_count': pending_advances_count,
-                    'pending_advances_amount': str(pending_advances_amount)
-                }
+                'financials': financials
             }
         })
 

@@ -15,6 +15,7 @@ import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import { formatDate } from '../utils/formatters';
+import { HelpButton } from '../components/ui/HelpButton';
 
 export const Leaves = () => {
   const { isEmployee, canApproveLeaves } = usePermissions();
@@ -110,16 +111,25 @@ export const Leaves = () => {
           </p>
         </div>
 
-        {/* Apply Leave Button (Only available for employees; Owners & HR are approvers) */}
-        {isEmployee && (
-          <button
-            onClick={() => setShowApplyModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Apply for Leave</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Apply Leave Button (Only available for employees; Owners & HR are approvers) */}
+          {isEmployee && (
+            <button
+              onClick={() => setShowApplyModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Apply for Leave</span>
+            </button>
+          )}
+
+          <HelpButton
+            title="Leave Guide"
+            whereAmI="Your leave requests and annual time-off balances."
+            whatCanIDo="Apply for paid or casual leave, review pending applications, and track manager approval status."
+            whatHappensNext="Approved leave excuses your absence on attendance records without cutting your salary."
+          />
+        </div>
       </div>
 
       {/* Leave Balances Strip */}
@@ -215,8 +225,24 @@ export const Leaves = () => {
         {loading ? (
           <Loader message="Loading leave applications..." />
         ) : leaves.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs">
-            No leave applications on record.
+          <div className="p-12 text-center text-zinc-500 text-xs space-y-2">
+            <CalendarOff className="w-8 h-8 text-zinc-300 mx-auto" />
+            <p className="font-bold text-zinc-800 text-sm">No leave requests found.</p>
+            <p className="text-zinc-500 text-xs">
+              {isEmployee
+                ? 'Click "Apply for Leave" above to request time off.'
+                : 'There are currently no workforce leave applications in the queue.'}
+            </p>
+            {isEmployee && (
+              <button
+                type="button"
+                onClick={() => setShowApplyModal(true)}
+                className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-zinc-900 text-white rounded-lg text-xs font-bold hover:bg-black transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Apply for Leave</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

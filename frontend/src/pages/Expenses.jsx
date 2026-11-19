@@ -16,6 +16,7 @@ import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import { formatINR, formatDate } from '../utils/formatters';
+import { HelpButton } from '../components/ui/HelpButton';
 
 export const Expenses = () => {
   const { canManageExpenses, isAuditor } = usePermissions();
@@ -99,23 +100,32 @@ export const Expenses = () => {
           </p>
         </div>
 
-        {/* Record Transaction Button: Only visible to Accountants & Owners */}
-        {canManageExpenses && (
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white    rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Record Cash Entry</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Record Transaction Button: Only visible to Accountants & Owners */}
+          {canManageExpenses && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Record Cash Entry</span>
+            </button>
+          )}
 
-        {isAuditor && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100  border border-zinc-300  text-zinc-800  rounded-lg text-xs font-semibold">
-            <Shield className="w-4 h-4 text-zinc-700 " />
-            <span>Auditor Compliance (Read-Only)</span>
-          </div>
-        )}
+          {isAuditor && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 border border-zinc-300 text-zinc-800 rounded-lg text-xs font-semibold">
+              <Shield className="w-4 h-4 text-zinc-700" />
+              <span>Auditor Compliance (Read-Only)</span>
+            </div>
+          )}
+
+          <HelpButton
+            title="Cashbook & Expenses"
+            whereAmI="Your petty cash and daily business expense register."
+            whatCanIDo="Record cash in and cash out vouchers, monitor the live register balance, and view full transaction history."
+            whatHappensNext="Every entry immediately updates the liquid cashbook balance and links to corporate reports."
+          />
+        </div>
       </div>
 
       {/* Cash Summary Cards */}
@@ -166,8 +176,20 @@ export const Expenses = () => {
         {loading ? (
           <Loader message="Loading cashbook transactions..." />
         ) : transactions.length === 0 ? (
-          <div className="p-12 text-center text-zinc-500  text-xs">
-            No entries recorded in cashbook for this period.
+          <div className="p-12 text-center text-zinc-500 text-xs space-y-2">
+            <Wallet className="w-8 h-8 text-zinc-300 mx-auto" />
+            <p className="font-bold text-zinc-800 text-sm">No cashbook entries recorded yet.</p>
+            <p className="text-zinc-500 text-xs">Click &quot;Record Cash Entry&quot; to log your first income or expense voucher.</p>
+            {canManageExpenses && (
+              <button
+                type="button"
+                onClick={() => setShowModal(true)}
+                className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-zinc-900 text-white rounded-lg text-xs font-bold hover:bg-black transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Record Cash Entry</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

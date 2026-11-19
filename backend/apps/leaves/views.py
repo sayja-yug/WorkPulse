@@ -50,13 +50,20 @@ class LeaveRequestViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
         if not user.is_superuser:
             from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(user, business):
+            roles = PermissionService.get_user_roles(user, business) if business else []
+            if 'SUPERVISOR' in roles and not any(r in ['BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN'] for r in roles):
+                from apps.employees.models import Employee
+                sup_emp = Employee.objects.filter(user=user, business=business).first()
+                if sup_emp:
+                    team_ids = [sup_emp.id] + list(Employee.objects.filter(reporting_manager=sup_emp).values_list('id', flat=True))
+                    qs = qs.filter(employee_id__in=team_ids)
+                else:
+                    qs = qs.none()
+            elif PermissionService.is_branch_scoped(user, business):
                 branch_ids = PermissionService.get_accessible_branch_ids(user, business)
                 qs = qs.filter(employee__branch_id__in=branch_ids)
             else:
-                is_admin_or_owner = user.user_roles.filter(
-                    role__code__in=['BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN']
-                ).exists()
+                is_admin_or_owner = any(r in ['BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN'] for r in roles)
                 if not is_admin_or_owner:
                     qs = qs.filter(employee__user=user)
 

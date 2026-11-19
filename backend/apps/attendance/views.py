@@ -86,11 +86,17 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         if not user.is_superuser:
             from apps.accounts.services import PermissionService
             roles = PermissionService.get_user_roles(user, business) if business else []
-            manager_roles = {'BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'AUDITOR', 'SUPER_ADMIN'}
-            if PermissionService.is_branch_scoped(user, business):
+            if 'SUPERVISOR' in roles and not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN'} for r in roles):
+                sup_emp = Employee.objects.filter(user=user, business=business).first()
+                if sup_emp:
+                    team_ids = [sup_emp.id] + list(Employee.objects.filter(reporting_manager=sup_emp).values_list('id', flat=True))
+                    qs = qs.filter(employee_id__in=team_ids)
+                else:
+                    qs = qs.none()
+            elif PermissionService.is_branch_scoped(user, business):
                 branch_ids = PermissionService.get_accessible_branch_ids(user, business)
                 qs = qs.filter(employee__branch_id__in=branch_ids)
-            elif not any(r in manager_roles for r in roles) and not self.request.query_params.get('employee'):
+            elif not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'AUDITOR', 'SUPER_ADMIN'} for r in roles) and not self.request.query_params.get('employee'):
                 qs = qs.filter(employee__user=user)
         return qs.order_by('-date', '-check_in')
 

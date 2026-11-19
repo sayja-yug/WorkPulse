@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { formatDate } from '../utils/formatters';
 import { PageHeader } from '../components/layout/PageHeader';
+import { HelpButton } from '../components/ui/HelpButton';
 import {
   Card,
   CardHeader,
@@ -296,19 +297,27 @@ export const Shifts = () => {
     <div className="space-y-6">
       {/* Global Standard Page Header */}
       <PageHeader
-        title="Shifts & Rostering"
-        description="Configure work schedules, night shifts, late-grace periods, and department roster assignments"
+        title="Work Schedule"
+        description="Configure work hours, day and night shifts, late-arrival grace periods, and team shift assignments"
         actions={
-          canManageShifts ? (
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={Plus}
-              onClick={() => setShowCreateModal(true)}
-            >
-              Create New Shift
-            </Button>
-          ) : null
+          <div className="flex items-center gap-2">
+            {canManageShifts && (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={Plus}
+                onClick={() => setShowCreateModal(true)}
+              >
+                Create New Shift
+              </Button>
+            )}
+            <HelpButton
+              title="Work Schedule Guide"
+              whereAmI="Your company shift schedule and work hour definitions."
+              whatCanIDo="Create shifts with specific start/end times, set late-check-in grace periods, and assign staff members to shifts."
+              whatHappensNext="Assigned shifts track whether employee clock-ins are on time and calculate overtime hours automatically."
+            />
+          </div>
         }
       />
 

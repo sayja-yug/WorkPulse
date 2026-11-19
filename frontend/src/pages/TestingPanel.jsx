@@ -50,10 +50,10 @@ export const TestingPanel = () => {
         <div>
           <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
             <Terminal className="w-5 h-5 text-zinc-900" />
-            <span>Developer &amp; Testing Diagnostics Panel</span>
+            <span>System Check</span>
           </h2>
           <p className="text-xs text-zinc-500 mt-0.5">
-            Real-time environment metrics, live PostgreSQL telemetry, and active session permissions
+            System health status, database connection, and security session verification
           </p>
         </div>
 

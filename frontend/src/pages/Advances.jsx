@@ -19,6 +19,7 @@ import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import { formatINR, formatDate } from '../utils/formatters';
+import { HelpButton } from '../components/ui/HelpButton';
 
 export const Advances = () => {
   const { isEmployee, canApproveAdvances } = usePermissions();
@@ -177,14 +178,23 @@ export const Advances = () => {
           </p>
         </div>
 
-        {/* Action Button: Role-Aware */}
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold shadow-xs transition-colors text-white bg-zinc-950 hover:bg-black cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{isEmployee ? 'Request Advance' : 'Issue Advance to Employee'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Action Button: Role-Aware */}
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold shadow-xs transition-colors text-white bg-zinc-950 hover:bg-black cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{isEmployee ? 'Request Advance' : 'Issue Advance to Employee'}</span>
+          </button>
+
+          <HelpButton
+            title="Advances Guide"
+            whereAmI="Your salary advances and loan tracking register."
+            whatCanIDo="Request a salary advance, approve employee requests, and disburse approved funds."
+            whatHappensNext="Disbursed advances are scheduled for automatic recovery during monthly payroll."
+          />
+        </div>
       </div>
 
       {/* KPI Cards (for Owners & Managers) */}

@@ -90,6 +90,17 @@
   scrollbar-width: none;
 }
 
+/* Mobile readability and touch target enhancement for field workforce */
+@media (max-width: 640px) {
+  button, input, select {
+    min-height: 2.5rem;
+  }
+  .text-xs {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+  }
+}
+
 /* Enterprise sleek monochrome scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

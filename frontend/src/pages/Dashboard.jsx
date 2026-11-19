@@ -20,6 +20,9 @@ import {
   Plus,
   Activity,
   ArrowUpRight,
+  ShieldCheck,
+  MapPin,
+  Sparkles,
 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { formatINR, formatTime } from '../utils/formatters';
@@ -27,6 +30,10 @@ import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
 import { calculateWorkHoursSummary, parseCheckInDate } from '../utils/workHours';
 import { calculateEmployeeInactivity } from '../utils/employeeInactivity';
+import { UI_LABELS } from '../constants/labels';
+import { NumberTooltip } from '../components/ui/NumberTooltip';
+import { HelpButton } from '../components/ui/HelpButton';
+import { GettingStartedChecklist } from '../components/dashboard/GettingStartedChecklist';
 
 export const Dashboard = () => {
   const { user, business, activeRole } = useAuth();
@@ -45,6 +52,10 @@ export const Dashboard = () => {
   } = usePermissions();
   const { toast } = useNotification();
 
+  const isSupervisor = activeRole === 'SUPERVISOR';
+  const isBranchManager = activeRole === 'BRANCH_MANAGER';
+  const isBusinessOwner = isOwner || activeRole === 'BUSINESS_OWNER';
+
   const [stats, setStats] = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -53,6 +64,7 @@ export const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [punchingAction, setPunchingAction] = useState(false);
   const [inactiveEmployees, setInactiveEmployees] = useState([]);
+  const [latestPayslip, setLatestPayslip] = useState(null);
 
   // Live timer tick every 10 seconds for real-time employee working hours
   useEffect(() => {
@@ -77,6 +89,19 @@ export const Dashboard = () => {
     }
   };
 
+  const fetchLatestPayslip = async () => {
+    if (!isEmployee) return;
+    try {
+      const res = await api.get('/payroll/payslips/');
+      const slips = res.data?.data || res.data?.results || res.data || [];
+      if (Array.isArray(slips) && slips.length > 0) {
+        setLatestPayslip(slips[0]);
+      }
+    } catch {
+      // silent
+    }
+  };
+
   const handleDashboardPunchIn = async () => {
     try {
       setPunchingAction(true);
@@ -89,9 +114,9 @@ export const Dashboard = () => {
         setTodayRecord(res.data.data);
       }
       await fetchAttendanceRecord();
-      toast.success('Punched in successfully! Have a productive day.');
+      toast.success('Started work successfully! Have a great day.');
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Check In failed');
+      toast.error(err.response?.data?.error?.message || 'Could not start work. Please try again.');
     } finally {
       setPunchingAction(false);
     }
@@ -108,9 +133,9 @@ export const Dashboard = () => {
         setTodayRecord(res.data.data);
       }
       await fetchAttendanceRecord();
-      toast.info('Punched out successfully! Work session ended.');
+      toast.info('Ended work session successfully. See you next shift!');
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Check Out failed');
+      toast.error(err.response?.data?.error?.message || 'Could not end work. Please try again.');
     } finally {
       setPunchingAction(false);
     }
@@ -166,9 +191,10 @@ export const Dashboard = () => {
         }
 
         await fetchAttendanceRecord();
+        await fetchLatestPayslip();
 
-        // For Business Owners and HR, compute any employees inactive for 3+ consecutive days
-        if (!isEmployee && !isAccountantStrict) {
+        // For Business Owners, HR, and Branch Managers, check 3+ day inactive staff
+        if (isBusinessOwner || isHR || isBranchManager) {
           try {
             const [empRes, attRes] = await Promise.all([
               api.get('/employees/'),
@@ -197,7 +223,7 @@ export const Dashboard = () => {
     };
 
     loadDashboard();
-  }, [business, isEmployee, isAccountantStrict]);
+  }, [business, isEmployee, isAccountantStrict, isBusinessOwner, isHR, isBranchManager]);
 
   const computeRealtimeHours = () => {
     if (!todayRecord) return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false, hours: 0 };
@@ -224,7 +250,7 @@ export const Dashboard = () => {
       };
     }
 
-    // Completed shift (Already checked out, working_hours calculated by server)
+    // Completed shift
     if (todayRecord.working_hours !== undefined && todayRecord.working_hours !== null) {
       const num = Number(todayRecord.working_hours);
       if (!isNaN(num) && isFinite(num)) {
@@ -251,25 +277,51 @@ export const Dashboard = () => {
   );
 
   if (loading) {
-    return <Loader message="Loading workspace operations..." size="lg" />;
+    return <Loader message="Loading dashboard..." size="lg" />;
   }
 
-  const empTypes = stats?.employee_types || {};
-  const leaveDist = stats?.leave_distribution || [];
+  // Consistent Role Welcome Lines
+  const getWelcomeLine = () => {
+    if (isBusinessOwner) return UI_LABELS.WELCOME_OWNER;
+    if (isBranchManager) return UI_LABELS.WELCOME_BRANCH_MANAGER;
+    if (isHR) return UI_LABELS.WELCOME_HR;
+    if (isAccountantStrict) return UI_LABELS.WELCOME_ACCOUNTANT;
+    if (isSupervisor) return UI_LABELS.WELCOME_SUPERVISOR;
+    if (isEmployee) return UI_LABELS.WELCOME_EMPLOYEE;
+    return `Welcome back, ${user?.full_name || 'User'}!`;
+  };
+
+  // Plain numbers definition:
+  // Present + Absent + On Leave = Active!
+  const totalEmployees = Number(stats?.total_employees || 0);
+  const activeEmployees = Number(stats?.active_employees || 0);
+  const presentToday = Number(stats?.attendance_today?.present || 0);
+  const onLeaveToday = Number(stats?.attendance_today?.on_leave || 0);
+  // Ensure math consistency: if present + leave < active, absent is the remainder
+  const calculatedAbsent = Math.max(0, activeEmployees - presentToday - onLeaveToday);
+  const absentToday = stats?.attendance_today?.absent !== undefined
+    ? Math.max(Number(stats?.attendance_today?.absent || 0), calculatedAbsent)
+    : calculatedAbsent;
+
+  const pendingLeavesCount = Number(stats?.pending_leaves_count || 0);
+  const pendingAdvancesCount = Number(stats?.pending_advances_count || 0);
+  const hasPendingItems = pendingLeavesCount > 0 || inactiveEmployees.length > 0 || (isAccountantStrict && pendingAdvancesCount > 0);
+
   const branchStats = stats?.branch_stats || [];
   const recentActivity = stats?.recent_activity || [];
+  const leaveDist = stats?.leave_distribution || [];
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      {/* 1. Welcome Banner + Quick Actions */}
+      {/* 1. Header Banner: Plain Greeting + One Clear Action + Help */}
       <div className="bg-zinc-950 rounded-2xl p-4 sm:p-6 text-white shadow-subtle border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <span className="text-[10px] font-bold px-2 py-0.5 bg-zinc-800 text-zinc-200 rounded-full border border-zinc-700 uppercase tracking-wide">
               {activeRole.replace('_', ' ')}
             </span>
-            <span className="text-xs text-zinc-300 font-medium">
-              {business?.name || 'No Company Selected'}
+            <span className="text-xs text-zinc-400 font-medium truncate max-w-xs">
+              {business?.name || 'Workspace'}
             </span>
             {isSelfAttendanceOnly && (
               <span
@@ -279,565 +331,735 @@ export const Dashboard = () => {
                     : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${isPunchedIn ? 'bg-zinc-950 animate-pulse' : 'bg-zinc-500'}`}></span>
-                {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'INACTIVE (OFF DUTY)'}
+                <span className={`w-2 h-2 rounded-full ${isPunchedIn ? 'bg-zinc-950 animate-pulse' : 'bg-zinc-500'}`} />
+                {isPunchedIn ? 'WORKING (CLOCKED IN)' : 'OFF DUTY'}
               </span>
             )}
           </div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">Welcome back, {user?.full_name}!</h2>
-          <p className="text-zinc-400 text-xs mt-1">
-            {isAccountantStrict
-              ? isPunchedIn
-                ? `Clocked in at ${formatTime(todayRecord.check_in)}. Financial overview, payroll processing, and cashbook ledger below.`
-                : 'You are currently off duty. Clock in to activate your shift and begin tracking duty hours.'
-              : isEmployee
-              ? isPunchedIn
-                ? `You clocked in at ${formatTime(todayRecord.check_in)}. Shift hours are actively tracked below.`
-                : 'You are currently off duty. Punch in to activate your shift and begin tracking hours.'
-              : isAuditor
-              ? 'Read-only compliance overview and financial audit records.'
-              : 'Live workforce punch activity, leaves, expenses, and payroll overview.'}
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+            Welcome back, {user?.first_name || user?.full_name || 'there'}!
+          </h2>
+          <p className="text-zinc-400 text-xs mt-1 leading-relaxed max-w-2xl">
+            {getWelcomeLine()}
           </p>
         </div>
 
-        {/* Role-specific Quick Actions */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          {isAccountantStrict && (
-            <>
-              {!isPunchedIn ? (
-                <button
-                  type="button"
-                  disabled={punchingAction}
-                  onClick={handleDashboardPunchIn}
-                  className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{punchingAction ? 'Punching In...' : 'Punch In (PI)'}</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={punchingAction}
-                  onClick={handleDashboardPunchOut}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{punchingAction ? 'Punching Out...' : 'Punch Out (PO)'}</span>
-                </button>
-              )}
+        {/* Top-Right: One Primary Action + Help Button */}
+        <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
+          {/* Main Primary Button Per Role (Strong Color) */}
+          {isEmployee ? (
+            !isPunchedIn ? (
+              <button
+                type="button"
+                disabled={punchingAction}
+                onClick={handleDashboardPunchIn}
+                className="px-5 py-2.5 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                <Clock className="w-4 h-4 text-zinc-950" />
+                <span>{punchingAction ? 'Starting...' : UI_LABELS.START_WORK}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={punchingAction}
+                onClick={handleDashboardPunchOut}
+                className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-600 rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                <Clock className="w-4 h-4 text-white" />
+                <span>{punchingAction ? 'Ending...' : UI_LABELS.END_WORK}</span>
+              </button>
+            )
+          ) : isAccountantStrict ? (
+            <div className="flex items-center gap-2">
               <Link
                 to="/payroll"
-                className="px-3.5 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
+                className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs font-bold shadow-sm transition-colors"
               >
                 Process Payroll
               </Link>
-              <Link
-                to="/cashbook"
-                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
-              >
-                Cashbook &amp; Expenses
-              </Link>
-              <Link
-                to="/advances"
-                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
-              >
-                Advances &amp; Loans
-              </Link>
-              <Link
-                to="/reports"
-                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
-              >
-                Financial Reports
-              </Link>
-            </>
-          )}
-
-          {isEmployee && (
-            <>
               {!isPunchedIn ? (
                 <button
                   type="button"
                   disabled={punchingAction}
                   onClick={handleDashboardPunchIn}
-                  className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold cursor-pointer"
                 >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{punchingAction ? 'Punching In...' : 'Punch In (PI)'}</span>
+                  {UI_LABELS.START_WORK}
                 </button>
               ) : (
                 <button
                   type="button"
                   disabled={punchingAction}
                   onClick={handleDashboardPunchOut}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold cursor-pointer"
                 >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{punchingAction ? 'Punching Out...' : 'Punch Out (PO)'}</span>
+                  {UI_LABELS.END_WORK}
                 </button>
               )}
-              <Link
-                to="/attendance"
-                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
-              >
-                Punch Logs
-              </Link>
-              <Link
-                to="/payroll"
-                className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
-              >
-                My Payslips
-              </Link>
-            </>
-          )}
-
-          {canCreateEmployee && !isEmployee && !isAccountantStrict && (
-            <Link
-              to="/employees?action=add"
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Employee</span>
-            </Link>
-          )}
-
-          {canManageEmployees && !isEmployee && !isAccountantStrict && (
+            </div>
+          ) : isSupervisor ? (
             <Link
               to="/attendance"
-              className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-bold hover:bg-zinc-800 hover:text-white transition-colors"
+              className="px-4 py-2.5 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
             >
-              Mark Attendance
+              <CalendarCheck2 className="w-4 h-4" />
+              <span>Mark Team Attendance</span>
             </Link>
-          )}
+          ) : isHR || isBranchManager ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/employees?action=add"
+                className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Employee</span>
+              </Link>
+              <Link
+                to="/attendance"
+                className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-xl text-xs font-semibold"
+              >
+                Mark Attendance
+              </Link>
+            </div>
+          ) : isBusinessOwner ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/payroll"
+                className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
+              >
+                <Banknote className="w-4 h-4" />
+                <span>Process Payroll</span>
+              </Link>
+              <Link
+                to="/employees?action=add"
+                className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-xl text-xs font-semibold"
+              >
+                Add Employee
+              </Link>
+            </div>
+          ) : null}
 
-          {canManagePayroll && !isEmployee && !isAccountantStrict && (
-            <Link
-              to="/payroll"
-              className="px-3.5 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
-            >
-              Process Payroll
-            </Link>
-          )}
-
-          {isAuditor && (
-            <Link
-              to="/reports"
-              className="px-4 py-2 bg-white text-zinc-950 rounded-lg text-xs font-bold hover:bg-zinc-100 shadow-xs transition-colors"
-            >
-              Compliance Reports
-            </Link>
-          )}
+          {/* 30-Second Page Explanation Help */}
+          <HelpButton
+            title="Dashboard Overview"
+            whereAmI="Your main WorkPulse operations screen, customized for your active role."
+            whatCanIDo="Review today's attendance, take action on pending items, and jump straight into daily tasks."
+            whatHappensNext="Updates reflect instantly for all managers and employees across your company."
+          />
         </div>
       </div>
 
-      {/* Enterprise Inactivity Notification Alert Banner (Owner & HR View) */}
-      {!isEmployee && !isAccountantStrict && inactiveEmployees.length > 0 && (
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-amber-300 shadow-sm relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 shrink-0 mt-0.5 sm:mt-0">
-                <AlertTriangle className="w-5 h-5 text-amber-700" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-zinc-950">
-                    Enterprise Attendance Alert: {inactiveEmployees.length} Employee{inactiveEmployees.length > 1 ? 's' : ''} Inactive
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 uppercase tracking-wide">
-                    3+ Days No Punch
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-600 mt-0.5 leading-relaxed">
-                  These employees have not logged a punch-in for 3 or more consecutive working days. Their profile status is marked inactive until attendance is resumed or reviewed by HR.
-                </p>
+      {/* 2. Getting Started Checklist for Business Owners */}
+      {isBusinessOwner && (
+        <GettingStartedChecklist
+          hasCompany={Boolean(business?.id)}
+          employeeCount={totalEmployees}
+          hasShifts={true}
+          hasPayroll={Boolean(stats?.financials?.monthly_payroll_total && stats.financials.monthly_payroll_total !== '0.00')}
+        />
+      )}
 
-                {/* Inactive Employee Quick Summary Chips */}
-                <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-                  {inactiveEmployees.slice(0, 5).map((emp) => (
-                    <Link
-                      key={emp.id}
-                      to={`/employees/${emp.id}`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-50 hover:bg-amber-50 text-zinc-800 hover:text-amber-900 border border-zinc-200 text-xs font-semibold transition-colors"
-                      title={emp.inactivity?.label}
-                    >
-                      <span>{emp.full_name}</span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
-                        {emp.inactivity?.days}d unpunched
-                      </span>
-                    </Link>
-                  ))}
-                  {inactiveEmployees.length > 5 && (
-                    <span className="text-xs text-zinc-500 font-medium px-1">
-                      +{inactiveEmployees.length - 5} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+      {/* 3. "What Needs Your Attention" Bar (Placed at the top before statistics) */}
+      {!isEmployee && hasPendingItems && (
+        <div className="bg-amber-50/70 border border-amber-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-800" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-950">
+              {UI_LABELS.ATTENTION_TITLE}
+            </h3>
+          </div>
 
-            <div className="shrink-0 self-start sm:self-center">
-              <Link
-                to="/employees?status=INACTIVE_3_DAYS"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-950 text-white text-xs font-bold hover:bg-zinc-800 transition-colors shadow-xs"
-              >
-                <span>Review In HR Directory</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* 3a. Inactivity Notice (Owner & HR/Branch Manager) */}
+            {inactiveEmployees.length > 0 && !isAccountantStrict && (
+              <div className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-zinc-950 truncate">
+                    {UI_LABELS.INACTIVITY_ALERT(inactiveEmployees.length)}
+                  </p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">No punch logs recorded for 3+ days</p>
+                </div>
+                <Link
+                  to="/employees?status=INACTIVE_3_DAYS"
+                  className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors shrink-0"
+                >
+                  {UI_LABELS.VIEW_INACTIVE_EMPLOYEES}
+                </Link>
+              </div>
+            )}
+
+            {/* 3b. Pending Leave Requests */}
+            {pendingLeavesCount > 0 && !isAccountantStrict && (
+              <div className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-zinc-950 truncate">
+                    {pendingLeavesCount} leave request{pendingLeavesCount > 1 ? 's' : ''} waiting
+                  </p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Requires manager approval</p>
+                </div>
+                <Link
+                  to="/leaves"
+                  className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors shrink-0"
+                >
+                  Review Leaves
+                </Link>
+              </div>
+            )}
+
+            {/* 3c. Pending Advance Requests (Accountant & Owner) */}
+            {(isAccountantStrict || isBusinessOwner) && pendingAdvancesCount > 0 && (
+              <div className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-zinc-950 truncate">
+                    {pendingAdvancesCount} salary advance request{pendingAdvancesCount > 1 ? 's' : ''}
+                  </p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Awaiting disbursement</p>
+                </div>
+                <Link
+                  to="/advances"
+                  className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors shrink-0"
+                >
+                  Review Advances
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* 2. KPI Cards Grid */}
-      {isAccountantStrict ? (
-        /* Dedicated Accountant Financial & Self-Attendance KPI Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-          {/* Card 1: Duty Status & Clock In/Out */}
-          <Link to="/attendance" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Duty Status</span>
-              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80">
-                <CheckCircle2 className="w-5 h-5" />
+      {/* 4. Role-Specific KPI Cards & Statistics */}
+      {isEmployee ? (
+        /* ================= FIELD EMPLOYEE DASHBOARD ================= */
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            {/* Card 1: Duty Status & Quick Punch Action */}
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Duty Status</span>
+                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-3">
+                <Badge variant={isPunchedIn ? 'inverted' : 'default'} dot>
+                  {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'OFF DUTY'}
+                </Badge>
+                <p className="text-xs text-zinc-500 mt-2">
+                  {isPunchedIn
+                    ? `Clocked in at ${formatTime(todayRecord.check_in)}`
+                    : todayRecord?.check_out
+                    ? `Clocked out at ${formatTime(todayRecord.check_out)}`
+                    : 'Click Start Work above to begin shift'}
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Geofence verification active</span>
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-2">
-              <Badge variant={isPunchedIn ? 'inverted' : 'default'} dot>
-                {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'INACTIVE (OFF DUTY)'}
-              </Badge>
-            </div>
-            <p className="text-xs text-zinc-500 mt-2">
-              {isPunchedIn
-                ? `Clocked in: ${formatTime(todayRecord.check_in)}`
-                : todayRecord?.check_out
-                ? `Clocked out: ${formatTime(todayRecord.check_out)}`
-                : 'Click to punch attendance'}
-            </p>
-          </Link>
 
-          {/* Card 2: Monthly Payroll Total */}
-          <Link to="/payroll" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Monthly Payroll</span>
-              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                <Banknote className="w-5 h-5" />
+            {/* Card 2: Today's Hours (SHOWN ONCE with week/month sub-strip) */}
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Today&apos;s Hours</span>
+                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900">
+                  <Clock className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-black text-zinc-950 font-mono">
+                  {liveHours.formatted}
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  {liveHours.isLive ? `${liveHours.text} (Live Shift)` : liveHours.text}
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-zinc-100 grid grid-cols-2 gap-2 text-[11px]">
+                <div className="bg-zinc-50 p-1.5 rounded-lg border border-zinc-100">
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase block">This Week</span>
+                  <span className="font-mono font-bold text-zinc-950">{workHoursSummary.weeklyFormatted}</span>
+                </div>
+                <div className="bg-zinc-50 p-1.5 rounded-lg border border-zinc-100">
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase block">This Month</span>
+                  <span className="font-mono font-bold text-zinc-950">{workHoursSummary.monthlyFormatted}</span>
+                </div>
               </div>
             </div>
-            <p className="text-2xl font-black text-zinc-950 mt-2">
-              {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
-            </p>
-            <p className="text-xs text-zinc-950 font-bold mt-1">Open Payroll Engine &rarr;</p>
-          </Link>
 
-          {/* Card 3: Monthly Expenses */}
-          <Link to="/cashbook" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Monthly Expenses</span>
-              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                <Receipt className="w-5 h-5" />
+            {/* Card 3: Pending Leaves */}
+            <Link
+              to="/leaves"
+              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">My Leaves</span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <Calendar className="w-5 h-5" />
+                </div>
               </div>
-            </div>
-            <p className="text-2xl font-black text-zinc-950 mt-2">
-              {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
-            </p>
-            <p className="text-xs text-zinc-950 font-bold mt-1">Open Expense Tracker &rarr;</p>
-          </Link>
+              <div className="mt-2">
+                <p className="text-2xl font-black text-zinc-950 font-mono">
+                  {pendingLeavesCount}
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">Leave requests pending</p>
+              </div>
+              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
+                <span>Apply or view leaves</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
+              </p>
+            </Link>
 
-          {/* Card 4: Liquid Cashbook Balance */}
-          <Link to="/cashbook" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Cashbook Balance</span>
-              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                <TrendingUp className="w-5 h-5" />
+            {/* Card 4: Latest Payslip (Shows Month & Take-Home Amount) */}
+            <Link
+              to="/payroll"
+              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">My Payslips</span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <Banknote className="w-5 h-5" />
+                </div>
               </div>
-            </div>
-            <p className="text-2xl font-black text-zinc-950 mt-2">
-              {formatINR(stats?.financials?.cash_balance ?? 0)}
-            </p>
-            <p className="text-xs text-zinc-950 font-bold mt-1">Open Cash Register &rarr;</p>
-          </Link>
+              <div className="mt-2">
+                <p className="text-2xl font-black text-zinc-950">
+                  {latestPayslip ? formatINR(latestPayslip.net_salary || 0) : 'Available'}
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  {latestPayslip?.period || 'Latest payslip generated'}
+                </p>
+              </div>
+              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
+                <span>View salary slips</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
+              </p>
+            </Link>
+          </div>
         </div>
-      ) : isEmployee ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-          {/* Card 1: Live Status & Punch In/Out */}
-          <Link to="/attendance" className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-500  uppercase tracking-wider">Duty Status</span>
-              <div className="p-2 rounded-lg bg-zinc-100  text-zinc-900  border border-zinc-200/80 ">
-                <CheckCircle2 className="w-5 h-5" />
+      ) : isAccountantStrict ? (
+        /* ================= ACCOUNTANT DASHBOARD ================= */
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            {/* Card 1: Duty Status & Clock In */}
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Duty Status</span>
+                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-2">
+                <Badge variant={isPunchedIn ? 'inverted' : 'default'} dot>
+                  {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'OFF DUTY'}
+                </Badge>
+                <p className="text-xs text-zinc-500 mt-2">
+                  {isPunchedIn ? `Clocked in at ${formatTime(todayRecord.check_in)}` : 'Click Start Work to mark duty'}
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-zinc-100 text-[11px] text-zinc-500">
+                Self-service attendance only
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-2">
-              <Badge variant={isPunchedIn ? 'inverted' : 'default'} dot>
-                {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'INACTIVE (OFF DUTY)'}
-              </Badge>
-            </div>
-            <p className="text-xs text-zinc-500  mt-2">
-              {isPunchedIn
-                ? `Punched in: ${formatTime(todayRecord.check_in)}`
-                : todayRecord?.check_out
-                ? `Punched out: ${formatTime(todayRecord.check_out)}`
-                : 'Click to punch attendance'}
-            </p>
-          </Link>
 
-          {/* Card 2: Real-time Live Working Hours */}
-          <Link to="/attendance" className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Today&apos;s Hours</span>
-              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 border border-zinc-200/80">
-                <Clock className="w-5 h-5" />
+            {/* Card 2: Monthly Payroll Total */}
+            <Link
+              to="/payroll"
+              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Payroll</span>
+                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <Banknote className="w-5 h-5" />
+                </div>
               </div>
-            </div>
-            <p className="text-2xl font-bold text-zinc-950 mt-2 flex items-baseline gap-1.5">
-              <span>{liveHours.formatted}</span>
-              <span className="text-xs text-zinc-400 font-normal">({liveHours.text})</span>
-            </p>
-            <p className="text-xs mt-1">
-              {liveHours.isLive ? (
-                <span className="text-zinc-900 font-semibold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-900 animate-pulse"></span>
-                  Active shift (Live tracking)
+              <div className="mt-2">
+                <p className="text-2xl font-black text-zinc-950">
+                  {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">Monthly disbursement</p>
+              </div>
+              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
+                <span>Open Payroll &rarr;</span>
+              </p>
+            </Link>
+
+            {/* Card 3: Monthly Expenses */}
+            <Link
+              to="/cashbook"
+              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Expenses</span>
+                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <Receipt className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-black text-zinc-950">
+                  {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">Approved vouchers</p>
+              </div>
+              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
+                <span>Open Expenses &rarr;</span>
+              </p>
+            </Link>
+
+            {/* Card 4: Liquid Cashbook Balance */}
+            <Link
+              to="/cashbook"
+              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Cashbook</span>
+                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-black text-zinc-950">
+                  {formatINR(stats?.financials?.cash_balance ?? 0)}
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">Current petty cash balance</p>
+              </div>
+              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
+                <span>Open Cashbook &rarr;</span>
+              </p>
+            </Link>
+          </div>
+        </div>
+      ) : isSupervisor ? (
+        /* ================= SUPERVISOR DASHBOARD (NO MONEY NUMBERS) ================= */
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            {/* Card 1: My Team Total */}
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>My Team</span>
+                  <NumberTooltip text="Total members reporting to you in this location." />
                 </span>
-              ) : todayRecord?.check_out ? (
-                <span className="text-zinc-600 font-medium">✓ Completed shift today</span>
-              ) : (
-                <span className="text-zinc-400">0.00 hrs recorded today</span>
-              )}
-            </p>
-
-            {/* Weekly & Monthly Sub-Breakdown Strip */}
-            <div className="mt-3 pt-3 border-t border-zinc-100 grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-zinc-50 p-2 rounded-lg border border-zinc-200/60">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">This Week</span>
-                <span className="font-mono font-bold text-zinc-950 mt-0.5 block">{workHoursSummary.weeklyFormatted}</span>
-                <span className="text-[10px] text-zinc-400 font-medium">{workHoursSummary.weeklyText}</span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg">
+                  <Users className="w-4 h-4" />
+                </div>
               </div>
-              <div className="bg-zinc-50 p-2 rounded-lg border border-zinc-200/60">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">This Month</span>
-                <span className="font-mono font-bold text-zinc-950 mt-0.5 block">{workHoursSummary.monthlyFormatted}</span>
-                <span className="text-[10px] text-zinc-400 font-medium">{workHoursSummary.monthlyText}</span>
-              </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{totalEmployees}</p>
+              <p className="text-xs text-zinc-500 mt-1">{activeEmployees} active on team</p>
             </div>
-          </Link>
 
-          {/* Card 3: Pending Leaves */}
-          <Link to="/leaves" className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-500  uppercase tracking-wider">Pending Leaves</span>
-              <div className="p-2 bg-zinc-100  text-zinc-900  rounded-lg border border-zinc-200/80 ">
-                <Calendar className="w-5 h-5" />
+            {/* Card 2: Team Present Today */}
+            <Link
+              to="/attendance"
+              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>Present Today</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_PRESENT_TODAY} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <CalendarCheck2 className="w-4 h-4" />
+                </div>
               </div>
-            </div>
-            <p className="text-2xl font-bold text-zinc-950  mt-2">{stats?.pending_leaves_count ?? 0}</p>
-            <p className="text-xs text-zinc-500  mt-1">View leave requests &rarr;</p>
-          </Link>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{presentToday}</p>
+              <p className="text-xs text-zinc-500 mt-1">
+                {activeEmployees > 0 ? `${Math.round((presentToday / activeEmployees) * 100)}% attendance rate` : '0%'}
+              </p>
+            </Link>
 
-          {/* Card 4: My Payslips */}
-          <Link to="/payroll" className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-500  uppercase tracking-wider">My Payslips</span>
-              <div className="p-2 bg-zinc-100  text-zinc-900  rounded-lg border border-zinc-200/80 ">
-                <Banknote className="w-5 h-5" />
+            {/* Card 3: Team Absent Today */}
+            <Link
+              to="/attendance"
+              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>Absent Today</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_ABSENT_TODAY} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <UserX className="w-4 h-4" />
+                </div>
               </div>
-            </div>
-            <p className="text-lg font-bold text-zinc-950  mt-2 truncate">{business?.name || '-'}</p>
-            <p className="text-xs text-zinc-950  font-bold mt-1">View salary slips &rarr;</p>
-          </Link>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{absentToday}</p>
+              <p className="text-xs text-zinc-500 mt-1">Pending clock-in</p>
+            </Link>
+
+            {/* Card 4: Team On Leave */}
+            <Link
+              to="/leaves"
+              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>On Leave</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_ON_LEAVE_TODAY} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <Calendar className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{onLeaveToday}</p>
+              <p className="text-xs text-zinc-500 mt-1">{pendingLeavesCount} pending review</p>
+            </Link>
+          </div>
+        </div>
+      ) : isHR || isBranchManager ? (
+        /* ================= HR / BRANCH MANAGER DASHBOARD (NO MONEY NUMBERS) ================= */
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+            {/* Metric 1: Total Employees */}
+            <Link
+              to="/employees"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>Total Staff</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_TOTAL_EMPLOYEES} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{totalEmployees}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">{activeEmployees} active on roster</p>
+            </Link>
+
+            {/* Metric 2: Present Today */}
+            <Link
+              to="/attendance"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>Present</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_PRESENT_TODAY} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <CalendarCheck2 className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{presentToday}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">
+                {activeEmployees > 0 ? `${Math.round((presentToday / activeEmployees) * 100)}% attendance rate` : '0%'}
+              </p>
+            </Link>
+
+            {/* Metric 3: Absent Today */}
+            <Link
+              to="/attendance"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>Absent</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_ABSENT_TODAY} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <UserX className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{absentToday}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">Not yet clocked in</p>
+            </Link>
+
+            {/* Metric 4: On Leave */}
+            <Link
+              to="/leaves"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>On Leave</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_ON_LEAVE_TODAY} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <Calendar className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{onLeaveToday}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">{pendingLeavesCount} awaiting review</p>
+            </Link>
+
+            {/* Metric 5: Late Arrivals */}
+            <Link
+              to="/attendance"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Late Check-ins</span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{stats?.attendance_today?.late ?? 0}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">Delayed start times</p>
+            </Link>
+          </div>
         </div>
       ) : (
-        /* Management / Owner KPI Cards */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
-          <Link to="/employees" className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-zinc-500  uppercase tracking-wider">Total Employees</span>
-              <div className="p-2 bg-zinc-100  text-zinc-900  rounded-lg group-hover:bg-zinc-950 group-hover:text-white :bg-white :text-zinc-950 transition-colors">
-                <Users className="w-4 h-4" />
+        /* ================= BUSINESS OWNER DASHBOARD (ALL NUMBERS + MONEY) ================= */
+        <div className="space-y-4">
+          {/* People & Attendance Strip with Explanations */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+            <Link
+              to="/employees"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>Total Employees</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_TOTAL_EMPLOYEES} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <Users className="w-4 h-4" />
+                </div>
               </div>
-            </div>
-            <p className="text-2xl font-black text-zinc-950  mt-2">{stats?.total_employees ?? 0}</p>
-            <div className="flex items-center gap-1 text-[11px] text-zinc-600  font-semibold mt-1">
-              <TrendingUp className="w-3 h-3 text-zinc-950 " />
-              <span>{stats?.active_employees ?? 0} active</span>
-            </div>
-          </Link>
-
-          <Link to="/attendance" className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-zinc-500  uppercase tracking-wider">Present Today</span>
-              <div className="p-2 bg-zinc-100  text-zinc-900  rounded-lg group-hover:bg-zinc-950 group-hover:text-white :bg-white :text-zinc-950 transition-colors">
-                <CalendarCheck2 className="w-4 h-4" />
+              <p className="text-2xl font-black text-zinc-950 mt-2">{totalEmployees}</p>
+              <div className="flex items-center gap-1 text-[11px] text-zinc-600 font-semibold mt-1">
+                <span>{activeEmployees} active</span>
               </div>
-            </div>
-            <p className="text-2xl font-black text-zinc-950  mt-2">{stats?.attendance_today?.present ?? 0}</p>
-            <p className="text-[11px] text-zinc-500  mt-1">{stats?.attendance_today?.attendance_percentage ?? '0%'} rate</p>
-          </Link>
+            </Link>
 
-          <Link to="/attendance" className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-zinc-500  uppercase tracking-wider">Absent Today</span>
-              <div className="p-2 bg-zinc-100  text-zinc-900  rounded-lg group-hover:bg-zinc-950 group-hover:text-white :bg-white :text-zinc-950 transition-colors">
-                <UserX className="w-4 h-4" />
+            <Link
+              to="/attendance"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>Present Today</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_PRESENT_TODAY} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <CalendarCheck2 className="w-4 h-4" />
+                </div>
               </div>
-            </div>
-            <p className="text-2xl font-black text-zinc-950  mt-2">{stats?.attendance_today?.absent ?? 0}</p>
-            <p className="text-[11px] text-zinc-500  mt-1">View attendance sheet</p>
-          </Link>
-
-          <Link to="/leaves" className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-zinc-500  uppercase tracking-wider">On Leave</span>
-              <div className="p-2 bg-zinc-100  text-zinc-900  rounded-lg group-hover:bg-zinc-950 group-hover:text-white :bg-white :text-zinc-950 transition-colors">
-                <Calendar className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-zinc-950  mt-2">{stats?.attendance_today?.on_leave ?? 0}</p>
-            <p className="text-[11px] text-zinc-600  font-semibold mt-1">{stats?.pending_leaves_count ?? 0} pending review</p>
-          </Link>
-
-          <Link to="/attendance" className="bg-white  p-4 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all block group">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-zinc-500  uppercase tracking-wider">Late Arrivals</span>
-              <div className="p-2 bg-zinc-100  text-zinc-900  rounded-lg group-hover:bg-zinc-950 group-hover:text-white :bg-white :text-zinc-950 transition-colors">
-                <AlertCircle className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-zinc-950  mt-2">{stats?.attendance_today?.late ?? 0}</p>
-            <p className="text-[11px] text-zinc-500  mt-1">Delayed check-ins today</p>
-          </Link>
-        </div>
-      )}
-
-      {/* 3. Financial Summaries for Non-Employees & Non-Accountants */}
-      {!isEmployee && !isAccountantStrict && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
-          <Link to="/payroll" className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all flex items-center justify-between group">
-            <div>
-              <p className="text-xs font-bold text-zinc-500  uppercase tracking-wider">Payroll Summary</p>
-              <p className="text-2xl font-black text-zinc-950  mt-1">
-                {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
+              <p className="text-2xl font-black text-zinc-950 mt-2">{presentToday}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">
+                {activeEmployees > 0 ? `${Math.round((presentToday / activeEmployees) * 100)}% rate` : '0%'}
               </p>
-              <p className="text-xs text-zinc-950  font-bold mt-1">Open Payroll Overview &rarr;</p>
-            </div>
-            <div className="p-3 bg-zinc-100  text-zinc-900  rounded-xl group-hover:bg-zinc-950 group-hover:text-white :bg-white :text-zinc-950 transition-colors">
-              <Banknote className="w-6 h-6" />
-            </div>
-          </Link>
+            </Link>
 
-          <Link to="/cashbook" className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all flex items-center justify-between group">
-            <div>
-              <p className="text-xs font-bold text-zinc-500  uppercase tracking-wider">Expense Summary (Month)</p>
-              <p className="text-2xl font-black text-zinc-950  mt-1">
-                {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
-              </p>
-              <p className="text-xs text-zinc-950  font-bold mt-1">Open Expense Report &rarr;</p>
-            </div>
-            <div className="p-3 bg-zinc-100  text-zinc-900  rounded-xl group-hover:bg-zinc-950 group-hover:text-white :bg-white :text-zinc-950 transition-colors">
-              <Receipt className="w-6 h-6" />
-            </div>
-          </Link>
-
-          <Link to="/cashbook" className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 transition-all flex items-center justify-between group">
-            <div>
-              <p className="text-xs font-bold text-zinc-500  uppercase tracking-wider">Cashbook Balance</p>
-              <p className="text-2xl font-black text-zinc-950  mt-1">
-                {formatINR(stats?.financials?.cash_balance ?? 0)}
-              </p>
-              <p className="text-xs text-zinc-950  font-bold mt-1">Open Cashbook Ledger &rarr;</p>
-            </div>
-            <div className="p-3 bg-zinc-100  text-zinc-900  rounded-xl group-hover:bg-zinc-950 group-hover:text-white :bg-white :text-zinc-950 transition-colors">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-          </Link>
-        </div>
-      )}
-
-      {/* 3. Dedicated Cumulative Work Hours Strip (Today, Weekly, Monthly) for Employee & Accountant */}
-      {isSelfAttendanceOnly && (
-        <div className="bg-white rounded-xl border border-zinc-200 shadow-subtle p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-100 pb-3 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-zinc-100 text-zinc-950 border border-zinc-200">
-                <Clock className="w-4 h-4" />
+            <Link
+              to="/attendance"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>Absent Today</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_ABSENT_TODAY} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <UserX className="w-4 h-4" />
+                </div>
               </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{absentToday}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">Not yet punched in</p>
+            </Link>
+
+            <Link
+              to="/leaves"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+                  <span>On Leave</span>
+                  <NumberTooltip text={UI_LABELS.TOOLTIP_ON_LEAVE_TODAY} />
+                </span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <Calendar className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{onLeaveToday}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">{pendingLeavesCount} pending review</p>
+            </Link>
+
+            <Link
+              to="/attendance"
+              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Late Arrivals</span>
+                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-zinc-950 mt-2">{stats?.attendance_today?.late ?? 0}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">Delayed check-ins</p>
+            </Link>
+          </div>
+
+          {/* Money Summary Cards (Only Owner & SuperAdmin) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
+            <Link
+              to="/payroll"
+              className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex items-center justify-between group"
+            >
               <div>
-                <h3 className="text-sm font-bold text-zinc-950">Work Hours &amp; Shift Summary</h3>
-                <p className="text-xs text-zinc-500">Real-time attendance &amp; accumulated hours for this pay period</p>
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Payroll</p>
+                <p className="text-2xl font-black text-zinc-950 mt-1">
+                  {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
+                </p>
+                <p className="text-xs text-zinc-950 font-bold mt-1">Process Payroll &rarr;</p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 text-2xs text-zinc-500">
-              <span className="px-2.5 py-1 bg-zinc-100 rounded-full font-mono font-bold text-zinc-800">
-                Week: {workHoursSummary.weekLabel}
-              </span>
-              <span className="px-2.5 py-1 bg-zinc-100 rounded-full font-mono font-bold text-zinc-800">
-                Month: {workHoursSummary.monthLabel}
-              </span>
-            </div>
-          </div>
+              <div className="p-3 bg-zinc-100 text-zinc-900 rounded-xl group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                <Banknote className="w-6 h-6" />
+              </div>
+            </Link>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            {/* 1. Today's Shift */}
-            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Today&apos;s Hours</span>
-                <span className={`w-2 h-2 rounded-full ${isPunchedIn ? 'bg-zinc-950 animate-pulse' : 'bg-zinc-400'}`} />
+            <Link
+              to="/cashbook"
+              className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex items-center justify-between group"
+            >
+              <div>
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Expenses (Month)</p>
+                <p className="text-2xl font-black text-zinc-950 mt-1">
+                  {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
+                </p>
+                <p className="text-xs text-zinc-950 font-bold mt-1">Manage Expenses &rarr;</p>
               </div>
-              <p className="text-2xl font-mono font-black text-zinc-950 mt-2">
-                {liveHours.formatted}
-              </p>
-              <p className="text-xs text-zinc-500 mt-1">
-                {liveHours.isLive ? `${liveHours.text} (Clocked in)` : liveHours.text}
-              </p>
-            </div>
+              <div className="p-3 bg-zinc-100 text-zinc-900 rounded-xl group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                <Receipt className="w-6 h-6" />
+              </div>
+            </Link>
 
-            {/* 2. Total Weekly Hours */}
-            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Total Weekly Hours</span>
-                <Calendar className="w-4 h-4 text-zinc-500" />
+            <Link
+              to="/cashbook"
+              className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex items-center justify-between group"
+            >
+              <div>
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Cashbook Balance</p>
+                <p className="text-2xl font-black text-zinc-950 mt-1">
+                  {formatINR(stats?.financials?.cash_balance ?? 0)}
+                </p>
+                <p className="text-xs text-zinc-950 font-bold mt-1">Manage Cashbook &rarr;</p>
               </div>
-              <p className="text-2xl font-mono font-black text-zinc-950 mt-2">
-                {workHoursSummary.weeklyFormatted}
-              </p>
-              <p className="text-xs text-zinc-500 mt-1">
-                {workHoursSummary.weeklyText} &bull; Monday to Sunday
-              </p>
-            </div>
-
-            {/* 3. Total Monthly Hours */}
-            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Total Monthly Hours</span>
-                <Clock className="w-4 h-4 text-zinc-500" />
+              <div className="p-3 bg-zinc-100 text-zinc-900 rounded-xl group-hover:bg-zinc-950 group-hover:text-white transition-colors">
+                <TrendingUp className="w-6 h-6" />
               </div>
-              <p className="text-2xl font-mono font-black text-zinc-950 mt-2">
-                {workHoursSummary.monthlyFormatted}
-              </p>
-              <p className="text-xs text-zinc-500 mt-1">
-                {workHoursSummary.monthlyText} &bull; {workHoursSummary.monthLabel}
-              </p>
-            </div>
+            </Link>
           </div>
         </div>
       )}
 
-      {/* 4. Main Analytics Grid: Monochrome Attendance Chart + Employee Status / Leaves */}
+      {/* 5. Main Attendance Chart & Leave Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-        {/* Clickable Monochrome Attendance Chart */}
         <div
           onClick={() => navigate(isSelfAttendanceOnly ? '/attendance' : '/reports')}
-          className="lg:col-span-2 bg-white  p-5 sm:p-6 rounded-xl border border-zinc-200  shadow-subtle hover:border-zinc-400 :border-zinc-600 cursor-pointer transition-all"
-          title={isSelfAttendanceOnly ? 'Click to open My Attendance' : 'Click to open Attendance Analytics'}
+          className="lg:col-span-2 bg-white p-5 sm:p-6 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 cursor-pointer transition-all"
+          title={isSelfAttendanceOnly ? 'Click to open Attendance logs' : 'Click to open Attendance reports'}
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-zinc-950  flex items-center gap-1.5">
-                <span>{isSelfAttendanceOnly ? 'My Recent Attendance Activity' : 'Attendance Trend'}</span>
+              <h3 className="text-sm sm:text-base font-bold text-zinc-950 flex items-center gap-1.5">
+                <span>{isSelfAttendanceOnly ? 'My Attendance History' : 'Attendance Trend'}</span>
                 <ArrowUpRight className="w-4 h-4 text-zinc-400" />
               </h3>
-              <p className="text-xs text-zinc-500  mt-0.5">
-                {isSelfAttendanceOnly ? 'Click chart to view your full Attendance Logs' : 'Click chart to view full Attendance Analytics'}
+              <p className="text-xs text-zinc-500 mt-0.5">
+                {isSelfAttendanceOnly ? 'Click chart to view your full logs' : '7-day daily workforce attendance overview'}
               </p>
             </div>
-            <span className="text-xs font-bold text-zinc-950  bg-zinc-100  px-2.5 py-1 rounded-md border border-zinc-200 ">
+            <span className="text-xs font-bold text-zinc-950 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200">
               Live Data
             </span>
           </div>
@@ -845,242 +1067,92 @@ export const Dashboard = () => {
           <div className="h-64 w-full">
             {weeklyData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-zinc-400">
-                No attendance logs recorded for this period yet.
+                {UI_LABELS.EMPTY_ATTENDANCE}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
-                  <XAxis dataKey="day" stroke="#71717a" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#71717a" fontSize={11} tickLine={false} />
+                <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E4E7" />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#71717A' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#71717A' }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#ffffff',
-                      borderColor: '#e4e4e7',
-                      borderRadius: '0.75rem',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08)',
+                      backgroundColor: '#18181B',
+                      color: '#FAFAFA',
+                      borderRadius: '8px',
+                      border: '1px solid #27272A',
                       fontSize: '12px',
-                      color: '#09090b',
                     }}
                   />
-                  <Bar dataKey="present" fill="#18181b" radius={[4, 4, 0, 0]} name="Present" />
-                  <Bar dataKey="absent" fill="#d4d4d8" radius={[4, 4, 0, 0]} name="Other" />
+                  <Bar dataKey="present" fill="#18181B" radius={[4, 4, 0, 0]} name="Present" />
+                  <Bar dataKey="absent" fill="#E4E4E7" radius={[4, 4, 0, 0]} name="Absent" />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        {/* Right Column: Financial Quick Access (Accountant) OR Employee Status (Management only) OR Quick Self-Service (Employees) */}
-        <div className="space-y-4">
-          {isAccountantStrict ? (
-            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950">Financial Quick Access</h3>
-                <span className="text-[10px] font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200 uppercase">
-                  Accountant
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <Link
-                  to="/attendance"
-                  className="p-3 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg transition-all flex flex-col items-center text-center group"
-                >
-                  <Clock className="w-5 h-5 text-zinc-900 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="font-bold text-zinc-900">Punch Clock</span>
-                  <span className="text-[10px] text-zinc-400">My Attendance</span>
-                </Link>
-                <Link
-                  to="/payroll"
-                  className="p-3 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg transition-all flex flex-col items-center text-center group"
-                >
-                  <Banknote className="w-5 h-5 text-zinc-900 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="font-bold text-zinc-900">Payroll</span>
-                  <span className="text-[10px] text-zinc-400">Run Salary</span>
-                </Link>
-                <Link
-                  to="/cashbook"
-                  className="p-3 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg transition-all flex flex-col items-center text-center group"
-                >
-                  <Receipt className="w-5 h-5 text-zinc-900 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="font-bold text-zinc-900">Expenses</span>
-                  <span className="text-[10px] text-zinc-400">Petty Cash</span>
-                </Link>
-                <Link
-                  to="/advances"
-                  className="p-3 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg transition-all flex flex-col items-center text-center group"
-                >
-                  <TrendingUp className="w-5 h-5 text-zinc-900 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="font-bold text-zinc-900">Advances</span>
-                  <span className="text-[10px] text-zinc-400">Loans &amp; Adv.</span>
-                </Link>
-              </div>
-            </div>
-          ) : !isEmployee ? (
-            <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 ">Employee Status &amp; Type</h3>
-                <Link to="/employees" className="text-[11px] font-bold text-zinc-900  hover:underline">
-                  View All
-                </Link>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2.5 bg-zinc-100  rounded-lg border border-zinc-200/80 ">
-                  <p className="text-lg font-black text-zinc-950 ">{empTypes.FULL_TIME ?? 0}</p>
-                  <p className="text-[10px] font-semibold text-zinc-600 ">Full-Time</p>
-                </div>
-                <div className="p-2.5 bg-zinc-100  rounded-lg border border-zinc-200/80 ">
-                  <p className="text-lg font-black text-zinc-950 ">{empTypes.CONTRACT ?? 0}</p>
-                  <p className="text-[10px] font-semibold text-zinc-600 ">Contract</p>
-                </div>
-                <div className="p-2.5 bg-zinc-100  rounded-lg border border-zinc-200/80 ">
-                  <p className="text-lg font-black text-zinc-950 ">{(empTypes.PART_TIME ?? 0) + (empTypes.INTERN ?? 0)}</p>
-                  <p className="text-[10px] font-semibold text-zinc-600 ">Part/Intern</p>
-                </div>
-              </div>
-            </div>
+        {/* Right Side: Quick Distribution Card */}
+        <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950">Leave Type Distribution</h3>
+            <Link to="/leaves" className="text-[11px] font-bold text-zinc-900 hover:underline">
+              All Leaves &rarr;
+            </Link>
+          </div>
+          {leaveDist.length === 0 ? (
+            <p className="text-xs text-zinc-400">{UI_LABELS.EMPTY_LEAVES}</p>
           ) : (
-            <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 ">My Self-Service</h3>
-                <span className="text-[10px] font-bold text-zinc-900  bg-zinc-100  px-2 py-0.5 rounded border border-zinc-200  uppercase">
-                  Quick Access
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <Link
-                  to="/attendance"
-                  className="p-3 bg-zinc-50  hover:bg-zinc-100 :bg-zinc-800 border border-zinc-200  rounded-lg transition-all flex flex-col items-center text-center group"
-                >
-                  <Clock className="w-5 h-5 text-zinc-900  mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="font-bold text-zinc-900 ">Punch Clock</span>
-                  <span className="text-[10px] text-zinc-400">Check In / Out</span>
-                </Link>
-                <Link
-                  to="/leaves"
-                  className="p-3 bg-zinc-50  hover:bg-zinc-100 :bg-zinc-800 border border-zinc-200  rounded-lg transition-all flex flex-col items-center text-center group"
-                >
-                  <Calendar className="w-5 h-5 text-zinc-900  mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="font-bold text-zinc-900 ">Apply Leave</span>
-                  <span className="text-[10px] text-zinc-400">Request off</span>
-                </Link>
-                <Link
-                  to="/payroll"
-                  className="p-3 bg-zinc-50  hover:bg-zinc-100 :bg-zinc-800 border border-zinc-200  rounded-lg transition-all flex flex-col items-center text-center group"
-                >
-                  <Banknote className="w-5 h-5 text-zinc-900  mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="font-bold text-zinc-900 ">Payslips</span>
-                  <span className="text-[10px] text-zinc-400">Download slip</span>
-                </Link>
-                <Link
-                  to="/advances"
-                  className="p-3 bg-zinc-50  hover:bg-zinc-100 :bg-zinc-800 border border-zinc-200  rounded-lg transition-all flex flex-col items-center text-center group"
-                >
-                  <Receipt className="w-5 h-5 text-zinc-900  mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="font-bold text-zinc-900 ">Salary Advance</span>
-                  <span className="text-[10px] text-zinc-400">Request funds</span>
-                </Link>
-              </div>
+            <div className="space-y-2 flex-1">
+              {leaveDist.map((item) => (
+                <div key={item.name} className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-600 font-medium">{item.name}</span>
+                  <span className="font-bold text-zinc-950 px-2 py-0.5 bg-zinc-100 border border-zinc-200 rounded">
+                    {item.count}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
-
-          {isAccountantStrict ? (
-            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950">Pending Approvals</h3>
-                <Link to="/advances" className="text-[11px] font-bold text-zinc-900 hover:underline">
-                  Advances &rarr;
-                </Link>
-              </div>
-              <div className="space-y-2.5">
-                <Link
-                  to="/advances"
-                  className="p-3 bg-zinc-50 hover:bg-zinc-100 rounded-lg border border-zinc-200/80 flex items-center justify-between transition-colors block"
-                >
-                  <div>
-                    <span className="text-xs font-bold text-zinc-900 block">Pending Advances</span>
-                    <span className="text-[11px] text-zinc-500">
-                      {stats?.financials?.pending_advances_amount
-                        ? `${formatINR(stats?.financials?.pending_advances_amount)} total`
-                        : 'Awaiting disbursement'}
-                    </span>
-                  </div>
-                  <span className="font-mono font-bold text-xs bg-zinc-950 text-white px-2.5 py-1 rounded-md">
-                    {stats?.pending_advances_count ?? 0}
-                  </span>
-                </Link>
-                <Link
-                  to="/leaves"
-                  className="p-3 bg-zinc-50 hover:bg-zinc-100 rounded-lg border border-zinc-200/80 flex items-center justify-between transition-colors block"
-                >
-                  <div>
-                    <span className="text-xs font-bold text-zinc-900 block">Pending Leaves</span>
-                    <span className="text-[11px] text-zinc-500">Workforce leave requests</span>
-                  </div>
-                  <span className="font-mono font-bold text-xs bg-zinc-200 text-zinc-900 px-2.5 py-1 rounded-md">
-                    {stats?.pending_leaves_count ?? 0}
-                  </span>
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 ">Leave Type Distribution</h3>
-                <Link to="/leaves" className="text-[11px] font-bold text-zinc-900  hover:underline">
-                  Leaves &rarr;
-                </Link>
-              </div>
-              {leaveDist.length === 0 ? (
-                <p className="text-xs text-zinc-400">No leave requests recorded.</p>
-              ) : (
-                <div className="space-y-2">
-                  {leaveDist.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-600  font-medium">{item.name}</span>
-                      <span className="font-bold text-zinc-950  px-2 py-0.5 bg-zinc-100  border border-zinc-200/60  rounded">{item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <div className="mt-4 pt-3 border-t border-zinc-100 text-[11px] text-zinc-500">
+            Approved and pending leave requests
+          </div>
         </div>
       </div>
 
-      {/* 5. Bottom Row: Branch Statistics (Management) OR Financial Controller Summary (Accountant) & Recent Activity */}
+      {/* 6. Bottom Row: Branch Statistics (Non-Accountants) OR Financial Controller (Accountant) + Recent Activity */}
       {!isEmployee && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-          {/* Branch Statistics OR Financial Controller Summary */}
           {!isAccountantStrict ? (
-            <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
+            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950  flex items-center gap-2">
-                  <Building className="w-4 h-4 text-zinc-900 " />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 flex items-center gap-2">
+                  <Building className="w-4 h-4 text-zinc-900" />
                   <span>Branch Statistics</span>
                 </h3>
-                <Link to="/organization" className="text-[11px] font-bold text-zinc-900  hover:underline">
-                  Manage Branches &rarr;
-                </Link>
+                {isBusinessOwner && (
+                  <Link to="/organization" className="text-[11px] font-bold text-zinc-900 hover:underline">
+                    Organization &rarr;
+                  </Link>
+                )}
               </div>
               {branchStats.length === 0 ? (
                 <p className="text-xs text-zinc-400">No branches configured.</p>
               ) : (
                 <div className="space-y-2">
                   {branchStats.map((br) => (
-                    <Link
+                    <div
                       key={br.id}
-                      to="/organization"
-                      className="flex items-center justify-between p-3 bg-zinc-50  hover:bg-zinc-100 :bg-zinc-800/70 rounded-lg border border-zinc-200/80  transition-all"
+                      className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80"
                     >
                       <div>
-                        <p className="text-xs font-bold text-zinc-950 ">{br.name}</p>
-                        <p className="text-[11px] text-zinc-500 ">{br.city || 'Operational Site'}</p>
+                        <p className="text-xs font-bold text-zinc-950">{br.name}</p>
+                        <p className="text-[11px] text-zinc-500">{br.city || 'Operational Branch'}</p>
                       </div>
-                      <span className="text-xs font-bold text-zinc-950  bg-zinc-200  border border-zinc-300  px-2.5 py-1 rounded-md">
+                      <span className="text-xs font-bold text-zinc-950 bg-zinc-200 px-2.5 py-1 rounded-md">
                         {br.employee_count} Staff
                       </span>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1090,17 +1162,17 @@ export const Dashboard = () => {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 flex items-center gap-2">
                   <Banknote className="w-4 h-4 text-zinc-900" />
-                  <span>Financial Controller Summary</span>
+                  <span>Financial Status</span>
                 </h3>
                 <Link to="/payroll" className="text-[11px] font-bold text-zinc-900 hover:underline">
-                  Run Payroll &rarr;
+                  Payroll &rarr;
                 </Link>
               </div>
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80">
                   <div>
-                    <p className="text-xs font-bold text-zinc-950">Monthly Payroll Expenditure</p>
-                    <p className="text-[11px] text-zinc-500">Gross disbursement for active workforce</p>
+                    <p className="text-xs font-bold text-zinc-950">Payroll Total</p>
+                    <p className="text-[11px] text-zinc-500">Net salary across employees</p>
                   </div>
                   <span className="text-xs font-mono font-bold text-zinc-950 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
                     {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
@@ -1108,8 +1180,8 @@ export const Dashboard = () => {
                 </div>
                 <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80">
                   <div>
-                    <p className="text-xs font-bold text-zinc-950">Monthly Operational Expenses</p>
-                    <p className="text-[11px] text-zinc-500">Approved vouchers &amp; vendor bills</p>
+                    <p className="text-xs font-bold text-zinc-950">Expenses Total</p>
+                    <p className="text-[11px] text-zinc-500">Approved operational vouchers</p>
                   </div>
                   <span className="text-xs font-mono font-bold text-zinc-950 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
                     {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
@@ -1117,8 +1189,8 @@ export const Dashboard = () => {
                 </div>
                 <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80">
                   <div>
-                    <p className="text-xs font-bold text-zinc-950">Available Cashbook Balance</p>
-                    <p className="text-[11px] text-zinc-500">Current liquid petty cash register</p>
+                    <p className="text-xs font-bold text-zinc-950">Cashbook Balance</p>
+                    <p className="text-[11px] text-zinc-500">Liquid cash in register</p>
                   </div>
                   <span className="text-xs font-mono font-bold text-zinc-950 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
                     {formatINR(stats?.financials?.cash_balance ?? 0)}
@@ -1129,27 +1201,27 @@ export const Dashboard = () => {
           )}
 
           {/* Recent Activity */}
-          <div className="bg-white  p-5 rounded-xl border border-zinc-200  shadow-subtle">
+          <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950  flex items-center gap-2">
-                <Activity className="w-4 h-4 text-zinc-900 " />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-zinc-900" />
                 <span>Recent Activity</span>
               </h3>
-              <span className="text-[11px] text-zinc-400">Click item to inspect</span>
+              <span className="text-[11px] text-zinc-400">Click item to open</span>
             </div>
             {recentActivity.length === 0 ? (
-              <p className="text-xs text-zinc-400">No recent activity found.</p>
+              <p className="text-xs text-zinc-400">No recent activity recorded.</p>
             ) : (
               <div className="space-y-2">
                 {recentActivity.map((act) => (
                   <Link
                     key={act.id}
                     to={act.link}
-                    className="flex items-center justify-between p-2.5 bg-zinc-50  hover:bg-zinc-100 :bg-zinc-800 rounded-lg border border-transparent hover:border-zinc-200 :border-zinc-800 transition-colors"
+                    className="flex items-center justify-between p-2.5 bg-zinc-50 hover:bg-zinc-100 rounded-lg border border-transparent hover:border-zinc-200 transition-colors"
                   >
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-zinc-950  truncate">{act.title}</p>
-                      <p className="text-[11px] text-zinc-500  truncate">{act.subtitle}</p>
+                      <p className="text-xs font-bold text-zinc-950 truncate">{act.title}</p>
+                      <p className="text-[11px] text-zinc-500 truncate">{act.subtitle}</p>
                     </div>
                     <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                   </Link>

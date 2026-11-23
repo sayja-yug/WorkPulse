@@ -14,6 +14,7 @@ class Command(BaseCommand):
         self.stdout.write('Initializing system permissions...')
         perms = [
             ('employee.view', 'View employees', 'employees'),
+            ('employee.view_bank', 'View employee bank details', 'employees'),
             ('employee.create', 'Create employee', 'employees'),
             ('employee.update', 'Update employee', 'employees'),
             ('employee.deactivate', 'Deactivate employee', 'employees'),
@@ -71,7 +72,7 @@ class Command(BaseCommand):
 
         role_matrix = {
             Role.RoleCode.SUPER_ADMIN: list(all_perms.keys()),
-            Role.RoleCode.BUSINESS_OWNER: list(all_perms.keys()),
+            Role.RoleCode.BUSINESS_OWNER: [p.code for p in Permission.objects.exclude(scope_type='GLOBAL').exclude(code__startswith='platform.')],
             Role.RoleCode.HR_MANAGER: [
                 'employee.view', 'employee.create', 'employee.update', 'employee.deactivate', 'employee.transfer',
                 'attendance.view', 'attendance.mark', 'attendance.correct', 'attendance.approve', 'attendance.view_reports',
@@ -80,6 +81,7 @@ class Command(BaseCommand):
                 'report.view', 'business.view'
             ],
             Role.RoleCode.ACCOUNTANT: [
+                'employee.view_bank',
                 'payroll.view', 'payroll.calculate', 'payroll.approve', 'payroll.view_own',
                 'advance.view', 'advance.request', 'advance.approve',
                 'expense.view', 'expense.create', 'expense.approve',

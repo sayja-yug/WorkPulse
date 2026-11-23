@@ -50,6 +50,11 @@ class BranchSerializer(serializers.ModelSerializer):
 class DepartmentSerializer(serializers.ModelSerializer):
     head_name = serializers.CharField(source='head.full_name', read_only=True)
 
+    def validate_head(self, user):
+        if user and not user.business_memberships.filter(business=self.context['request'].business, is_active=True).exists():
+            raise serializers.ValidationError('Select a member of this company.')
+        return user
+
     class Meta:
         model = Department
         fields = [

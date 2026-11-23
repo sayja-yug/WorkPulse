@@ -59,7 +59,7 @@ const MONTH_NAMES = [
 ];
 
 export const Payroll = () => {
-  const { isEmployee, isAuditor, canManagePayroll, user } = usePermissions();
+  const { isEmployee, isAuditor, canManagePayroll, canApprovePayroll, hasPermission, user } = usePermissions();
   const { business } = useAuth();
   const { toast, confirm } = useNotification();
 
@@ -566,7 +566,7 @@ export const Payroll = () => {
                       <th className="py-3 px-4">Deductions</th>
                       <th className="py-3 px-4">Net Payout</th>
                       <th className="py-3 px-4">Status</th>
-                      {canManagePayroll && <th className="py-3 px-4 text-right">Actions</th>}
+                      {(canManagePayroll || canApprovePayroll) && <th className="py-3 px-4 text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-200">
@@ -577,7 +577,7 @@ export const Payroll = () => {
                           <td className="py-3.5 px-4 font-semibold text-zinc-900">
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold">{r.name}</span>
-                              {isDisbursed && (
+                              {hasPermission('employee.view_bank') && isDisbursed && (
                                 <Badge variant="default">Disbursed</Badge>
                               )}
                             </div>
@@ -594,30 +594,30 @@ export const Payroll = () => {
                               {isDisbursed ? 'DISBURSED' : r.status}
                             </Badge>
                           </td>
-                          {canManagePayroll && (
+                          {(canManagePayroll || canApprovePayroll) && (
                             <td className="py-3.5 px-4 text-right whitespace-nowrap">
                               <div className="inline-flex items-center gap-1.5">
-                                {r.status === 'DRAFT' && (
+                                {canManagePayroll && r.status === 'DRAFT' && (
                                   <Button size="xs" variant="secondary" onClick={() => handleCalculate(r.id)}>
                                     Calculate
                                   </Button>
                                 )}
                                 {r.status === 'REVIEW' && (
                                   <>
-                                    <Button size="xs" variant="outline" onClick={() => handleCalculate(r.id)}>
+                                    {canManagePayroll && <Button size="xs" variant="outline" onClick={() => handleCalculate(r.id)}>
                                       Re-calc
-                                    </Button>
-                                    <Button size="xs" variant="primary" onClick={() => handleApprove(r.id)}>
+                                    </Button>}
+                                    {canApprovePayroll && <Button size="xs" variant="primary" onClick={() => handleApprove(r.id)}>
                                       Approve &amp; Lock
-                                    </Button>
+                                    </Button>}
                                   </>
                                 )}
-                                {r.status === 'APPROVED' && !isDisbursed && (
+                                {canApprovePayroll && r.status === 'APPROVED' && !isDisbursed && (
                                   <Button size="xs" variant="primary" leftIcon={CreditCard} onClick={() => setDisburseRun(r)}>
                                     Disburse
                                   </Button>
                                 )}
-                                {isDisbursed && (
+                                {hasPermission('employee.view_bank') && isDisbursed && (
                                   <Button size="xs" variant="outline" leftIcon={FileSpreadsheet} onClick={() => handleExportBankSheet(r)}>
                                     Bank Sheet
                                   </Button>

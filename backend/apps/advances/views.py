@@ -1,3 +1,4 @@
+from common.permissions import HasPermission
 from decimal import Decimal
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status
@@ -16,7 +17,8 @@ from .serializers import (
 
 class AdvanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = AdvanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['advance.view'], 'write': ['advance.approve'], 'create': ['advance.request'], 'request_advance': ['advance.request']}
     filterset_fields = ['employee', 'status']
 
     def get_queryset(self):
@@ -207,7 +209,8 @@ class AdvanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
 class LoanViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = LoanSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['advance.view'], 'write': ['advance.approve'], 'create': ['advance.request'], 'request_advance': ['advance.request']}
     queryset = Loan.objects.prefetch_related('repayments').all()
     filterset_fields = ['employee', 'status']
 
@@ -223,7 +226,8 @@ class LoanViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
 class ReimbursementViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ReimbursementSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['advance.view'], 'write': ['advance.approve'], 'create': ['advance.request'], 'request_advance': ['advance.request']}
     queryset = Reimbursement.objects.all()
     filterset_fields = ['employee', 'status']
 

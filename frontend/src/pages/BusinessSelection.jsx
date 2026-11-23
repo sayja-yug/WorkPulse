@@ -60,14 +60,14 @@ export const BusinessSelection = () => {
             <p className="text-xs text-zinc-600 ">
               Choose an organization workspace to load your role-specific dashboard and permissions:
             </p>
-            <button
+            {user?.is_superuser && <button
               type="button"
               onClick={() => setShowCreate(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950 hover:bg-zinc-800   text-white  rounded-lg text-xs font-bold shadow-2xs transition-colors self-start sm:self-auto cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New Company</span>
-            </button>
+            </button>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -1,112 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import api from '../api/client';
-import { BarChart3, Download, Calendar, TrendingUp, Layers, FileSpreadsheet, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowUpRight, CalendarClock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { PageHeader } from '../components/layout/PageHeader';
+import { Card, CardContent, Loader } from '../components/ui';
 import { formatINR } from '../utils/formatters';
-import { Loader } from '../components/ui/Loader';
-import { HelpButton } from '../components/ui/HelpButton';
+import api from '../api/client';
 
 export const Reports = () => {
+  const { business, hasPermission } = useAuth();
   const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    const fetchReport = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/reports/overview/');
-        setReport(res.data.data);
-      } catch (err) {
-        console.error('Failed to load report', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReport();
-  }, []);
+    const controller = new AbortController();
+    setReport(null);
+    setError(false);
+    if (!hasPermission('report.view')) return;
+    api.get('/reports/overview/', { signal: controller.signal })
+      .then(({ data }) => setReport(data.data))
+      .catch(() => { if (!controller.signal.aborted) setError(true); });
+    return () => controller.abort();
+  }, [business?.id]);
+
+  const metrics = report ? [
+    ['Active employees', report.active_employees],
+    ['Branches', report.branches_count],
+    ['Departments', report.departments_count],
+  ] : [];
+  if (report?.financials?.monthly_payroll_total != null) {
+    metrics.push(['Latest payroll', formatINR(report.financials.monthly_payroll_total)]);
+  }
+  if (report?.financials?.monthly_expenses_total != null) {
+    metrics.push(['Expenses this month', formatINR(report.financials.monthly_expenses_total)]);
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-zinc-950 tracking-tight flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-zinc-900" />
-            <span>Executive Reports &amp; Analytics</span>
-          </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            Live database aggregations, workforce KPIs, and exportable business registers
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => alert('Exporting complete Excel workforce & payroll register...')}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-zinc-50 border border-zinc-300 text-zinc-800 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-zinc-700" />
-            <span>Export Excel</span>
-          </button>
-          <button
-            onClick={() => alert('Generating compliance audit PDF summary...')}
-            className="flex items-center gap-2 px-3.5 py-1.5 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export PDF</span>
-          </button>
-          <HelpButton
-            title="Reports Guide"
-            whereAmI="Your executive reports and data exports hub."
-            whatCanIDo="Inspect attendance statistics, branch headcount, and download Excel/PDF reports."
-            whatHappensNext="Downloaded files reflect verified, real-time data from your database."
-          />
-        </div>
-      </div>
-
-      {loading ? (
-        <Loader message="Aggregating executive reports..." />
+    <div className="space-y-5">
+      <PageHeader title="Reports" subtitle={business?.name} />
+      {hasPermission('report.view') && (error ? <p role="alert">Unable to load the company report.</p> : !report ? (
+        <Loader message="Loading company report…" />
       ) : (
-        <>
-          {/* Metrics Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white  p-6 rounded-xl border border-zinc-200  shadow-xs space-y-2">
-              <span className="text-xs font-semibold text-zinc-500  uppercase tracking-wider">Total Headcount</span>
-              <p className="text-3xl font-extrabold text-zinc-950 ">{report?.total_employees || 22}</p>
-              <p className="text-xs text-zinc-500 ">Across 3 branches &amp; 5 departments</p>
+        <dl className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          {metrics.map(([label, value]) => (
+            <div key={label} className="p-5 bg-white border border-zinc-200 rounded-xl">
+              <dt className="text-sm font-medium text-zinc-600">{label}</dt>
+              <dd className="mt-2 text-2xl text-zinc-950 font-semibold tabular-nums">{value}</dd>
             </div>
-
-            <div className="bg-white  p-6 rounded-xl border border-zinc-200  shadow-xs space-y-2">
-              <span className="text-xs font-semibold text-zinc-500  uppercase tracking-wider">Monthly Payroll Disbursal</span>
-              <p className="text-3xl font-extrabold text-zinc-950 ">
-                {formatINR(report?.financials?.monthly_payroll_total || 1145000)}
-              </p>
-              <p className="text-xs text-zinc-500 ">Net salary disbursed for active cycle</p>
-            </div>
-
-            <div className="bg-white  p-6 rounded-xl border border-zinc-200  shadow-xs space-y-2">
-              <span className="text-xs font-semibold text-zinc-500  uppercase tracking-wider">Current Month Expenses</span>
-              <p className="text-3xl font-extrabold text-zinc-950 ">
-                {formatINR(report?.financials?.monthly_expenses_total || 14500)}
-              </p>
-              <p className="text-xs text-zinc-500 ">Recorded across petty cash vouchers</p>
-            </div>
-          </div>
-
-          <div className="bg-white  rounded-xl border border-zinc-200  p-6 shadow-xs flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-zinc-100  rounded-xl text-zinc-900  border border-zinc-200 ">
-                <ShieldCheck className="w-6 h-6" />
+          ))}
+        </dl>
+      ))}
+      {hasPermission('employee.view_bank') && !hasPermission('attendance.view_reports') && (
+        <Link to="/" className="block rounded-xl bg-white border border-zinc-200 p-4 font-semibold">View employee bank details on the dashboard</Link>
+      )}
+      {hasPermission('attendance.view_reports') && (
+        <Card>
+          <CardContent>
+            <Link to="/#punch-report" className="flex gap-4 items-center group">
+              <span className="rounded-xl bg-brand-100 text-brand-800 p-3"><CalendarClock size={20} /></span>
+              <div className="flex-1">
+                <h2 className="font-semibold text-zinc-950">Punch In / Punch Out report</h2>
+                <p className="text-sm text-zinc-600">View attendance by branch and date, or download the matching records.</p>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-zinc-950 ">Compliance &amp; Regulatory Audit Pass</h4>
-                <p className="text-xs text-zinc-500 ">
-                  All numbers displayed across this dashboard originate from verified PostgreSQL relational queries.
-                </p>
-              </div>
-            </div>
-          </div>
-        </>
+              <ArrowUpRight className="text-brand-700" size={19} />
+            </Link>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 };
-

@@ -4,22 +4,22 @@
 
 @layer base {
   :root {
-    --bg-canvas: #ffffff;
-    --bg-subtle: #f8fafc;
+    --bg-canvas: #f8f7f2;
+    --bg-subtle: #f8f7f2;
     --bg-surface: #ffffff;
     --bg-surface-elevated: #ffffff;
-    --bg-muted: #f1f5f9;
+    --bg-muted: #edf1e8;
 
-    --fg-primary: #09090b;
-    --fg-secondary: #27272a;
-    --fg-muted: #71717a;
-    --fg-subtle: #a1a1aa;
+    --fg-primary: #163b2c;
+    --fg-secondary: #304d3e;
+    --fg-muted: #637568;
+    --fg-subtle: #9fae9e;
 
-    --border-default: #e4e4e7;
-    --border-subtle: #f4f4f5;
-    --border-strong: #71717a;
+    --border-default: #e1e5da;
+    --border-subtle: #eef0e9;
+    --border-strong: #637568;
 
-    --accent-primary: #09090b;
+    --accent-primary: #163b2c;
     --accent-contrast: #ffffff;
 
     color-scheme: light;
@@ -101,7 +101,7 @@
   }
 }
 
-/* Enterprise sleek monochrome scrollbars */
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -112,10 +112,81 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d4d4d8;
+  background: #cbd4c6;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1aa;
+  background: #9fae9e;
+}
+/* The same illustration anchors the workspace and the dashboard greeting. */
+.workspace-sidebar {
+  isolation: isolate;
+  background-color: #163b2c;
+}
+.workspace-sidebar::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  bottom: 5.25rem;
+  left: 0;
+  width: 100%;
+  height: 15rem;
+  background: url('../assets/ash-branch.webp') right center / 150% auto no-repeat;
+  transform: scaleX(-1);
+  opacity: .16;
+}
+.workspace-sidebar nav a {
+  min-height: 34px;
+}
+.workspace-sidebar nav a[aria-current="page"] {
+  box-shadow: inset 3px 0 #b9ceaa;
+}
+.brand-mark {
+  height: 34px;
+  width: 34px;
+  color: #e1e9c9;
+  background: #31553f;
+  border: 1px solid #70876c;
+  border-radius: 10px;
+}
+.brand-wordmark {
+  font: 24px/1 Georgia, Cambria, serif;
+  letter-spacing: -.045em;
+}
+.dashboard-welcome {
+  position: relative;
+  isolation: isolate;
+  min-height: 104px;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0 16px;
+}
+.dashboard-welcome::before {
+  position: absolute;
+  content: '';
+  z-index: -1;
+  pointer-events: none;
+  inset: -4px 0 -4px auto;
+  width: min(51%, 560px);
+  background: url('../assets/ash-branch.webp') 53% 52% / cover no-repeat;
+  opacity: .29;
+  mask-image: linear-gradient(to right, transparent, #000 30%);
+}
+.dashboard-welcome h1 {
+  font-family: Georgia, Cambria, serif;
+  font-size: clamp(30px, 3.1vw, 46px);
+  font-weight: 400;
+  letter-spacing: -.048em;
+  line-height: 1.12;
+  color: #163b2c;
+}
+:where(button, a, select, input, textarea, [role="combobox"]):focus-visible {
+  outline: 2px solid #608463;
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .dashboard-welcome { min-height: 99px; }
+  .dashboard-welcome::before { width: 36%; opacity: .18; }
 }

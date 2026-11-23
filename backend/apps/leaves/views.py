@@ -1,3 +1,4 @@
+from common.permissions import HasPermission
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,14 +16,16 @@ from .services import LeaveService
 
 class LeaveTypeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = LeaveTypeSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['leave.view'], 'write': ['business.update'], 'reject': ['leave.reject']}
     queryset = LeaveType.objects.all()
     filterset_fields = ['is_active', 'is_paid']
 
 
 class LeaveBalanceViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveBalanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['leave.view'], 'write': ['business.update'], 'reject': ['leave.reject']}
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None)
@@ -38,7 +41,8 @@ class LeaveBalanceViewSet(viewsets.ModelViewSet):
 
 class LeaveRequestViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = LeaveRequestSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['leave.view'], 'write': ['leave.approve'], 'reject': ['leave.reject'], 'create': ['leave.apply']}
     filterset_fields = ['employee', 'leave_type', 'status']
 
     def get_queryset(self):
@@ -204,7 +208,8 @@ class LeaveRequestViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
 class LeaveTransactionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LeaveTransactionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['leave.view'], 'write': ['leave.approve'], 'reject': ['leave.reject']}
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None)

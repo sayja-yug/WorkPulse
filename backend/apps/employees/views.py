@@ -1,6 +1,12 @@
 import io
 import csv
 import logging
+from decimal import Decimal, InvalidOperation
+from django.db import transaction
+from django.db.models import Case, IntegerField, Q, Value, When
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from apps.accounts.services import PermissionService
+from apps.attendance.scope import workforce_scope
 from datetime import datetime
 from django.http import HttpResponse
 import openpyxl
@@ -10,7 +16,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.mixins import TenantViewSetMixin
-from common.permissions import HasPermission
+from common.permissions import HasPermission, IsBusinessMember
 from apps.notifications.services import notify_employee, notify_business_managers
 from .models import Employee, EmployeeDocument, EmploymentHistory
 from .serializers import (
@@ -19,37 +25,43 @@ from .serializers import (
     EmployeeDocumentSerializer,
     EmploymentHistorySerializer
 )
-from .services import EmployeeService
+from .services import EmployeeService, business_today
 
 logger = logging.getLogger(__name__)
 
 
 class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = EmployeeSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = Employee.objects.select_related('branch', 'department', 'designation', 'user').all()
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    http_method_names = ['get', 'post', 'patch', 'put', 'head', 'options']
+    permission_map = {
+        'list': ['employee.view'], 'retrieve': ['employee.view'], 'history': ['employee.view'],
+        'metadata': ['employee.view'], 'destroy': ['employee.deactivate'],
+        'create': ['employee.create'], 'import_excel': ['employee.create'], 'sample_template': ['employee.create'],
+        'update': ['employee.update'], 'partial_update': ['employee.update'],
+        'activate': ['employee.deactivate'], 'deactivate': ['employee.deactivate'],
+        'terminate': ['employee.deactivate'], 'transfer': ['employee.transfer'], 'export_excel': ['employee.view'],
+    }
+    queryset = Employee.objects.select_related('business', 'branch', 'department', 'designation', 'user')
     filterset_fields = ['branch', 'department', 'designation', 'employment_type', 'is_field_employee']
     search_fields = ['first_name', 'last_name', 'employee_code', 'email', 'phone']
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        user = self.request.user
-        business = getattr(self.request, 'business', None)
+    def get_permissions(self):
+        if self.action in ('retrieve', 'history'):
+            return [permissions.IsAuthenticated(), IsBusinessMember()]
+        return super().get_permissions()
 
-        # Enforce strict branch isolation for Branch Managers and team isolation for Supervisors
-        if business and not user.is_superuser:
-            from apps.accounts.services import PermissionService
-            from django.db.models import Q
-            user_roles = PermissionService.get_user_roles(user, business)
-            if 'SUPERVISOR' in user_roles and not any(r in ['BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN'] for r in user_roles):
-                sup_emp = Employee.objects.filter(user=user, business=business).first()
-                if sup_emp:
-                    qs = qs.filter(Q(reporting_manager=sup_emp) | Q(id=sup_emp.id))
-                else:
-                    qs = qs.none()
-            elif PermissionService.is_branch_scoped(user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
-                qs = qs.filter(branch_id__in=branch_ids)
+    def get_queryset(self):
+        business = self.request.business
+        employees, _ = workforce_scope(self.request, business)
+        qs = employees.select_related('business', 'branch', 'department', 'designation', 'user').order_by(
+            Case(When(status__in=['INACTIVE', 'TERMINATED', 'ABSCONDING'], then=Value(1)),
+                 default=Value(0), output_field=IntegerField()),
+            '-created_at', 'pk',
+        )
+
+        if self.action in ('retrieve', 'history') and not PermissionService.has_permissions(self.request.user, business, ['employee.view']):
+            return qs.filter(user=self.request.user)
 
         status_param = self.request.query_params.get('status')
         if not status_param:
@@ -58,10 +70,8 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         status_param = status_param.strip().upper()
         from apps.attendance.models import AttendanceRecord
         from datetime import timedelta
-        from django.utils import timezone
-        from django.db.models import Q
 
-        today = timezone.now().date()
+        today = business_today(business)
         threshold_date = today - timedelta(days=3)
 
         # Employee IDs who logged at least one punch-in within the last 3 days
@@ -71,34 +81,12 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             att_qs = att_qs.filter(business=business)
         recently_active_ids = att_qs.values_list('employee_id', flat=True).distinct()
 
-        if status_param in ('INACTIVE_3_DAYS', 'INACTIVE'):
-            # Inactive enterprise definition:
-            # 1. Explicitly marked INACTIVE/ABSCONDING in DB, OR
-            # 2. No punch-in for 3+ consecutive days (not in recently_active_ids) and not terminated/resigned
-            return qs.filter(
-                Q(status=Employee.Status.INACTIVE) |
-                Q(status=Employee.Status.ABSCONDING) |
-                (
-                    ~Q(id__in=recently_active_ids) &
-                    ~Q(status__in=[Employee.Status.TERMINATED, 'RESIGNED']) &
-                    (Q(joining_date__lt=threshold_date) | Q(joining_date__isnull=True))
-                )
-            ).distinct()
-
-        elif status_param == 'ACTIVE':
-            # Truly active working employees:
-            # DB status is ACTIVE AND (punched in within last 3 days OR joined within last 3 days)
-            return qs.filter(
-                Q(status=Employee.Status.ACTIVE) &
-                (
-                    Q(id__in=recently_active_ids) |
-                    Q(joining_date__gte=threshold_date)
-                )
-            ).distinct()
-
-        elif status_param in ('TERMINATED', 'RESIGNED', 'ON_NOTICE', 'ABSCONDING'):
+        if status_param == 'INACTIVE_3_DAYS':
+            return qs.filter(status=Employee.Status.ACTIVE, joining_date__lt=threshold_date).exclude(id__in=recently_active_ids)
+        if status_param == 'DEACTIVATED':
+            return qs.filter(deactivated_on__isnull=False)
+        if status_param in Employee.Status.values or status_param == 'RESIGNED':
             return qs.filter(status=status_param)
-
         return qs
 
     def get_serializer_class(self):
@@ -109,28 +97,15 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         business = getattr(self.request, 'business', None)
         if not business:
-            business_id = self.request.headers.get('X-Business-ID') or self.request.META.get('HTTP_X_BUSINESS_ID')
-            if business_id:
-                from apps.businesses.models import Business
-                business = Business.objects.filter(id=business_id).first()
-            elif getattr(self.request.user, 'active_business', None):
-                business = self.request.user.active_business
-            elif getattr(self.request.user, 'is_authenticated', False):
-                from apps.businesses.models import BusinessMembership
-                mem = BusinessMembership.objects.filter(user=self.request.user, is_active=True).first()
-                if mem:
-                    business = mem.business
-        # Auto-enforce branch for Branch Managers
-        user = self.request.user
-        if business and not user.is_superuser:
-            from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
-                target_branch = serializer.validated_data.get('branch')
-                if not target_branch or target_branch.id not in branch_ids:
-                    from apps.branches.models import Branch
-                    if branch_ids:
-                        serializer.validated_data['branch'] = Branch.objects.filter(id=branch_ids[0]).first()
+            raise ValidationError('Select a company before adding employees.')
+        if self.request.data.get('shift_id'):
+            if not PermissionService.has_permissions(self.request.user, business, ['shift.assign']):
+                raise PermissionDenied('Shift assignment permission is required.')
+            from apps.shifts.models import Shift
+            from rest_framework.serializers import UUIDField
+            shift_id = UUIDField().run_validation(self.request.data['shift_id'])
+            if not Shift.objects.filter(pk=shift_id, business=business).exists():
+                raise ValidationError({'shift_id': 'Choose a shift in the selected company.'})
 
         serializer.instance = EmployeeService.create_employee(
             business=business,
@@ -138,7 +113,7 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             created_by=self.request.user,
             base_salary=self.request.data.get('base_salary'),
             shift_id=self.request.data.get('shift_id'),
-            send_invite=self.request.data.get('send_invite', True),
+            send_invite=self.request.data.get('send_invite', False),
         )
         if serializer.instance and business:
             notify_business_managers(
@@ -148,103 +123,59 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
                 exclude_user=self.request.user
             )
 
+    @transaction.atomic
     def perform_update(self, serializer):
+        employee = Employee.objects.select_for_update().get(pk=serializer.instance.pk)
+        new_status = serializer.validated_data.pop('status', employee.status)
+        if new_status != employee.status:
+            if not PermissionService.has_permissions(self.request.user, employee.business, ['employee.deactivate']):
+                raise PermissionDenied('Permission to change employee status is required.')
+            employee = EmployeeService.change_status(employee, new_status, self.request.user)
+
+        serializer.instance = employee
         employee = serializer.save()
         base_salary = self.request.data.get('base_salary')
-        if base_salary is not None and str(base_salary).strip() != '':
+        if base_salary is not None and str(base_salary).strip():
+            from apps.payroll.models import EmployeeSalaryStructure
             try:
-                from decimal import Decimal
-                from apps.payroll.models import EmployeeSalaryStructure
-                val = Decimal(str(base_salary))
-                struct = EmployeeSalaryStructure.objects.filter(employee=employee, is_current=True).first()
-                if struct:
-                    struct.base_salary = val
-                    struct.save(update_fields=['base_salary', 'updated_at'])
-                elif employee.business:
-                    EmployeeSalaryStructure.objects.create(
-                        employee=employee,
-                        business=employee.business,
-                        base_salary=val,
-                        effective_from=timezone.now().date(),
-                        is_current=True
-                    )
-            except Exception:
-                pass
+                amount = Decimal(str(base_salary))
+                if not amount.is_finite() or amount < 0:
+                    raise InvalidOperation
+            except InvalidOperation:
+                raise ValidationError({'base_salary': 'Enter a valid non-negative amount.'})
+            structure = employee.salary_structures.filter(is_current=True).first()
+            if structure:
+                structure.base_salary = amount
+                structure.save(update_fields=['base_salary', 'updated_at'])
+            else:
+                EmployeeSalaryStructure.objects.create(employee=employee, business=employee.business,
+                    base_salary=amount, effective_from=business_today(employee.business), is_current=True)
+
+    def _change_status(self, request, new_status):
+        employee = EmployeeService.change_status(self.get_object(), new_status, request.user)
+        return Response({'success': True, 'data': self.get_serializer(employee).data})
 
     @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):
-        employee = self.get_object()
-        employee.status = Employee.Status.ACTIVE
-        employee.save(update_fields=['status', 'updated_at'])
-        notify_employee(
-            employee=employee,
-            title="Account Activated",
-            message="Your employee profile and access have been activated by management."
-        )
-        return Response({'success': True, 'data': {'message': 'Employee activated successfully.'}})
+        return self._change_status(request, Employee.Status.ACTIVE)
 
     @action(detail=True, methods=['post'])
     def deactivate(self, request, pk=None):
-        employee = self.get_object()
-        employee.status = Employee.Status.INACTIVE
-        employee.save(update_fields=['status', 'updated_at'])
-        notify_employee(
-            employee=employee,
-            title="Account Deactivated",
-            message="Your employee account status has been changed to inactive by management."
-        )
-        return Response({'success': True, 'data': {'message': 'Employee deactivated successfully.'}})
-
-    def destroy(self, request, *args, **kwargs):
-        employee = self.get_object()
-        user = request.user
-        is_owner_or_admin = (
-            user.is_superuser or
-            user.is_staff or
-            user.business_memberships.filter(business=employee.business, is_owner=True).exists() or
-            user.user_roles.filter(role__code__in=['BUSINESS_OWNER', 'SUPER_ADMIN', 'HR_MANAGER']).exists()
-        )
-        if not is_owner_or_admin:
-            return Response(
-                {'success': False, 'error': {'message': 'Only the Business Owner or HR can remove employees.'}},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        try:
-            employee_name = employee.full_name
-            linked_user = employee.user
-
-            if linked_user and not linked_user.is_superuser:
-                linked_user.is_active = False
-                linked_user.save(update_fields=['is_active'])
-
-            employee.delete()
-            return Response(
-                {'success': True, 'data': {'message': f'Employee {employee_name} has been removed successfully.'}},
-                status=status.HTTP_200_OK
-            )
-        except Exception as exc:
-            logger.exception("Failed to delete employee %s: %s", employee.id, exc)
-            return Response(
-                {'success': False, 'error': {'message': f'Unable to remove employee: {str(exc)}'}},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return self._change_status(request, Employee.Status.INACTIVE)
 
     @action(detail=True, methods=['post'])
     def terminate(self, request, pk=None):
-        employee = self.get_object()
-        employee.status = Employee.Status.TERMINATED
-        employee.save(update_fields=['status', 'updated_at'])
-        if employee.user and not employee.user.is_superuser:
-            employee.user.is_active = False
-            employee.user.save(update_fields=['is_active'])
-        return Response({'success': True, 'data': {'message': f'{employee.full_name} has been offboarded / terminated.'}})
+        return self._change_status(request, Employee.Status.TERMINATED)
 
     @action(detail=True, methods=['post'])
     def transfer(self, request, pk=None):
         employee = self.get_object()
         new_branch_id = request.data.get('branch_id')
         new_dept_id = request.data.get('department_id')
+        transfer_data = {key: value for key, value in (
+            ('branch', new_branch_id), ('department', new_dept_id)
+        ) if value is not None}
+        self.get_serializer(employee, data=transfer_data, partial=True).is_valid(raise_exception=True)
         notes = request.data.get('notes', '')
         EmployeeService.transfer_employee(
             employee=employee,
@@ -261,7 +192,7 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             title="Department / Branch Transfer",
             message=f"You have been transferred to Branch: {branch_name}, Department: {dept_name}."
         )
-        return Response({'success': True, 'data': EmployeeSerializer(employee).data})
+        return Response({'success': True, 'data': self.get_serializer(employee).data})
 
     @action(detail=True, methods=['get'])
     def history(self, request, pk=None):
@@ -432,8 +363,9 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             if PermissionService.is_branch_scoped(request.user, business):
                 is_branch_scoped = True
                 bids = PermissionService.get_accessible_branch_ids(request.user, business)
-                if bids:
-                    manager_branch = Branch.objects.filter(id__in=bids).first()
+                if not bids:
+                    raise PermissionDenied('No assigned branch is available.')
+                manager_branch = Branch.objects.filter(id__in=bids).first()
 
         created_count = 0
         skipped_errors = []
@@ -489,7 +421,7 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
                     validated_data=validated_data,
                     created_by=request.user,
                     base_salary=base_sal,
-                    send_invite=True,
+                    send_invite=False,
                 )
                 created_count += 1
             except Exception as err:
@@ -507,29 +439,37 @@ class EmployeeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
 class EmployeeDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = EmployeeDocumentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsBusinessMember, HasPermission]
+    permission_map = {
+        'list': ['employee.view'], 'retrieve': ['employee.view'], 'create': ['employee.update'],
+        'update': ['employee.update'], 'partial_update': ['employee.update'], 'destroy': ['employee.update'],
+    }
+
+    def _employees(self):
+        employees, _ = workforce_scope(self.request, self.request.business)
+        return employees
 
     def get_queryset(self):
+        qs = EmployeeDocument.objects.filter(employee__in=self._employees())
         business = getattr(self.request, 'business', None)
-        qs = EmployeeDocument.objects.filter(employee__business=business)
-        user = self.request.user
-        if business and not user.is_superuser:
-            from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
-                qs = qs.filter(employee__branch_id__in=branch_ids)
+        if not business or not PermissionService.has_permissions(self.request.user, business, ['employee.view_bank']):
+            qs = qs.exclude(document_type=EmployeeDocument.DocType.BANK_STATEMENT)
         return qs
 
+    def get_serializer(self, *args, **kwargs):
+        serializer = super().get_serializer(*args, **kwargs)
+        serializer.fields['employee'].queryset = self._employees()
+        return serializer
+
     def perform_create(self, serializer):
-        user = self.request.user
-        business = getattr(self.request, 'business', None)
-        if business and not user.is_superuser:
-            from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
-                emp = serializer.validated_data.get('employee')
-                if emp and emp.branch_id not in branch_ids:
-                    from rest_framework.exceptions import PermissionDenied
-                    raise PermissionDenied("Cannot upload documents for employees outside your branch.")
+        self._check_bank_document(serializer)
         serializer.save(uploaded_by=self.request.user)
 
+    def perform_update(self, serializer):
+        self._check_bank_document(serializer)
+        serializer.save()
+
+    def _check_bank_document(self, serializer):
+        if serializer.validated_data.get('document_type') == EmployeeDocument.DocType.BANK_STATEMENT:
+            if not PermissionService.has_permissions(self.request.user, self.request.business, ['employee.view_bank']):
+                raise PermissionDenied('Bank details permission is required.')

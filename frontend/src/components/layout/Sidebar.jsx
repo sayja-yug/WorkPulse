@@ -1,6 +1,8 @@
+import { canOpenPage } from '../../utils/access';
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
+  Activity,
   LayoutDashboard,
   Building2,
   Users,
@@ -40,6 +42,7 @@ export const Sidebar = ({
     user,
     activeRole,
     hasPermission,
+    hasRole,
     business,
     businesses,
     switchBusiness,
@@ -183,13 +186,11 @@ export const Sidebar = ({
           name: UI_LABELS.NAV_EMPLOYEES,
           path: '/employees',
           icon: Users,
-          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
         },
         {
           name: UI_LABELS.NAV_ORGANIZATION,
           path: '/organization',
           icon: Building2,
-          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
         },
       ],
     },
@@ -206,7 +207,6 @@ export const Sidebar = ({
           name: UI_LABELS.NAV_WORK_SCHEDULE,
           path: '/shifts',
           icon: Clock,
-          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN'],
         },
         {
           name: UI_LABELS.NAV_LEAVES,
@@ -219,7 +219,6 @@ export const Sidebar = ({
           name: UI_LABELS.NAV_FIELD_WORK,
           path: '/field-management',
           icon: Navigation,
-          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
         },
       ],
     },
@@ -230,20 +229,17 @@ export const Sidebar = ({
           name: UI_LABELS.NAV_PAYROLL,
           path: '/payroll',
           icon: Banknote,
-          allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'EMPLOYEE', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
           employeeName: UI_LABELS.NAV_MY_PAYSLIPS,
         },
         {
           name: UI_LABELS.NAV_ADVANCES_LOANS,
           path: '/advances',
           icon: HandCoins,
-          allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'EMPLOYEE', 'FIELD_EMPLOYEE', 'SUPER_ADMIN'],
         },
         {
           name: UI_LABELS.NAV_CASHBOOK_EXPENSES,
           path: '/cashbook',
           icon: Wallet,
-          allowedRoles: ['BUSINESS_OWNER', 'ACCOUNTANT', 'AUDITOR', 'SUPER_ADMIN'],
         },
       ],
     },
@@ -254,7 +250,6 @@ export const Sidebar = ({
           name: UI_LABELS.NAV_REPORTS,
           path: '/reports',
           icon: BarChart3,
-          allowedRoles: ['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN'],
         },
       ],
     },
@@ -262,34 +257,31 @@ export const Sidebar = ({
       group: UI_LABELS.GROUP_SETTINGS,
       items: [
         {
+          name: 'Roles & permissions',
+          path: '/roles',
+          icon: Users,
+        },
+        {
           name: UI_LABELS.NAV_SUBSCRIPTION,
           path: '/subscription',
           icon: CreditCard,
-          allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
         },
         {
           name: UI_LABELS.NAV_SETTINGS,
           path: '/settings',
           icon: Settings,
-          allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
         },
         {
           name: UI_LABELS.NAV_SYSTEM_CHECK, // Replaces 'Diagnostics', shown ONLY to Business Owner & SuperAdmin
           path: '/testing-panel',
           icon: Terminal,
-          allowedRoles: ['BUSINESS_OWNER', 'SUPER_ADMIN'],
         },
       ],
     },
   ];
 
   // Helper to check if item is permitted for active role
-  const isItemVisible = (item) => {
-    if (!item.allowedRoles && !item.allowedPermissions) return true;
-    if (item.allowedRoles && item.allowedRoles.includes(activeRole)) return true;
-    if (item.allowedPermissions && item.allowedPermissions.some((p) => hasPermission(p))) return true;
-    return false;
-  };
+  const isItemVisible = (item) => canOpenPage(item.path, { user, hasPermission, hasRole });
 
   // Filter sections and exclude empty headings
   const visibleSections = navSections
@@ -301,8 +293,8 @@ export const Sidebar = ({
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-zinc-950 text-zinc-300 flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] border-r border-zinc-800/80 transition-all duration-200 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:z-30 select-none ${
-        isCollapsed ? 'lg:w-20' : 'lg:w-64 xl:w-72'
+      className={`workspace-sidebar fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-zinc-950 text-zinc-300 flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] border-r border-zinc-800/80 transition-all duration-200 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:z-30 select-none ${
+        isCollapsed ? 'lg:w-20' : 'lg:w-60'
       } ${
         isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
       }`}
@@ -310,12 +302,12 @@ export const Sidebar = ({
       {/* 1. Header: Brand & Notification Quick Action */}
       <div className={`h-16 px-4 flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950 shrink-0 ${isCollapsed ? 'lg:justify-center lg:px-2' : 'sm:px-5'}`}>
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-white text-zinc-950 flex items-center justify-center font-black text-base shadow-sm shrink-0">
-            W
+          <div className="brand-mark flex items-center justify-center shrink-0" aria-hidden="true">
+            <Activity size={24} strokeWidth={1.8} />
           </div>
           {!isCollapsed && (
             <div className="min-w-0">
-              <h1 className="text-sm font-bold text-white tracking-tight leading-none truncate">
+              <h1 className="brand-wordmark text-white leading-none truncate">
                 WorkPulse
               </h1>
               <p className="text-[10px] text-zinc-400 font-medium tracking-wider uppercase mt-1 leading-none">
@@ -334,7 +326,7 @@ export const Sidebar = ({
                 className={`p-2 rounded-lg transition-colors cursor-pointer relative ${
                   showNotifications
                     ? 'bg-zinc-800 text-white'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                    : 'text-[#d4e2d6] hover:text-white hover:bg-white/10'
                 }`}
                 title="Notifications"
                 aria-label="Open Notifications"
@@ -524,7 +516,7 @@ export const Sidebar = ({
       </div>
 
       {/* 3. Grouped Navigation Menu */}
-      <nav className={`flex-1 min-h-0 py-3 overflow-y-auto overscroll-contain space-y-4 ${isCollapsed ? 'px-2' : 'px-3'}`}>
+      <nav className={`flex-1 min-h-0 py-3 overflow-y-auto overscroll-contain space-y-2.5 ${isCollapsed ? 'px-2' : 'px-3'}`}>
         {/* Top-level Dashboard link */}
         <div className="space-y-1">
           <NavLink
@@ -537,8 +529,8 @@ export const Sidebar = ({
                 isCollapsed ? 'lg:justify-center lg:px-2' : ''
               } ${
                 isActive
-                  ? 'bg-white text-zinc-950 font-bold shadow-xs'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                  ? 'bg-white/15 text-white font-semibold'
+                  : 'text-[#d4e2d6] hover:text-white hover:bg-white/10'
               }`
             }
           >
@@ -551,7 +543,7 @@ export const Sidebar = ({
         {visibleSections.map((section) => (
           <div key={section.group} className="space-y-1">
             {!isCollapsed && (
-              <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+              <p className="px-3 pt-1.5 pb-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#a8bfae]">
                 {section.group}
               </p>
             )}
@@ -570,8 +562,8 @@ export const Sidebar = ({
                       isCollapsed ? 'lg:justify-center lg:px-2' : ''
                     } ${
                       isActive
-                        ? 'bg-white text-zinc-950 font-bold shadow-xs'
-                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                        ? 'bg-white/15 text-white font-semibold'
+                        : 'text-[#d4e2d6] hover:text-white hover:bg-white/10'
                     }`
                   }
                 >

@@ -60,7 +60,7 @@ export const PlatformLayout = () => {
 
       {/* Dedicated Platform Admin Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 text-zinc-300 flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] border-r border-zinc-800 transition-transform duration-200 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:z-30 select-none ${
+        className={`workspace-sidebar fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 text-zinc-300 flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] border-r border-zinc-800 transition-transform duration-200 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:z-30 select-none ${
           sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >

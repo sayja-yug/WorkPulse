@@ -1,3 +1,4 @@
+from common.permissions import HasPermission
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
@@ -27,20 +28,23 @@ from .services import PayrollService
 
 class SalaryComponentViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = SalaryComponentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['payroll.view'], 'write': ['payroll.calculate'], 'approve': ['payroll.approve'], 'disburse': ['payroll.approve']}
     queryset = SalaryComponent.objects.all()
     filterset_fields = ['type', 'is_active']
 
 
 class SalaryTemplateViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = SalaryTemplateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['payroll.view'], 'write': ['payroll.calculate'], 'approve': ['payroll.approve'], 'disburse': ['payroll.approve']}
     queryset = SalaryTemplate.objects.all()
 
 
 class EmployeeSalaryStructureViewSet(viewsets.ModelViewSet):
     serializer_class = EmployeeSalaryStructureSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['payroll.view'], 'write': ['payroll.calculate'], 'approve': ['payroll.approve'], 'disburse': ['payroll.approve']}
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None)
@@ -53,7 +57,8 @@ class EmployeeSalaryStructureViewSet(viewsets.ModelViewSet):
 
 class PayrollRunViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = PayrollRunSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['payroll.view'], 'write': ['payroll.calculate'], 'approve': ['payroll.approve'], 'disburse': ['payroll.approve']}
     queryset = PayrollRun.objects.prefetch_related('items__components', 'items__employee').all()
     filterset_fields = ['status']
 
@@ -203,7 +208,10 @@ class PayrollRunViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
 class PayslipViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PayslipSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': []}
+    any_permissions = ['payroll.view', 'payroll.view_own']
+    filterset_fields = ['employee']
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None) or getattr(self.request.user, 'active_business', None)
@@ -213,9 +221,8 @@ class PayslipViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(business=business)
 
         # Managers (Owner, HR, Accountant, Auditor, Admin) can view all company payslips
-        is_manager = user.is_superuser or user.is_staff or user.user_roles.filter(
-            role__code__in=['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'AUDITOR', 'SUPER_ADMIN']
-        ).exists()
+        from apps.accounts.services import PermissionService
+        is_manager = PermissionService.has_permissions(user, business, ['payroll.view'])
 
         if not is_manager:
             qs = qs.filter(employee__user=user)
@@ -225,7 +232,8 @@ class PayslipViewSet(viewsets.ReadOnlyModelViewSet):
 
 class SalaryPaymentViewSet(viewsets.ModelViewSet):
     serializer_class = SalaryPaymentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['payroll.view'], 'write': ['payroll.approve'], 'approve': ['payroll.approve'], 'disburse': ['payroll.approve']}
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None)

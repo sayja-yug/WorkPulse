@@ -39,7 +39,10 @@ import {
 const ALL_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export const Organization = () => {
-  const { business } = useAuth();
+  const { business, hasPermission } = useAuth();
+  const canReadStaff = hasPermission('employee.view');
+  const canAssignManager = hasPermission('role.assign');
+  const canReadAttendance = hasPermission('attendance.view');
   const { canManageBranches, isBranchManagerStrict } = usePermissions();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
@@ -112,7 +115,7 @@ export const Organization = () => {
         api.get('/branches/departments/'),
         api.get('/branches/designations/'),
         api.get('/attendance/holidays/'),
-        api.get('/employees/'),
+        canReadStaff ? api.get('/employees/') : Promise.resolve({ data: [] }),
       ];
       if (business?.id) {
         calls.push(api.get(`/businesses/${business.id}/`));
@@ -220,7 +223,9 @@ export const Organization = () => {
     try {
       setSubmitting(true);
       const payload = { ...branchForm };
-      if (!payload.manager_id) {
+      if (!canAssignManager || (editingBranch && String(payload.manager_id || '') === String(editingBranch.manager?.user_id || ''))) {
+        delete payload.manager_id;
+      } else if (!payload.manager_id) {
         payload.manager_id = null;
       }
       if (editingBranch) {
@@ -386,26 +391,26 @@ export const Organization = () => {
                 </h1>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-800 border border-zinc-200 uppercase tracking-wide shrink-0">
                   <ShieldCheck className="w-3 h-3 text-zinc-700" />
-                  Verified Organization
+                  Organization
                 </span>
               </div>
               <p className="text-xs text-zinc-500 mt-1 flex flex-wrap items-center gap-2 font-mono">
                 <span>Tenant ID: <strong className="text-zinc-800 font-bold">{bizDetail?.slug || 'company-slug'}</strong></span>
                 <span className="hidden sm:inline text-zinc-300">&bull;</span>
-                <span className="font-sans">HQ: <strong className="text-zinc-800 font-semibold">{bizDetail?.city || 'Noida'}, {bizDetail?.state || 'India'}</strong></span>
+                <span className="font-sans">HQ: <strong className="text-zinc-800 font-semibold">{[bizDetail?.city, bizDetail?.state].filter(Boolean).join(', ') || '—'}</strong></span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
-            <Button
+            {canManageBranches && (<Button
               variant="primary"
               size="sm"
               leftIcon={Edit3}
               onClick={openEditBusiness}
             >
               Edit Profile
-            </Button>
+            </Button>)}
           </div>
         </div>
 
@@ -471,14 +476,14 @@ export const Organization = () => {
                   <CardTitle>Corporate Identity &amp; Contact Details</CardTitle>
                   <CardDescription>Official registered business profile and contact information</CardDescription>
                 </div>
-                <Button
+                {canManageBranches && (<Button
                   variant="outline"
                   size="xs"
                   leftIcon={Edit3}
                   onClick={openEditBusiness}
                 >
                   Edit
-                </Button>
+                </Button>)}
               </CardHeader>
 
               <CardContent className="space-y-4">
@@ -697,7 +702,7 @@ export const Organization = () => {
                           Edit
                         </Button>
                       )}
-                      <Button
+                      {canReadAttendance && (<Button
                         size="xs"
                         variant="primary"
                         leftIcon={CalendarCheck2}
@@ -705,7 +710,7 @@ export const Organization = () => {
                         title={`View attendance for ${b.name}`}
                       >
                         Attendance
-                      </Button>
+                      </Button>)}
                       <Button
                         size="xs"
                         variant="secondary"
@@ -739,14 +744,14 @@ export const Organization = () => {
               <CardTitle>Departments &amp; Divisions ({departments.length})</CardTitle>
               <CardDescription>Departmental division codes and employee groupings</CardDescription>
             </div>
-            <Button
+            {canManageBranches && (<Button
               variant="primary"
               size="sm"
               leftIcon={Plus}
               onClick={openAddDept}
             >
               Add Department
-            </Button>
+            </Button>)}
           </CardHeader>
 
           <div className="overflow-x-auto">
@@ -764,12 +769,12 @@ export const Organization = () => {
                     <td className="py-3.5 px-4 font-bold text-zinc-900">{d.name}</td>
                     <td className="py-3.5 px-4 font-mono font-bold text-zinc-600">{d.code}</td>
                     <td className="py-3.5 px-4 text-right space-x-2">
-                      <Button size="xs" variant="secondary" onClick={() => handleViewDeptUsers(d)}>
+                      {canReadStaff && (<Button size="xs" variant="secondary" onClick={() => handleViewDeptUsers(d)}>
                         Users
-                      </Button>
-                      <Button size="xs" variant="outline" onClick={() => openEditDept(d)}>
+                      </Button>)}
+                      {canManageBranches && (<Button size="xs" variant="outline" onClick={() => openEditDept(d)}>
                         Edit
-                      </Button>
+                      </Button>)}
                     </td>
                   </tr>
                 ))}
@@ -787,14 +792,14 @@ export const Organization = () => {
               <CardTitle>Designations &amp; Roles ({designations.length})</CardTitle>
               <CardDescription>Hierarchy levels, seniority bands, and job titles</CardDescription>
             </div>
-            <Button
+            {canManageBranches && (<Button
               variant="primary"
               size="sm"
               leftIcon={Plus}
               onClick={() => setShowDesigModal(true)}
             >
               Add Designation
-            </Button>
+            </Button>)}
           </CardHeader>
 
           <div className="overflow-x-auto">
@@ -830,13 +835,13 @@ export const Organization = () => {
               <CardTitle>Company Operating Schedule</CardTitle>
               <CardDescription>Standard configured active working days for workforce shifts</CardDescription>
             </div>
-            <Button
+            {canManageBranches && (<Button
               variant="primary"
               size="sm"
               onClick={() => setShowWorkingDaysModal(true)}
             >
               Configure Schedule
-            </Button>
+            </Button>)}
           </CardHeader>
 
           <CardContent>
@@ -872,14 +877,14 @@ export const Organization = () => {
               <CardTitle>Company Holidays Calendar ({holidays.length})</CardTitle>
               <CardDescription>Scheduled public, national, and company holidays</CardDescription>
             </div>
-            <Button
+            {hasPermission('attendance.mark') && (<Button
               variant="primary"
               size="sm"
               leftIcon={Plus}
               onClick={() => setShowHolidayModal(true)}
             >
               Add Holiday
-            </Button>
+            </Button>)}
           </CardHeader>
 
           {holidays.length === 0 ? (
@@ -1033,7 +1038,7 @@ export const Organization = () => {
             />
           </div>
 
-          <div>
+          {canAssignManager && <div>
             <label className="block text-xs font-semibold text-zinc-900 mb-1.5">
               Branch Manager (Site Supervisor)
             </label>
@@ -1052,7 +1057,7 @@ export const Organization = () => {
             <p className="text-[10px] text-zinc-500 mt-1">
               Designate which manager leads this branch. The Branch Manager will only have authority over candidates in this branch.
             </p>
-          </div>
+          </div>}
 
           <div className="pt-4 border-t border-zinc-100 flex items-center justify-end gap-2.5">
             <Button
@@ -1131,20 +1136,20 @@ export const Organization = () => {
             </div>
 
             <div className="flex flex-wrap gap-2 pt-2 border-t border-zinc-100">
-              <Button size="xs" variant="primary" onClick={() => openEditBranch(selectedBranch)}>
+              {canManageBranches && <Button size="xs" variant="primary" onClick={() => openEditBranch(selectedBranch)}>
                 Edit Branch
-              </Button>
-              <Button size="xs" variant="secondary" onClick={() => handleViewBranchEmployees(selectedBranch)}>
+              </Button>}
+              {canReadStaff && (<Button size="xs" variant="secondary" onClick={() => handleViewBranchEmployees(selectedBranch)}>
                 View Employees
-              </Button>
-              <Button
+              </Button>)}
+              {canReadAttendance && (<Button
                 size="xs"
                 variant="outline"
                 leftIcon={CalendarCheck2}
                 onClick={() => navigate(`/attendance?branch=${selectedBranch.id}&branchName=${encodeURIComponent(selectedBranch.name)}`)}
               >
                 Branch Attendance
-              </Button>
+              </Button>)}
             </div>
 
             {showBranchEmployees && (

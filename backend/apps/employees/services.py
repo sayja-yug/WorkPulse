@@ -1,9 +1,63 @@
+from calendar import monthrange
+import secrets
+from django.core.mail import send_mail
+from rest_framework.exceptions import PermissionDenied
+from apps.attendance.scope import business_zone
+
 from django.db import transaction
 from django.utils import timezone
 from .models import Employee, EmploymentHistory
 
 
+def business_today(business):
+    return timezone.localdate(timezone=business_zone(business))
+
+
+def completed_tenure(joined, as_of):
+    """Count calendar-month anniversaries, using month end in shorter months."""
+    months = (as_of.year - joined.year) * 12 + as_of.month - joined.month
+    anniversary_day = min(joined.day, monthrange(as_of.year, as_of.month)[1])
+    months -= as_of.day < anniversary_day
+    years, months = divmod(max(months, 0), 12)
+    parts = []
+    if years:
+        parts.append(f"{years} year{'s' if years != 1 else ''}")
+    if months or not years:
+        parts.append(f"{months} month{'s' if months != 1 else ''}")
+    return ' '.join(parts)
+
+
 class EmployeeService:
+    @staticmethod
+    @transaction.atomic
+    def change_status(employee, new_status, actor):
+        employee = Employee.objects.select_for_update().get(pk=employee.pk)
+        old_status = employee.status
+        if old_status == new_status and (new_status != Employee.Status.INACTIVE or employee.deactivated_on):
+            return employee
+
+        effective_date = business_today(employee.business)
+        deactivating = new_status in (Employee.Status.INACTIVE, Employee.Status.TERMINATED)
+        employee.status = new_status
+        employee.deactivated_on = effective_date if deactivating else None
+        employee.deactivated_by_name = actor.full_name if deactivating else ''
+        employee.save(update_fields=['status', 'deactivated_on', 'deactivated_by_name', 'updated_at'])
+        EmploymentHistory.objects.create(
+            employee=employee,
+            change_type=EmploymentHistory.ChangeType.STATUS_CHANGED,
+            from_value={'status': old_status},
+            to_value={'status': new_status, 'actor_name': actor.full_name},
+            effective_date=effective_date,
+            changed_by=actor,
+            notes=f'{employee.get_status_display()} status set by {actor.full_name}.',
+        )
+        from apps.notifications.services import notify_employee
+        notify_employee(
+            employee=employee, title='Employment status updated',
+            message=f'Your employment status is now {employee.get_status_display().lower()}.',
+        )
+        return employee
+
     @staticmethod
     def generate_employee_code(business):
         """Generates unique sequential employee code, e.g. WP-0001."""
@@ -29,28 +83,36 @@ class EmployeeService:
         if email and send_invite and not validated_data.get('user'):
             from apps.accounts.models import User, Role, UserRole
             from apps.businesses.models import BusinessMembership
+            from apps.accounts.services import PermissionService
+            emp_role = Role.objects.filter(code=Role.RoleCode.EMPLOYEE, is_system=True, is_active=True).first()
+            if not emp_role or not created_by or not PermissionService.has_permissions(created_by, business, ['role.assign']) or not PermissionService.can_delegate_role(created_by, business, emp_role):
+                raise PermissionDenied('Creating a login requires permission to delegate the employee role.')
             user = User.objects.filter(email__iexact=email).first()
+            initial_password = None
             if not user:
+                initial_password = secrets.token_urlsafe(24)
                 user = User.objects.create_user(
                     email=email,
-                    password='WorkPulse@2026',
+                    password=initial_password,
                     first_name=validated_data.get('first_name', 'Staff'),
                     last_name=validated_data.get('last_name', ''),
                     phone=validated_data.get('phone', ''),
                     active_business=business,
-                    email_verified=True,
                 )
             BusinessMembership.objects.get_or_create(
                 user=user,
                 business=business,
                 defaults={'is_owner': False, 'is_active': True}
             )
-            emp_role = Role.objects.filter(code=Role.RoleCode.EMPLOYEE, is_system=True).first()
-            if emp_role:
-                UserRole.objects.get_or_create(
-                    user=user,
-                    business=business,
-                    defaults={'role': emp_role, 'branch': validated_data.get('branch')}
+            UserRole.objects.get_or_create(
+                user=user, business=business, role=emp_role,
+                defaults={'branch': validated_data.get('branch')}
+            )
+            if initial_password:
+                send_mail(
+                    f'Your {business.name} WorkPulse account',
+                    f'Use {email} and the initial password {initial_password} to sign in to WorkPulse. Change your password after signing in.',
+                    None, [email],
                 )
             validated_data['user'] = user
 

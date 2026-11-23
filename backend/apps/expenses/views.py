@@ -1,3 +1,4 @@
+from common.permissions import HasPermission
 from rest_framework import viewsets, permissions, status, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -13,14 +14,16 @@ from .services import CashbookService
 
 class ExpenseCategoryViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ExpenseCategorySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['expense.view'], 'write': ['expense.create'], 'approve': ['expense.approve']}
     queryset = ExpenseCategory.objects.all()
     filterset_fields = ['type', 'is_active']
 
 
 class ExpenseViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['expense.view'], 'write': ['expense.create'], 'approve': ['expense.approve']}
     queryset = Expense.objects.select_related('category', 'created_by').all()
     filterset_fields = ['category', 'status', 'payment_mode', 'date']
 
@@ -65,7 +68,8 @@ class ExpenseViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
 class CashTransactionViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = CashTransactionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['expense.view'], 'write': ['expense.create'], 'approve': ['expense.approve']}
     queryset = CashTransaction.objects.select_related('category', 'created_by').all()
     filterset_fields = ['type', 'category', 'date']
 
@@ -92,7 +96,8 @@ class CashTransactionViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
 
 class CashbookBalanceView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['expense.view'], 'write': ['expense.create'], 'approve': ['expense.approve']}
 
     def get(self, request):
         business = getattr(request, 'business', None)

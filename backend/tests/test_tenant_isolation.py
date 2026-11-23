@@ -2,7 +2,7 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from apps.accounts.models import User, Role, UserRole
+from apps.accounts.models import Permission, User, Role, RolePermission, UserRole
 from apps.businesses.models import Business, BusinessMembership
 from apps.employees.models import Employee
 
@@ -21,6 +21,10 @@ class TestTenantIsolation:
         )
         self.biz_a = Business.objects.create(name='Business A', slug='biz-a')
         BusinessMembership.objects.create(user=self.user_a, business=self.biz_a, is_owner=True)
+        role, _ = Role.objects.get_or_create(code='BUSINESS_OWNER', is_system=True, defaults={'name': 'Owner'})
+        view, _ = Permission.objects.get_or_create(code='employee.view', defaults={'name': 'View employees', 'module': 'employees'})
+        RolePermission.objects.get_or_create(role=role, permission=view)
+        UserRole.objects.create(user=self.user_a, business=self.biz_a, role=role)
         self.emp_a = Employee.objects.create(
             business=self.biz_a,
             employee_code='WP-0001',

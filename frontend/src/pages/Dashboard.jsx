@@ -1,1238 +1,272 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { usePermissions } from '../hooks/usePermissions';
-import { useNotification } from '../context/NotificationContext';
-import api from '../api/client';
+import { Link } from 'react-router-dom';
 import {
-  Users,
-  CalendarCheck2,
-  AlertCircle,
-  AlertTriangle,
-  Banknote,
-  Receipt,
-  TrendingUp,
-  Building,
-  Clock,
-  CheckCircle2,
-  Calendar,
-  UserX,
-  Plus,
-  Activity,
-  ArrowUpRight,
-  ShieldCheck,
-  MapPin,
-  Sparkles,
+  ArrowUpRight, Building2, CalendarCheck2, CalendarDays, CalendarMinus, ChartNoAxesColumnIncreasing,
+  ChevronRight, ClipboardList, Download, FileText, Landmark, Leaf, ListFilter,
+  UserPlus, Users, Wallet, LogIn, LogOut,
 } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { formatINR, formatTime } from '../utils/formatters';
-import { Loader } from '../components/ui/Loader';
-import { Badge } from '../components/ui/Badge';
-import { calculateWorkHoursSummary, parseCheckInDate } from '../utils/workHours';
-import { calculateEmployeeInactivity } from '../utils/employeeInactivity';
-import { UI_LABELS } from '../constants/labels';
-import { NumberTooltip } from '../components/ui/NumberTooltip';
-import { HelpButton } from '../components/ui/HelpButton';
-import { GettingStartedChecklist } from '../components/dashboard/GettingStartedChecklist';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
+import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
+import { Pagination } from '../components/ui/Pagination';
+import { formatDate } from '../utils/formatters';
 
-export const Dashboard = () => {
-  const { user, business, activeRole } = useAuth();
-  const navigate = useNavigate();
-  const {
-    isEmployee,
-    isHR,
-    isAccountant,
-    isAccountantStrict,
-    isSelfAttendanceOnly,
-    isAuditor,
-    isOwner,
-    canManageEmployees,
-    canCreateEmployee,
-    canManagePayroll,
-  } = usePermissions();
+const PAGE_SIZE = 8;
+const panel = 'rounded-2xl border border-zinc-200 bg-white shadow-xs';
+const metrics = [
+  { key: 'active', label: 'Active employees', detail: 'Current workforce', icon: Users, color: 'bg-[#e3eddf] text-[#355a39]' },
+  { key: 'present', label: 'Present today', detail: 'Includes half days', icon: CalendarCheck2, color: 'bg-[#fbecd6] text-[#946920]' },
+  { key: 'absent', label: 'Absent today', detail: 'Excludes employees on leave', icon: CalendarMinus, color: 'bg-[#eee7f3] text-[#715a85]' },
+  { key: 'on_leave', label: 'On leave today', detail: 'Paid and unpaid leave', icon: Leaf, color: 'bg-[#e0eee7] text-[#387660]' },
+];
+const fieldClass = 'rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-xs font-medium text-zinc-800';
+const errorText = (error) => error?.response?.data?.error?.message || 'Could not load this report. Please try again.';
+
+function EmployeeName({ row }) {
+  const initials = row.employee.split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('');
+  return <div className="flex items-center gap-2.5">
+    <span aria-hidden="true" className="hidden sm:grid place-items-center w-8 h-8 shrink-0 rounded-full bg-[#eaf0e6] text-[#416146] text-[11px] font-bold">{initials}</span>
+    <div><div className="font-semibold text-zinc-900">{row.employee}</div><div className="text-[10px] text-zinc-500 mt-0.5">{row.employee_code}</div></div>
+  </div>;
+}
+
+function EmployeeReport({ group, branch, scopeName, onClose }) {
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+  const isBank = group === 'bank';
+  useEffect(() => {
+    const controller = new AbortController();
+    setData(null);
+    setError('');
+    api.get(isBank ? '/reports/bank-details/' : '/reports/workforce/', {
+      params: { branch: branch || undefined, group: isBank ? undefined : group, page, page_size: PAGE_SIZE },
+      signal: controller.signal,
+    }).then(res => setData(res.data)).catch(err => {
+      if (!controller.signal.aborted) setError(errorText(err));
+    });
+    return () => controller.abort();
+  }, [page, group, branch, isBank]);
+
+  return <Modal isOpen onClose={onClose} title={isBank ? 'Employee bank details' : metrics.find(m => m.key === group).label}
+    subtitle={scopeName} maxWidth="max-w-2xl">
+    {error ? <p role="alert">{error}</p> : !data ? <p role="status">Loading employees…</p> : !data.count ? <p>No matching employees.</p> :
+      <><div className="overflow-x-auto">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-zinc-50 text-zinc-600"><tr>
+            {(isBank ? ['Employee', 'Bank', 'Account number', 'IFSC'] : ['Employee', 'Branch']).map(t => <th key={t} className="p-3">{t}</th>)}
+          </tr></thead>
+          <tbody className="divide-y divide-zinc-100">{data.results.map(row => <tr key={row.id}>
+            <td className="p-3"><EmployeeName row={row} /></td>
+            {isBank ? <><td className="p-3">{row.bank_name || 'Missing'}</td><td className="p-3">{row.bank_account_number || 'Missing'}</td><td className="p-3">{row.bank_ifsc_code || 'Missing'}</td></> :
+              <td className="p-3">{row.branch || 'Unassigned'}</td>}
+          </tr>)}</tbody>
+        </table>
+      </div><Pagination currentPage={page} totalPages={Math.ceil(data.count / PAGE_SIZE)} totalItems={data.count} pageSize={PAGE_SIZE} onPageChange={setPage} /></>}
+  </Modal>;
+}
+
+function SelfPunch({ businessId }) {
+  const { user } = useAuth();
   const { toast } = useNotification();
-
-  const isSupervisor = activeRole === 'SUPERVISOR';
-  const isBranchManager = activeRole === 'BRANCH_MANAGER';
-  const isBusinessOwner = isOwner || activeRole === 'BUSINESS_OWNER';
-
-  const [stats, setStats] = useState(null);
-  const [weeklyData, setWeeklyData] = useState([]);
-  const [attendanceRecords, setAttendanceRecords] = useState([]);
-  const [todayRecord, setTodayRecord] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [punchingAction, setPunchingAction] = useState(false);
-  const [inactiveEmployees, setInactiveEmployees] = useState([]);
-  const [latestPayslip, setLatestPayslip] = useState(null);
-
-  // Live timer tick every 10 seconds for real-time employee working hours
+  const [working, setWorking] = useState(false);
+  const [pending, setPending] = useState(true);
+  const [available, setAvailable] = useState(false);
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const fetchAttendanceRecord = async () => {
+    const controller = new AbortController();
+    api.get('/attendance/', { params: { own: 'true', page_size: 1 }, signal: controller.signal })
+      .then(res => {
+        const record = res.data.results?.[0];
+        setWorking(Boolean(record?.check_in && !record.check_out));
+        setAvailable(true);
+      })
+      .catch(() => {})
+      .finally(() => { if (!controller.signal.aborted) setPending(false); });
+    return () => controller.abort();
+  }, [businessId, user.id]);
+  const punch = async () => {
+    setPending(true);
     try {
-      const attListRes = await api.get('/attendance/');
-      const list = attListRes.value?.data?.data || attListRes.data?.data || attListRes.data?.results || attListRes.data || [];
-      const safeList = Array.isArray(list) ? list : [];
-      setAttendanceRecords(safeList);
-      const localToday = new Date().toLocaleDateString('en-CA');
-      const utcToday = new Date().toISOString().split('T')[0];
-      const found = safeList.find((r) => r.date === localToday || r.date === utcToday);
-      setTodayRecord(found || null);
-    } catch {
-      // silent
-    }
-  };
-
-  const fetchLatestPayslip = async () => {
-    if (!isEmployee) return;
-    try {
-      const res = await api.get('/payroll/payslips/');
-      const slips = res.data?.data || res.data?.results || res.data || [];
-      if (Array.isArray(slips) && slips.length > 0) {
-        setLatestPayslip(slips[0]);
-      }
-    } catch {
-      // silent
-    }
-  };
-
-  const handleDashboardPunchIn = async () => {
-    try {
-      setPunchingAction(true);
-      const res = await api.post('/attendance/check-in/', {
-        latitude: 28.6280,
-        longitude: 77.3649,
-        source: 'WEB',
-      });
-      if (res.data?.data) {
-        setTodayRecord(res.data.data);
-      }
-      await fetchAttendanceRecord();
-      toast.success('Started work successfully! Have a great day.');
+      await api.post(working ? '/attendance/check-out/' : '/attendance/check-in/', {});
+      setWorking(!working);
+      toast.success(working ? 'Punched out.' : 'Punched in.');
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Could not start work. Please try again.');
+      toast.error(err.response?.data?.error?.message || 'Could not record your punch.');
     } finally {
-      setPunchingAction(false);
+      setPending(false);
     }
   };
+  if (!available) return null;
+  return <Button onClick={punch} disabled={pending} leftIcon={working ? LogOut : LogIn}>{working ? 'End Work' : 'Start Work'}</Button>;
+}
 
-  const handleDashboardPunchOut = async () => {
-    try {
-      setPunchingAction(true);
-      const res = await api.post('/attendance/check-out/', {
-        latitude: 28.6280,
-        longitude: 77.3649,
-      });
-      if (res.data?.data) {
-        setTodayRecord(res.data.data);
-      }
-      await fetchAttendanceRecord();
-      toast.info('Ended work session successfully. See you next shift!');
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Could not end work. Please try again.');
-    } finally {
-      setPunchingAction(false);
-    }
-  };
+function DashboardContent() {
+  const { user, business, hasPermission } = useAuth();
+  const { toast } = useNotification();
+  const [branch, setBranch] = useState('');
+  const [branches, setBranches] = useState([]);
+  const [dates, setDates] = useState({ date_from: '', date_to: '' });
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
+  const [downloading, setDownloading] = useState(false);
+  const [group, setGroup] = useState('');
+  const canReport = hasPermission('attendance.view_reports');
+  const canBank = hasPermission('employee.view_bank');
+  const scopeName = branches.find(b => b.id === branch)?.name || business?.name || 'Your company';
+  const requestKey = JSON.stringify([branch, dates, page, retry]);
+  const current = data?.key === requestKey ? data : null;
+  const invalidDates = dates.date_from && dates.date_to && dates.date_from > dates.date_to;
+  const params = { branch: branch || undefined, date_from: dates.date_from || undefined, date_to: dates.date_to || undefined };
 
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        setLoading(true);
-        const [statsRes, analyticsRes] = await Promise.all([
-          api.get('/reports/overview/'),
-          api.get('/reports/attendance/'),
-        ]);
+    if (!canReport || invalidDates) return;
+    const controller = new AbortController();
+    setError('');
+    api.get('/reports/punches/', { params: { ...params, page, page_size: PAGE_SIZE }, signal: controller.signal })
+      .then(res => {
+        if (controller.signal.aborted) return;
+        setData({ ...res.data.data, key: requestKey });
+        setBranches(res.data.data.branches);
+      })
+      .catch(err => { if (!controller.signal.aborted) setError(errorText(err)); });
+    return () => controller.abort();
+  }, [requestKey, canReport, invalidDates]);
 
-        const statsData = statsRes.data?.data || statsRes.data || {};
-        const analyticsData = analyticsRes.data?.data || analyticsRes.data || {};
+  useEffect(() => {
+    if (canReport || !canBank) return;
+    const controller = new AbortController();
+    api.get('/reports/bank-details/', { params: { page_size: 1, branches_only: 'true' }, signal: controller.signal })
+      .then(res => setBranches(res.data.branches || [])).catch(() => {});
+    return () => controller.abort();
+  }, [canReport, canBank]);
 
-        setStats(statsData);
-
-        const timeline = Array.isArray(analyticsData.timeline)
-          ? analyticsData.timeline
-          : Array.isArray(analyticsData.daily_trend)
-          ? analyticsData.daily_trend
-          : [];
-
-        if (timeline.length > 0) {
-          const byDay = {};
-          timeline.forEach((item) => {
-            const dayKey = item.date?.slice(5) || item.day || 'Day';
-            if (!byDay[dayKey]) {
-              byDay[dayKey] = { day: dayKey, present: 0, absent: 0 };
-            }
-            if (item.status === 'PRESENT') {
-              byDay[dayKey].present += Number(item.count || 0);
-            } else {
-              byDay[dayKey].absent += Number(item.count || 0);
-            }
-          });
-          const computed = Object.values(byDay);
-          if (computed.length > 0) {
-            setWeeklyData(computed.slice(-7));
-          }
-        } else {
-          setWeeklyData([
-            { day: 'Mon', present: 24, absent: 1 },
-            { day: 'Tue', present: 25, absent: 0 },
-            { day: 'Wed', present: 23, absent: 2 },
-            { day: 'Thu', present: 25, absent: 0 },
-            { day: 'Fri', present: 22, absent: 3 },
-            { day: 'Sat', present: 18, absent: 7 },
-            { day: 'Sun', present: 0, absent: 25 },
-          ]);
-        }
-
-        await fetchAttendanceRecord();
-        await fetchLatestPayslip();
-
-        // For Business Owners, HR, and Branch Managers, check 3+ day inactive staff
-        if (isBusinessOwner || isHR || isBranchManager) {
-          try {
-            const [empRes, attRes] = await Promise.all([
-              api.get('/employees/'),
-              api.get('/attendance/'),
-            ]);
-            const empList = empRes.data?.data || empRes.data?.results || empRes.data || [];
-            const attList = attRes.data?.data || attRes.data?.results || attRes.data || [];
-            if (Array.isArray(empList)) {
-              const inactiveList = empList
-                .map((emp) => {
-                  const inact = calculateEmployeeInactivity(emp, attList);
-                  return { ...emp, inactivity: inact };
-                })
-                .filter((emp) => emp.inactivity.isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED');
-              setInactiveEmployees(inactiveList);
-            }
-          } catch {
-            // silent
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboard();
-  }, [business, isEmployee, isAccountantStrict, isBusinessOwner, isHR, isBranchManager]);
-
-  const computeRealtimeHours = () => {
-    if (!todayRecord) return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false, hours: 0 };
-
-    // Active live shift (Checked in but not checked out yet)
-    if (todayRecord.check_in && !todayRecord.check_out) {
-      const inDate = parseCheckInDate(todayRecord.check_in, todayRecord.date);
-
-      if (!inDate || isNaN(inDate.getTime())) {
-        return { formatted: '0.00 hrs', text: 'Active shift', isLive: true, hours: 0 };
-      }
-
-      const diffMs = Math.max(0, currentTime.getTime() - inDate.getTime());
-      const totalHours = diffMs / (1000 * 60 * 60);
-      const safeHours = isNaN(totalHours) || !isFinite(totalHours) ? 0 : Math.max(0, totalHours);
-      const hrs = Math.floor(safeHours);
-      const mins = Math.floor((safeHours - hrs) * 60);
-
-      return {
-        formatted: `${safeHours.toFixed(2)} hrs`,
-        text: `${hrs}h ${mins}m active`,
-        isLive: true,
-        hours: safeHours,
-      };
+  const download = async () => {
+    setDownloading(true);
+    try {
+      const res = await api.get('/reports/punches/', { params: { ...params, download: 'csv' }, responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Punch report - ${scopeName}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.error('Could not download the punch report. Please try again.');
+    } finally {
+      setDownloading(false);
     }
-
-    // Completed shift
-    if (todayRecord.working_hours !== undefined && todayRecord.working_hours !== null) {
-      const num = Number(todayRecord.working_hours);
-      if (!isNaN(num) && isFinite(num)) {
-        const hrs = Math.floor(num);
-        const mins = Math.round((num - hrs) * 60);
-        return {
-          formatted: `${num.toFixed(2)} hrs`,
-          text: `${hrs}h ${mins}m completed`,
-          isLive: false,
-          hours: num,
-        };
-      }
-    }
-
-    return { formatted: '0.00 hrs', text: 'Off Duty', isLive: false, hours: 0 };
   };
 
-  const isPunchedIn = Boolean(todayRecord && todayRecord.check_in && !todayRecord.check_out);
-  const liveHours = computeRealtimeHours();
-  const workHoursSummary = calculateWorkHoursSummary(
-    attendanceRecords,
-    todayRecord,
-    isPunchedIn ? liveHours.hours : null
-  );
-
-  if (loading) {
-    return <Loader message="Loading dashboard..." size="lg" />;
-  }
-
-  // Consistent Role Welcome Lines
-  const getWelcomeLine = () => {
-    if (isBusinessOwner) return UI_LABELS.WELCOME_OWNER;
-    if (isBranchManager) return UI_LABELS.WELCOME_BRANCH_MANAGER;
-    if (isHR) return UI_LABELS.WELCOME_HR;
-    if (isAccountantStrict) return UI_LABELS.WELCOME_ACCOUNTANT;
-    if (isSupervisor) return UI_LABELS.WELCOME_SUPERVISOR;
-    if (isEmployee) return UI_LABELS.WELCOME_EMPLOYEE;
-    return `Welcome back, ${user?.full_name || 'User'}!`;
+  const selectedDate = (field, value) => {
+    setDates(prev => ({ ...prev, [field]: value }));
+    setPage(1);
   };
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const actions = [
+    { label: 'Add employee', path: '/employees?action=add', icon: UserPlus, permission: 'employee.create' },
+    { label: hasPermission('attendance.mark') ? 'Mark attendance' : 'View attendance', path: branch ? `/attendance?branch=${branch}` : '/attendance', icon: CalendarCheck2, permission: 'attendance.view' },
+    { label: 'Apply for leave', path: '/leaves', icon: Leaf, permission: 'leave.apply' },
+    { label: 'View reports', path: '/reports', icon: FileText, permission: 'report.view' },
+    { label: 'View payslips', path: '/payroll', icon: Wallet, permission: 'payroll.view_own' },
+  ].filter(item => hasPermission(item.permission));
 
-  // Plain numbers definition:
-  // Present + Absent + On Leave = Active!
-  const totalEmployees = Number(stats?.total_employees || 0);
-  const activeEmployees = Number(stats?.active_employees || 0);
-  const presentToday = Number(stats?.attendance_today?.present || 0);
-  const onLeaveToday = Number(stats?.attendance_today?.on_leave || 0);
-  // Ensure math consistency: if present + leave < active, absent is the remainder
-  const calculatedAbsent = Math.max(0, activeEmployees - presentToday - onLeaveToday);
-  const absentToday = stats?.attendance_today?.absent !== undefined
-    ? Math.max(Number(stats?.attendance_today?.absent || 0), calculatedAbsent)
-    : calculatedAbsent;
+  return <div className="space-y-5">
+    <section className="dashboard-welcome relative flex flex-wrap items-center justify-between gap-4 py-4 sm:py-7">
+      <div className="relative z-[1]">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-2"><CalendarDays size={14} />
+          {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <h1 className="text-3xl sm:text-[2.5rem] text-zinc-950 leading-tight">{greeting}, {user?.first_name || user?.full_name || 'there'}!</h1>
+        <p className="mt-2 text-sm text-zinc-600">Here’s your overview for {business?.name || 'your company'}.</p>
+      </div>
+      {hasPermission('attendance.mark_own') && !canReport && <SelfPunch businessId={business?.id} />}
+      {(canReport || canBank) && <label className="relative z-[1] inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-zinc-700 shadow-xs">
+        <Building2 size={15} /><select aria-label="Dashboard branch" value={branch}
+          onChange={e => { setBranch(e.target.value); setPage(1); setGroup(''); }}
+          className="bg-white text-xs font-semibold py-1 pr-1 max-w-44"><option value="">All branches</option>
+          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+      </label>}
+    </section>
 
-  const pendingLeavesCount = Number(stats?.pending_leaves_count || 0);
-  const pendingAdvancesCount = Number(stats?.pending_advances_count || 0);
-  const hasPendingItems = pendingLeavesCount > 0 || inactiveEmployees.length > 0 || (isAccountantStrict && pendingAdvancesCount > 0);
-
-  const branchStats = stats?.branch_stats || [];
-  const recentActivity = stats?.recent_activity || [];
-  const leaveDist = stats?.leave_distribution || [];
-
-  return (
-    <div className="space-y-5 sm:space-y-6">
-      {/* 1. Header Banner: Plain Greeting + One Clear Action + Help */}
-      <div className="bg-zinc-950 rounded-2xl p-4 sm:p-6 text-white shadow-subtle border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-zinc-800 text-zinc-200 rounded-full border border-zinc-700 uppercase tracking-wide">
-              {activeRole.replace('_', ' ')}
-            </span>
-            <span className="text-xs text-zinc-400 font-medium truncate max-w-xs">
-              {business?.name || 'Workspace'}
-            </span>
-            {isSelfAttendanceOnly && (
-              <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                  isPunchedIn
-                    ? 'bg-white text-zinc-950 shadow-xs'
-                    : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                }`}
-              >
-                <span className={`w-2 h-2 rounded-full ${isPunchedIn ? 'bg-zinc-950 animate-pulse' : 'bg-zinc-500'}`} />
-                {isPunchedIn ? 'WORKING (CLOCKED IN)' : 'OFF DUTY'}
-              </span>
-            )}
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-            Welcome back, {user?.first_name || user?.full_name || 'there'}!
-          </h2>
-          <p className="text-zinc-400 text-xs mt-1 leading-relaxed max-w-2xl">
-            {getWelcomeLine()}
-          </p>
-        </div>
-
-        {/* Top-Right: One Primary Action + Help Button */}
-        <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
-          {/* Main Primary Button Per Role (Strong Color) */}
-          {isEmployee ? (
-            !isPunchedIn ? (
-              <button
-                type="button"
-                disabled={punchingAction}
-                onClick={handleDashboardPunchIn}
-                className="px-5 py-2.5 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-              >
-                <Clock className="w-4 h-4 text-zinc-950" />
-                <span>{punchingAction ? 'Starting...' : UI_LABELS.START_WORK}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={punchingAction}
-                onClick={handleDashboardPunchOut}
-                className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-600 rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-              >
-                <Clock className="w-4 h-4 text-white" />
-                <span>{punchingAction ? 'Ending...' : UI_LABELS.END_WORK}</span>
-              </button>
-            )
-          ) : isAccountantStrict ? (
-            <div className="flex items-center gap-2">
-              <Link
-                to="/payroll"
-                className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs font-bold shadow-sm transition-colors"
-              >
-                Process Payroll
-              </Link>
-              {!isPunchedIn ? (
-                <button
-                  type="button"
-                  disabled={punchingAction}
-                  onClick={handleDashboardPunchIn}
-                  className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold cursor-pointer"
-                >
-                  {UI_LABELS.START_WORK}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={punchingAction}
-                  onClick={handleDashboardPunchOut}
-                  className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold cursor-pointer"
-                >
-                  {UI_LABELS.END_WORK}
-                </button>
-              )}
-            </div>
-          ) : isSupervisor ? (
-            <Link
-              to="/attendance"
-              className="px-4 py-2.5 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
-            >
-              <CalendarCheck2 className="w-4 h-4" />
-              <span>Mark Team Attendance</span>
-            </Link>
-          ) : isHR || isBranchManager ? (
-            <div className="flex items-center gap-2">
-              <Link
-                to="/employees?action=add"
-                className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Employee</span>
-              </Link>
-              <Link
-                to="/attendance"
-                className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-xl text-xs font-semibold"
-              >
-                Mark Attendance
-              </Link>
-            </div>
-          ) : isBusinessOwner ? (
-            <div className="flex items-center gap-2">
-              <Link
-                to="/payroll"
-                className="px-4 py-2 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
-              >
-                <Banknote className="w-4 h-4" />
-                <span>Process Payroll</span>
-              </Link>
-              <Link
-                to="/employees?action=add"
-                className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-xl text-xs font-semibold"
-              >
-                Add Employee
-              </Link>
-            </div>
-          ) : null}
-
-          {/* 30-Second Page Explanation Help */}
-          <HelpButton
-            title="Dashboard Overview"
-            whereAmI="Your main WorkPulse operations screen, customized for your active role."
-            whatCanIDo="Review today's attendance, take action on pending items, and jump straight into daily tasks."
-            whatHappensNext="Updates reflect instantly for all managers and employees across your company."
-          />
-        </div>
+    {canReport && <>
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
+        {metrics.map(({ key, label, detail, icon: Icon, color }) => <button key={key} disabled={!current} onClick={() => setGroup(key)}
+          className={`${panel} group flex items-center gap-2.5 p-3.5 sm:p-4 text-left transition-colors hover:border-[#98b299]`}>
+          <span className={`grid place-items-center rounded-2xl h-10 w-10 sm:h-12 sm:w-12 shrink-0 ${color}`}><Icon size={21} /></span>
+          <span className="min-w-0"><strong className="block text-[24px] leading-tight font-semibold tabular-nums text-zinc-950">{current?.totals[key] ?? '—'}</strong>
+            <span className="block text-xs leading-tight text-zinc-700">{label}</span><span className="sr-only">{detail}</span></span>
+          <ChevronRight size={13} className="ml-auto hidden sm:block text-zinc-400 group-hover:text-zinc-900" />
+        </button>)}
       </div>
 
-      {/* 2. Getting Started Checklist for Business Owners */}
-      {isBusinessOwner && (
-        <GettingStartedChecklist
-          hasCompany={Boolean(business?.id)}
-          employeeCount={totalEmployees}
-          hasShifts={true}
-          hasPayroll={Boolean(stats?.financials?.monthly_payroll_total && stats.financials.monthly_payroll_total !== '0.00')}
-        />
-      )}
-
-      {/* 3. "What Needs Your Attention" Bar (Placed at the top before statistics) */}
-      {!isEmployee && hasPendingItems && (
-        <div className="bg-amber-50/70 border border-amber-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-800" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-950">
-              {UI_LABELS.ATTENTION_TITLE}
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {/* 3a. Inactivity Notice (Owner & HR/Branch Manager) */}
-            {inactiveEmployees.length > 0 && !isAccountantStrict && (
-              <div className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-zinc-950 truncate">
-                    {UI_LABELS.INACTIVITY_ALERT(inactiveEmployees.length)}
-                  </p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">No punch logs recorded for 3+ days</p>
-                </div>
-                <Link
-                  to="/employees?status=INACTIVE_3_DAYS"
-                  className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors shrink-0"
-                >
-                  {UI_LABELS.VIEW_INACTIVE_EMPLOYEES}
-                </Link>
-              </div>
-            )}
-
-            {/* 3b. Pending Leave Requests */}
-            {pendingLeavesCount > 0 && !isAccountantStrict && (
-              <div className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-zinc-950 truncate">
-                    {pendingLeavesCount} leave request{pendingLeavesCount > 1 ? 's' : ''} waiting
-                  </p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">Requires manager approval</p>
-                </div>
-                <Link
-                  to="/leaves"
-                  className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors shrink-0"
-                >
-                  Review Leaves
-                </Link>
-              </div>
-            )}
-
-            {/* 3c. Pending Advance Requests (Accountant & Owner) */}
-            {(isAccountantStrict || isBusinessOwner) && pendingAdvancesCount > 0 && (
-              <div className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-zinc-950 truncate">
-                    {pendingAdvancesCount} salary advance request{pendingAdvancesCount > 1 ? 's' : ''}
-                  </p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">Awaiting disbursement</p>
-                </div>
-                <Link
-                  to="/advances"
-                  className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors shrink-0"
-                >
-                  Review Advances
-                </Link>
-              </div>
-            )}
-          </div>
+      <section id="punch-report" className={`${panel} overflow-hidden`} aria-labelledby="punch-heading" aria-busy={!current && !error && !invalidDates}>
+        <div className="flex flex-wrap justify-between items-center gap-3 p-4 sm:px-5">
+          <div><h2 id="punch-heading" className="flex items-center gap-2 text-base font-bold text-zinc-950"><ClipboardList size={19} />Punch In / Punch Out</h2>
+            <p className="mt-1 text-xs text-zinc-500">{scopeName}{current && ` · ${current.count} attendance ${current.count === 1 ? 'record' : 'records'} · ${current.timezone}`}</p></div>
+          <Button size="sm" leftIcon={Download} onClick={download} disabled={!current || downloading || invalidDates}>{downloading ? 'Downloading…' : 'Download CSV'}</Button>
         </div>
-      )}
-
-      {/* 4. Role-Specific KPI Cards & Statistics */}
-      {isEmployee ? (
-        /* ================= FIELD EMPLOYEE DASHBOARD ================= */
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-            {/* Card 1: Duty Status & Quick Punch Action */}
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Duty Status</span>
-                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-3">
-                <Badge variant={isPunchedIn ? 'inverted' : 'default'} dot>
-                  {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'OFF DUTY'}
-                </Badge>
-                <p className="text-xs text-zinc-500 mt-2">
-                  {isPunchedIn
-                    ? `Clocked in at ${formatTime(todayRecord.check_in)}`
-                    : todayRecord?.check_out
-                    ? `Clocked out at ${formatTime(todayRecord.check_out)}`
-                    : 'Click Start Work above to begin shift'}
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center gap-1.5 text-[11px] text-zinc-500">
-                <MapPin className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Geofence verification active</span>
-              </div>
-            </div>
-
-            {/* Card 2: Today's Hours (SHOWN ONCE with week/month sub-strip) */}
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Today&apos;s Hours</span>
-                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900">
-                  <Clock className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-2">
-                <p className="text-2xl font-black text-zinc-950 font-mono">
-                  {liveHours.formatted}
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  {liveHours.isLive ? `${liveHours.text} (Live Shift)` : liveHours.text}
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-zinc-100 grid grid-cols-2 gap-2 text-[11px]">
-                <div className="bg-zinc-50 p-1.5 rounded-lg border border-zinc-100">
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase block">This Week</span>
-                  <span className="font-mono font-bold text-zinc-950">{workHoursSummary.weeklyFormatted}</span>
-                </div>
-                <div className="bg-zinc-50 p-1.5 rounded-lg border border-zinc-100">
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase block">This Month</span>
-                  <span className="font-mono font-bold text-zinc-950">{workHoursSummary.monthlyFormatted}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 3: Pending Leaves */}
-            <Link
-              to="/leaves"
-              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">My Leaves</span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <Calendar className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-2">
-                <p className="text-2xl font-black text-zinc-950 font-mono">
-                  {pendingLeavesCount}
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">Leave requests pending</p>
-              </div>
-              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
-                <span>Apply or view leaves</span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
-              </p>
-            </Link>
-
-            {/* Card 4: Latest Payslip (Shows Month & Take-Home Amount) */}
-            <Link
-              to="/payroll"
-              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">My Payslips</span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <Banknote className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-2">
-                <p className="text-2xl font-black text-zinc-950">
-                  {latestPayslip ? formatINR(latestPayslip.net_salary || 0) : 'Available'}
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  {latestPayslip?.period || 'Latest payslip generated'}
-                </p>
-              </div>
-              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
-                <span>View salary slips</span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
-              </p>
-            </Link>
-          </div>
+        <div className="px-4 pb-4 sm:px-5 flex items-end flex-wrap gap-2">
+          <ListFilter size={15} className="hidden sm:block text-zinc-500 mb-2.5" />
+          {[['From', 'date_from'], ['To', 'date_to']].map(([label, field]) => <label key={field} className="flex flex-wrap items-center gap-1.5 text-xs text-zinc-600">
+            {label}<input type="date" aria-label={`Attendance date ${label.toLowerCase()}`} className={`${fieldClass} max-w-[142px]`} value={dates[field]} onChange={e => selectedDate(field, e.target.value)} />
+          </label>)}
+          {(dates.date_from || dates.date_to) && <Button size="xs" variant="ghost" onClick={() => { setPage(1); setDates({ date_from: '', date_to: '' }); }}>Clear dates</Button>}
         </div>
-      ) : isAccountantStrict ? (
-        /* ================= ACCOUNTANT DASHBOARD ================= */
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-            {/* Card 1: Duty Status & Clock In */}
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Duty Status</span>
-                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-2">
-                <Badge variant={isPunchedIn ? 'inverted' : 'default'} dot>
-                  {isPunchedIn ? 'ACTIVE (CLOCKED IN)' : 'OFF DUTY'}
-                </Badge>
-                <p className="text-xs text-zinc-500 mt-2">
-                  {isPunchedIn ? `Clocked in at ${formatTime(todayRecord.check_in)}` : 'Click Start Work to mark duty'}
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-zinc-100 text-[11px] text-zinc-500">
-                Self-service attendance only
-              </div>
-            </div>
+        {invalidDates ? <p role="alert" className="p-6 text-sm">Choose an end date on or after the start date.</p> :
+          error ? <div role="alert" className="p-6 text-sm">{error} <Button size="xs" variant="outline" onClick={() => setRetry(v => v + 1)}>Retry</Button></div> :
+          !current ? <p role="status" className="p-8 text-center text-xs text-zinc-500">Loading attendance…</p> :
+          !current.count ? <p className="p-8 text-center text-sm text-zinc-600">No attendance records for this selection.</p> :
+          <><div className="overflow-x-auto"><table className="w-full text-left text-xs">
+            <thead className="bg-zinc-50 border-y border-zinc-100 text-zinc-600"><tr>
+              {['Employee', 'Attendance date', 'Punch in', 'Punch out'].map(col => <th key={col} scope="col" className="py-2.5 px-3 sm:px-5 font-semibold">{col}</th>)}
+            </tr></thead>
+            <tbody className="divide-y divide-zinc-100">{current.results.map(row => <tr key={row.id} className="hover:bg-zinc-50">
+              <td className="py-2.5 px-3 sm:px-5"><EmployeeName row={row} /></td>
+              <td className="py-2.5 px-3 sm:px-5 whitespace-nowrap text-zinc-700">{formatDate(row.date + 'T12:00:00')}</td>
+              {[row.check_in, row.check_out].map((time, i) => <td key={i} className="py-2.5 px-3 sm:px-5">
+                {time ? <span className="font-medium text-zinc-900 tabular-nums">{time}</span> :
+                  <span className="inline-flex rounded-md bg-[#fbf0da] px-1.5 py-1 text-[10px] font-semibold text-[#78571b]">Missing punch</span>}
+              </td>)}
+            </tr>)}</tbody>
+          </table></div>
+          <Pagination currentPage={page} totalPages={Math.ceil(current.count / PAGE_SIZE)} totalItems={current.count} pageSize={PAGE_SIZE} onPageChange={setPage} /></>}
+      </section>
+    </>}
 
-            {/* Card 2: Monthly Payroll Total */}
-            <Link
-              to="/payroll"
-              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Payroll</span>
-                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <Banknote className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-2">
-                <p className="text-2xl font-black text-zinc-950">
-                  {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">Monthly disbursement</p>
-              </div>
-              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
-                <span>Open Payroll &rarr;</span>
-              </p>
-            </Link>
-
-            {/* Card 3: Monthly Expenses */}
-            <Link
-              to="/cashbook"
-              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Expenses</span>
-                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <Receipt className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-2">
-                <p className="text-2xl font-black text-zinc-950">
-                  {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">Approved vouchers</p>
-              </div>
-              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
-                <span>Open Expenses &rarr;</span>
-              </p>
-            </Link>
-
-            {/* Card 4: Liquid Cashbook Balance */}
-            <Link
-              to="/cashbook"
-              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex flex-col justify-between group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Cashbook</span>
-                <div className="p-2 rounded-lg bg-zinc-100 text-zinc-900 group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-2">
-                <p className="text-2xl font-black text-zinc-950">
-                  {formatINR(stats?.financials?.cash_balance ?? 0)}
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">Current petty cash balance</p>
-              </div>
-              <p className="text-xs text-zinc-950 font-bold mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
-                <span>Open Cashbook &rarr;</span>
-              </p>
-            </Link>
-          </div>
+    <div className={canReport ? 'grid grid-cols-1 lg:grid-cols-[1.45fr_1fr] gap-4' : ''}>
+      {canReport && <section className={`${panel} p-4 sm:p-5`}>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-sm font-bold flex items-center gap-2"><ChartNoAxesColumnIncreasing size={17} />Attendance trend</h2><span className="text-xs text-zinc-500">Present · last 7 days</span></div>
+        <div className="h-40 mt-3">
+          {current && <ResponsiveContainer width="100%" height="100%"><AreaChart data={current.trend} margin={{ top: 6, right: 12, bottom: 0, left: -25 }}>
+            <defs><linearGradient id="attendance-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#88a58b" stopOpacity={0.40} /><stop offset="1" stopColor="#88a58b" stopOpacity={0.04} /></linearGradient></defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e5dc" /><XAxis dataKey="date" tickFormatter={value => new Date(value + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'short' })} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip />
+            <Area name="Present" dataKey="present" type="monotone" stroke="#406944" strokeWidth={2} dot={{ r: 3 }} fill="url(#attendance-fill)" isAnimationActive={false} />
+          </AreaChart></ResponsiveContainer>}
         </div>
-      ) : isSupervisor ? (
-        /* ================= SUPERVISOR DASHBOARD (NO MONEY NUMBERS) ================= */
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-            {/* Card 1: My Team Total */}
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>My Team</span>
-                  <NumberTooltip text="Total members reporting to you in this location." />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg">
-                  <Users className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{totalEmployees}</p>
-              <p className="text-xs text-zinc-500 mt-1">{activeEmployees} active on team</p>
-            </div>
-
-            {/* Card 2: Team Present Today */}
-            <Link
-              to="/attendance"
-              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>Present Today</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_PRESENT_TODAY} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <CalendarCheck2 className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{presentToday}</p>
-              <p className="text-xs text-zinc-500 mt-1">
-                {activeEmployees > 0 ? `${Math.round((presentToday / activeEmployees) * 100)}% attendance rate` : '0%'}
-              </p>
-            </Link>
-
-            {/* Card 3: Team Absent Today */}
-            <Link
-              to="/attendance"
-              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>Absent Today</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_ABSENT_TODAY} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <UserX className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{absentToday}</p>
-              <p className="text-xs text-zinc-500 mt-1">Pending clock-in</p>
-            </Link>
-
-            {/* Card 4: Team On Leave */}
-            <Link
-              to="/leaves"
-              className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>On Leave</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_ON_LEAVE_TODAY} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <Calendar className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{onLeaveToday}</p>
-              <p className="text-xs text-zinc-500 mt-1">{pendingLeavesCount} pending review</p>
-            </Link>
-          </div>
+      </section>}
+      {(actions.length > 0 || canBank) && <section className={`${panel} p-4 sm:p-5`}>
+        <h2 className="text-sm font-bold flex items-center gap-2"><ArrowUpRight size={17} />Quick actions</h2>
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          {actions.map(({ label, path, icon: Icon }) => <Link key={label} to={path} className="flex items-center gap-2 rounded-xl bg-zinc-50 hover:bg-zinc-100 p-3 text-xs font-semibold text-zinc-800"><Icon size={16} />{label}</Link>)}
+          {canBank && <button type="button" onClick={() => setGroup('bank')} className="flex items-center gap-2 rounded-xl bg-zinc-50 hover:bg-zinc-100 p-3 text-xs font-semibold text-left text-zinc-800"><Landmark size={16} />Employee bank details</button>}
         </div>
-      ) : isHR || isBranchManager ? (
-        /* ================= HR / BRANCH MANAGER DASHBOARD (NO MONEY NUMBERS) ================= */
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
-            {/* Metric 1: Total Employees */}
-            <Link
-              to="/employees"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>Total Staff</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_TOTAL_EMPLOYEES} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <Users className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{totalEmployees}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">{activeEmployees} active on roster</p>
-            </Link>
-
-            {/* Metric 2: Present Today */}
-            <Link
-              to="/attendance"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>Present</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_PRESENT_TODAY} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <CalendarCheck2 className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{presentToday}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">
-                {activeEmployees > 0 ? `${Math.round((presentToday / activeEmployees) * 100)}% attendance rate` : '0%'}
-              </p>
-            </Link>
-
-            {/* Metric 3: Absent Today */}
-            <Link
-              to="/attendance"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>Absent</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_ABSENT_TODAY} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <UserX className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{absentToday}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">Not yet clocked in</p>
-            </Link>
-
-            {/* Metric 4: On Leave */}
-            <Link
-              to="/leaves"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>On Leave</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_ON_LEAVE_TODAY} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <Calendar className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{onLeaveToday}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">{pendingLeavesCount} awaiting review</p>
-            </Link>
-
-            {/* Metric 5: Late Arrivals */}
-            <Link
-              to="/attendance"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Late Check-ins</span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <AlertCircle className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{stats?.attendance_today?.late ?? 0}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">Delayed start times</p>
-            </Link>
-          </div>
-        </div>
-      ) : (
-        /* ================= BUSINESS OWNER DASHBOARD (ALL NUMBERS + MONEY) ================= */
-        <div className="space-y-4">
-          {/* People & Attendance Strip with Explanations */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
-            <Link
-              to="/employees"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>Total Employees</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_TOTAL_EMPLOYEES} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <Users className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{totalEmployees}</p>
-              <div className="flex items-center gap-1 text-[11px] text-zinc-600 font-semibold mt-1">
-                <span>{activeEmployees} active</span>
-              </div>
-            </Link>
-
-            <Link
-              to="/attendance"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>Present Today</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_PRESENT_TODAY} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <CalendarCheck2 className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{presentToday}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">
-                {activeEmployees > 0 ? `${Math.round((presentToday / activeEmployees) * 100)}% rate` : '0%'}
-              </p>
-            </Link>
-
-            <Link
-              to="/attendance"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>Absent Today</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_ABSENT_TODAY} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <UserX className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{absentToday}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">Not yet punched in</p>
-            </Link>
-
-            <Link
-              to="/leaves"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-                  <span>On Leave</span>
-                  <NumberTooltip text={UI_LABELS.TOOLTIP_ON_LEAVE_TODAY} />
-                </span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <Calendar className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{onLeaveToday}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">{pendingLeavesCount} pending review</p>
-            </Link>
-
-            <Link
-              to="/attendance"
-              className="bg-white p-4 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all block group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Late Arrivals</span>
-                <div className="p-2 bg-zinc-100 text-zinc-900 rounded-lg group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                  <AlertCircle className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl font-black text-zinc-950 mt-2">{stats?.attendance_today?.late ?? 0}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">Delayed check-ins</p>
-            </Link>
-          </div>
-
-          {/* Money Summary Cards (Only Owner & SuperAdmin) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
-            <Link
-              to="/payroll"
-              className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex items-center justify-between group"
-            >
-              <div>
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Payroll</p>
-                <p className="text-2xl font-black text-zinc-950 mt-1">
-                  {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
-                </p>
-                <p className="text-xs text-zinc-950 font-bold mt-1">Process Payroll &rarr;</p>
-              </div>
-              <div className="p-3 bg-zinc-100 text-zinc-900 rounded-xl group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                <Banknote className="w-6 h-6" />
-              </div>
-            </Link>
-
-            <Link
-              to="/cashbook"
-              className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex items-center justify-between group"
-            >
-              <div>
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Expenses (Month)</p>
-                <p className="text-2xl font-black text-zinc-950 mt-1">
-                  {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
-                </p>
-                <p className="text-xs text-zinc-950 font-bold mt-1">Manage Expenses &rarr;</p>
-              </div>
-              <div className="p-3 bg-zinc-100 text-zinc-900 rounded-xl group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                <Receipt className="w-6 h-6" />
-              </div>
-            </Link>
-
-            <Link
-              to="/cashbook"
-              className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 transition-all flex items-center justify-between group"
-            >
-              <div>
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Cashbook Balance</p>
-                <p className="text-2xl font-black text-zinc-950 mt-1">
-                  {formatINR(stats?.financials?.cash_balance ?? 0)}
-                </p>
-                <p className="text-xs text-zinc-950 font-bold mt-1">Manage Cashbook &rarr;</p>
-              </div>
-              <div className="p-3 bg-zinc-100 text-zinc-900 rounded-xl group-hover:bg-zinc-950 group-hover:text-white transition-colors">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* 5. Main Attendance Chart & Leave Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-        <div
-          onClick={() => navigate(isSelfAttendanceOnly ? '/attendance' : '/reports')}
-          className="lg:col-span-2 bg-white p-5 sm:p-6 rounded-xl border border-zinc-200 shadow-subtle hover:border-zinc-400 cursor-pointer transition-all"
-          title={isSelfAttendanceOnly ? 'Click to open Attendance logs' : 'Click to open Attendance reports'}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm sm:text-base font-bold text-zinc-950 flex items-center gap-1.5">
-                <span>{isSelfAttendanceOnly ? 'My Attendance History' : 'Attendance Trend'}</span>
-                <ArrowUpRight className="w-4 h-4 text-zinc-400" />
-              </h3>
-              <p className="text-xs text-zinc-500 mt-0.5">
-                {isSelfAttendanceOnly ? 'Click chart to view your full logs' : '7-day daily workforce attendance overview'}
-              </p>
-            </div>
-            <span className="text-xs font-bold text-zinc-950 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200">
-              Live Data
-            </span>
-          </div>
-
-          <div className="h-64 w-full">
-            {weeklyData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-zinc-400">
-                {UI_LABELS.EMPTY_ATTENDANCE}
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E4E7" />
-                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#71717A' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#71717A' }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181B',
-                      color: '#FAFAFA',
-                      borderRadius: '8px',
-                      border: '1px solid #27272A',
-                      fontSize: '12px',
-                    }}
-                  />
-                  <Bar dataKey="present" fill="#18181B" radius={[4, 4, 0, 0]} name="Present" />
-                  <Bar dataKey="absent" fill="#E4E4E7" radius={[4, 4, 0, 0]} name="Absent" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        {/* Right Side: Quick Distribution Card */}
-        <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950">Leave Type Distribution</h3>
-            <Link to="/leaves" className="text-[11px] font-bold text-zinc-900 hover:underline">
-              All Leaves &rarr;
-            </Link>
-          </div>
-          {leaveDist.length === 0 ? (
-            <p className="text-xs text-zinc-400">{UI_LABELS.EMPTY_LEAVES}</p>
-          ) : (
-            <div className="space-y-2 flex-1">
-              {leaveDist.map((item) => (
-                <div key={item.name} className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-600 font-medium">{item.name}</span>
-                  <span className="font-bold text-zinc-950 px-2 py-0.5 bg-zinc-100 border border-zinc-200 rounded">
-                    {item.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="mt-4 pt-3 border-t border-zinc-100 text-[11px] text-zinc-500">
-            Approved and pending leave requests
-          </div>
-        </div>
-      </div>
-
-      {/* 6. Bottom Row: Branch Statistics (Non-Accountants) OR Financial Controller (Accountant) + Recent Activity */}
-      {!isEmployee && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-          {!isAccountantStrict ? (
-            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 flex items-center gap-2">
-                  <Building className="w-4 h-4 text-zinc-900" />
-                  <span>Branch Statistics</span>
-                </h3>
-                {isBusinessOwner && (
-                  <Link to="/organization" className="text-[11px] font-bold text-zinc-900 hover:underline">
-                    Organization &rarr;
-                  </Link>
-                )}
-              </div>
-              {branchStats.length === 0 ? (
-                <p className="text-xs text-zinc-400">No branches configured.</p>
-              ) : (
-                <div className="space-y-2">
-                  {branchStats.map((br) => (
-                    <div
-                      key={br.id}
-                      className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80"
-                    >
-                      <div>
-                        <p className="text-xs font-bold text-zinc-950">{br.name}</p>
-                        <p className="text-[11px] text-zinc-500">{br.city || 'Operational Branch'}</p>
-                      </div>
-                      <span className="text-xs font-bold text-zinc-950 bg-zinc-200 px-2.5 py-1 rounded-md">
-                        {br.employee_count} Staff
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 flex items-center gap-2">
-                  <Banknote className="w-4 h-4 text-zinc-900" />
-                  <span>Financial Status</span>
-                </h3>
-                <Link to="/payroll" className="text-[11px] font-bold text-zinc-900 hover:underline">
-                  Payroll &rarr;
-                </Link>
-              </div>
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80">
-                  <div>
-                    <p className="text-xs font-bold text-zinc-950">Payroll Total</p>
-                    <p className="text-[11px] text-zinc-500">Net salary across employees</p>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-zinc-950 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
-                    {formatINR(stats?.financials?.monthly_payroll_total ?? 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80">
-                  <div>
-                    <p className="text-xs font-bold text-zinc-950">Expenses Total</p>
-                    <p className="text-[11px] text-zinc-500">Approved operational vouchers</p>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-zinc-950 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
-                    {formatINR(stats?.financials?.monthly_expenses_total ?? 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200/80">
-                  <div>
-                    <p className="text-xs font-bold text-zinc-950">Cashbook Balance</p>
-                    <p className="text-[11px] text-zinc-500">Liquid cash in register</p>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-zinc-950 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
-                    {formatINR(stats?.financials?.cash_balance ?? 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Recent Activity */}
-          <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-subtle">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-zinc-900" />
-                <span>Recent Activity</span>
-              </h3>
-              <span className="text-[11px] text-zinc-400">Click item to open</span>
-            </div>
-            {recentActivity.length === 0 ? (
-              <p className="text-xs text-zinc-400">No recent activity recorded.</p>
-            ) : (
-              <div className="space-y-2">
-                {recentActivity.map((act) => (
-                  <Link
-                    key={act.id}
-                    to={act.link}
-                    className="flex items-center justify-between p-2.5 bg-zinc-50 hover:bg-zinc-100 rounded-lg border border-transparent hover:border-zinc-200 transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-zinc-950 truncate">{act.title}</p>
-                      <p className="text-[11px] text-zinc-500 truncate">{act.subtitle}</p>
-                    </div>
-                    <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      </section>}
     </div>
-  );
-};
+    {group && <EmployeeReport key={`${group}-${branch}`} group={group} branch={branch} scopeName={scopeName} onClose={() => setGroup('')} />}
+  </div>;
+}
 
-export default Dashboard;
+export function Dashboard() {
+  const { business, user } = useAuth();
+  return <DashboardContent key={`${user?.id}-${business?.id}`} />;
+}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { ShieldCheck, Plus, Key } from 'lucide-react';
 import { Loader } from '../components/ui/Loader';
@@ -6,6 +7,25 @@ import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 
 export const RolesPermissions = () => {
+  const { hasRole, hasPermission, permissions: ownPermissions } = useAuth();
+  const canDelegate = hasRole('BUSINESS_OWNER') && hasPermission('role.assign');
+  const [members, setMembers] = useState([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [draft, setDraft] = useState([]);
+  const [notice, setNotice] = useState('');
+  useEffect(() => {
+    if (canDelegate) api.get('/auth/member-grants/').then(res => setMembers(res.data.data))
+      .catch(() => setNotice('Unable to load company members.'));
+  }, [canDelegate]);
+  const saveGrants = async () => {
+    setSubmitting(true);
+    try {
+      const res = await api.patch('/auth/member-grants/', { user_id: selectedId, permissions: draft });
+      setMembers(prev => prev.map(member => member.id === selectedId ? {...member, permissions: res.data.data.permissions} : member));
+      setNotice('Permissions saved.');
+    } catch { setNotice('Unable to save permissions.'); }
+    finally { setSubmitting(false); }
+  };
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,15 +88,37 @@ export const RolesPermissions = () => {
           </p>
         </div>
 
-        <button
+        {hasRole('BUSINESS_OWNER') && hasPermission('role.create') && <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create Custom Role</span>
-        </button>
+        </button>}
       </div>
 
+      {canDelegate && <section className="rounded-xl bg-white border border-zinc-200 p-5 space-y-4">
+        <h2 className="font-semibold">Member permissions</h2>
+        <label className="block text-sm">Company member
+          <select className="block mt-1 rounded-lg border border-zinc-300 bg-white px-3 py-2" value={selectedId}
+            onChange={event => {
+              const id = event.target.value;
+              setSelectedId(id);
+              setDraft(members.find(m => m.id === id)?.permissions || []);
+              setNotice('');
+            }}>
+            <option value="">Choose a member</option>
+            {members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.email})</option>)}
+          </select>
+        </label>
+        {selectedId && <><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {ownPermissions.filter(code => !code.startsWith('platform.')).sort().map(code => <label key={code} className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={draft.includes(code)} onChange={e => setDraft(prev => e.target.checked ? [...prev, code] : prev.filter(p => p !== code))}/>
+            {permissions.find(p => p.code === code)?.name || code}
+          </label>)}
+        </div><button disabled={submitting} onClick={saveGrants} className="px-4 py-2 rounded-lg bg-zinc-950 text-white text-sm">Save permissions</button></>}
+        {notice && <p role="status" className="text-sm">{notice}</p>}
+      </section>}
       {loading ? (
         <Loader message="Loading RBAC roles and permissions..." />
       ) : (

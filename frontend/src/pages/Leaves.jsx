@@ -18,7 +18,7 @@ import { formatDate } from '../utils/formatters';
 import { HelpButton } from '../components/ui/HelpButton';
 
 export const Leaves = () => {
-  const { isEmployee, canApproveLeaves } = usePermissions();
+  const { isEmployee, canApproveLeaves, hasPermission } = usePermissions();
   const { toast, prompt } = useNotification();
 
   const [leaves, setLeaves] = useState([]);
@@ -113,7 +113,7 @@ export const Leaves = () => {
 
         <div className="flex items-center gap-2">
           {/* Apply Leave Button (Only available for employees; Owners & HR are approvers) */}
-          {isEmployee && (
+          {hasPermission('leave.apply') && (
             <button
               onClick={() => setShowApplyModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
@@ -233,7 +233,7 @@ export const Leaves = () => {
                 ? 'Click "Apply for Leave" above to request time off.'
                 : 'There are currently no workforce leave applications in the queue.'}
             </p>
-            {isEmployee && (
+            {hasPermission('leave.apply') && (
               <button
                 type="button"
                 onClick={() => setShowApplyModal(true)}
@@ -255,7 +255,7 @@ export const Leaves = () => {
                   <th className="py-3 px-4">Days</th>
                   <th className="py-3 px-4">Reason</th>
                   <th className="py-3 px-4">Status</th>
-                  {canApproveLeaves && <th className="py-3 px-4 text-right">Approval Actions</th>}
+                  {(canApproveLeaves || hasPermission('leave.reject')) && <th className="py-3 px-4 text-right">Approval Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -288,22 +288,22 @@ export const Leaves = () => {
                       </Badge>
                     </td>
                     {/* Approve/Reject Buttons ONLY for Managers */}
-                    {canApproveLeaves && (
+                    {(canApproveLeaves || hasPermission('leave.reject')) && (
                       <td className="py-3.5 px-4 text-right">
                         {l.status === 'PENDING' ? (
                           <div className="flex items-center justify-end gap-1.5">
-                            <button
+                            {hasPermission('leave.approve') && (<button
                               onClick={() => handleApprove(l.id)}
                               className="px-2.5 py-1 bg-zinc-950 hover:bg-black text-white    rounded text-xs font-bold transition-colors"
                             >
                               Approve
-                            </button>
-                            <button
+                            </button>)}
+                            {hasPermission('leave.reject') && (<button
                               onClick={() => handleReject(l.id)}
                               className="px-2.5 py-1 bg-zinc-100  hover:bg-zinc-200  text-zinc-800  border border-zinc-200  rounded text-xs font-semibold transition-colors"
                             >
                               Reject
-                            </button>
+                            </button>)}
                           </div>
                         ) : (
                           <span className="text-[11px] text-zinc-400 font-mono">Completed</span>

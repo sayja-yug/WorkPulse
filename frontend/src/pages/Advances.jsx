@@ -22,7 +22,7 @@ import { formatINR, formatDate } from '../utils/formatters';
 import { HelpButton } from '../components/ui/HelpButton';
 
 export const Advances = () => {
-  const { isEmployee, canApproveAdvances } = usePermissions();
+  const { isEmployee, canApproveAdvances, hasPermission } = usePermissions();
   const { toast, confirm } = useNotification();
 
   const [advances, setAdvances] = useState([]);
@@ -180,13 +180,13 @@ export const Advances = () => {
 
         <div className="flex items-center gap-2">
           {/* Action Button: Role-Aware */}
-          <button
+          {hasPermission('advance.request') && <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold shadow-xs transition-colors text-white bg-zinc-950 hover:bg-black cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>{isEmployee ? 'Request Advance' : 'Issue Advance to Employee'}</span>
-          </button>
+          </button>}
 
           <HelpButton
             title="Advances Guide"

@@ -2,7 +2,9 @@ import math
 from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 from .models import AttendanceRecord, AttendancePunch
+from .scope import business_zone
 
 
 class AttendanceService:
@@ -38,8 +40,10 @@ class AttendanceService:
     @transaction.atomic
     def check_in(cls, employee, timestamp=None, latitude=None, longitude=None, accuracy=None, selfie=None, ip_address=None, device_info=None):
         ts = timestamp or timezone.now()
-        today = ts.date()
         business = employee.business
+        today = timezone.localdate(ts, business_zone(business))
+        if employee.deactivated_on and employee.deactivated_on <= today:
+            raise ValidationError('This employee has been deactivated.')
 
         # Check geofence
         is_valid = True
@@ -82,27 +86,23 @@ class AttendanceService:
             validation_notes=notes
         )
 
-        # Set employee duty/attendance status to ACTIVE upon Punch In
-        from apps.employees.models import Employee
-        if employee.status != Employee.Status.ACTIVE:
-            employee.status = Employee.Status.ACTIVE
-            employee.save(update_fields=['status', 'updated_at'])
-
         return record
 
     @classmethod
     @transaction.atomic
     def check_out(cls, employee, timestamp=None, latitude=None, longitude=None, accuracy=None, selfie=None, ip_address=None, device_info=None):
         ts = timestamp or timezone.now()
-        today = ts.date()
         business = employee.business
+        today = timezone.localdate(ts, business_zone(business))
+        if employee.deactivated_on and employee.deactivated_on <= today:
+            raise ValidationError('This employee has been deactivated.')
 
         # Find today's attendance record
         record = AttendanceRecord.objects.filter(employee=employee, date=today).first()
         if not record:
             # Check overnight shift (yesterday's record without checkout)
             yesterday = today - timezone.timedelta(days=1)
-            record = AttendanceRecord.objects.filter(employee=employee, date=yesterday, check_out__isnull=True).first()
+            record = AttendanceRecord.objects.filter(employee=employee, date=yesterday, check_in__isnull=False, check_out__isnull=True).first()
 
         if not record:
             record = AttendanceRecord.objects.create(
@@ -110,7 +110,6 @@ class AttendanceService:
                 business=business,
                 date=today,
                 status=AttendanceRecord.Status.PRESENT,
-                check_in=ts,
                 check_out=ts,
                 working_hours=Decimal('0.00'),
                 source=AttendanceRecord.Source.SELF
@@ -144,11 +143,6 @@ class AttendanceService:
             is_valid=is_valid,
             validation_notes=notes
         )
-
-        # Set employee duty/attendance status to INACTIVE upon Punch Out
-        from apps.employees.models import Employee
-        employee.status = Employee.Status.INACTIVE
-        employee.save(update_fields=['status', 'updated_at'])
 
         return record
 

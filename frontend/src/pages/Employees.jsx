@@ -1,3 +1,5 @@
+import { OnboardingProgress } from '../components/employees/OnboardingProgress';
+import { ShiftSelect } from '../components/employees/ShiftSelect';
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/client';
@@ -33,7 +35,6 @@ import {
   Briefcase,
   MapPin,
   Check,
-  Trash2,
   AlertTriangle,
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
@@ -63,11 +64,16 @@ const INITIAL_FORM = () => ({
   shift_id: '',
   pan_number: '',
   aadhaar_number: '',
-  send_invite: true,
+  bank_name: '',
+  bank_account_number: '',
+  bank_ifsc_code: '',
+  send_invite: false,
 });
 
 export const Employees = () => {
-  const { canCreateEmployee, isOwner, isHR, isBranchManagerStrict } = usePermissions();
+  const { canCreateEmployee, hasPermission, isBranchManagerStrict } = usePermissions();
+  const canEdit = hasPermission('employee.update');
+  const canChangeStatus = hasPermission('employee.deactivate');
   const { toast, confirm } = useNotification();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -85,8 +91,8 @@ export const Employees = () => {
   const [loading, setLoading] = useState(true);
 
   // Filters (Image 2)
-  const [search, setSearch] = useState('');
-  const [branchFilter, setBranchFilter] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') || '');
+  const [branchFilter, setBranchFilter] = useState(searchParams.get('branch') || '');
   const [deptFilter, setDeptFilter] = useState('');
   const [desigFilter, setDesigFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
@@ -122,6 +128,13 @@ export const Employees = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    setSearch(searchParams.get('search') || '');
+    setBranchFilter(searchParams.get('branch') || '');
+    setStatusFilter(searchParams.get('status') || '');
+    setPage(1);
+  }, [searchParams]);
 
   const fetchEmployees = async () => {
     try {
@@ -176,28 +189,7 @@ export const Employees = () => {
 
   const getInactivity = (emp) => calculateEmployeeInactivity(emp, attendanceRecords);
 
-  const displayedEmployees = employees.filter((emp) => {
-    if (managerOnlyFilter && !emp.is_branch_manager) {
-      return false;
-    }
-    const inact = getInactivity(emp);
-    if (statusFilter === 'INACTIVE_3_DAYS') {
-      return inact.isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED';
-    }
-    if (statusFilter === 'ACTIVE') {
-      return !inact.isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED';
-    }
-    if (statusFilter === 'TERMINATED') {
-      return emp.status === 'TERMINATED';
-    }
-    if (statusFilter === 'RESIGNED') {
-      return emp.status === 'RESIGNED';
-    }
-    if (statusFilter === 'ON_NOTICE') {
-      return emp.status === 'ON_NOTICE';
-    }
-    return true;
-  });
+  const displayedEmployees = employees.filter(emp => !managerOnlyFilter || emp.is_branch_manager);
 
   const inactiveEmployees = employees.filter(
     (emp) => getInactivity(emp).isInactive && emp.status !== 'TERMINATED' && emp.status !== 'RESIGNED'
@@ -225,11 +217,8 @@ export const Employees = () => {
 
   // Status toggle (Activate / Deactivate)
   const handleToggleStatus = async (emp) => {
-    if (!isOwner && !isHR) {
-      toast.warning('Only Business Owners and HR Managers can modify employee status.');
-      return;
-    }
-    const isActivating = emp.status !== 'ACTIVE';
+    if (!canChangeStatus) return;
+    const isActivating = ['INACTIVE', 'TERMINATED', 'ABSCONDING'].includes(emp.status);
     const action = isActivating ? 'activate' : 'deactivate';
     const confirmed = await confirm({
       title: `${isActivating ? 'Activate' : 'Deactivate'} Employee`,
@@ -277,6 +266,11 @@ export const Employees = () => {
       if (!payload.date_of_birth) delete payload.date_of_birth;
       if (!payload.base_salary) delete payload.base_salary;
       if (!payload.shift_id) delete payload.shift_id;
+      if (!hasPermission('employee.view_bank')) {
+        delete payload.bank_name;
+        delete payload.bank_account_number;
+        delete payload.bank_ifsc_code;
+      }
 
       const res = await api.post('/employees/', payload);
       const created = res.data?.data || res.data;
@@ -354,10 +348,10 @@ export const Employees = () => {
     try {
       setSubmitting(true);
       const payload = { ...editFormData };
-      if (!payload.branch) delete payload.branch;
-      if (!payload.department) delete payload.department;
-      if (!payload.designation) delete payload.designation;
-      if (!payload.date_of_birth) delete payload.date_of_birth;
+      if (!canChangeStatus || payload.status === editModalEmp.status) delete payload.status;
+      for (const field of ['branch', 'department', 'designation', 'date_of_birth']) {
+        if (!payload[field]) payload[field] = null;
+      }
       if (payload.base_salary === '' || payload.base_salary === null) delete payload.base_salary;
 
       await api.patch(`/employees/${editModalEmp.id}/`, payload);
@@ -368,27 +362,6 @@ export const Employees = () => {
       toast.error(err.response?.data?.error?.message || 'Failed to update employee');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleDeleteEmployee = async (emp) => {
-    if (!emp) return;
-    const empName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'this employee';
-    const confirmed = await confirm({
-      title: 'Remove Employee',
-      message: `Are you sure you want to permanently remove ${empName} from the company? This action cannot be undone and will delete all associated profile data.`,
-      confirmText: 'Remove Employee',
-      cancelText: 'Cancel',
-      type: 'danger',
-    });
-    if (!confirmed) return;
-
-    try {
-      await api.delete(`/employees/${emp.id}/`);
-      toast.success(`Employee ${empName} has been removed successfully.`);
-      fetchEmployees();
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to remove employee');
     }
   };
 
@@ -684,8 +657,9 @@ export const Employees = () => {
             className="px-3 py-2 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900  outline-none focus:ring-1 focus:ring-zinc-900  font-medium"
           >
             <option value="">Filter by Status (All)</option>
-            <option value="ACTIVE">Active (Working)</option>
-            <option value="INACTIVE_3_DAYS">Inactive (3+ Days No Punch)</option>
+            <option value="ACTIVE">Active</option>
+            <option value="DEACTIVATED">Deactivated</option>
+            <option value="INACTIVE_3_DAYS">No punch in 3+ days</option>
             <option value="ON_NOTICE">On Notice</option>
             <option value="TERMINATED">Terminated</option>
             <option value="RESIGNED">Resigned</option>
@@ -726,7 +700,7 @@ export const Employees = () => {
               )}
               {statusFilter && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100  text-zinc-800  border border-zinc-200 ">
-                  Status: {statusFilter === 'INACTIVE_3_DAYS' ? 'Inactive (3+ Days No Punch)' : statusFilter === 'ACTIVE' ? 'Active (Working)' : statusFilter}
+                  Status: {statusFilter === 'INACTIVE_3_DAYS' ? 'No punch in 3+ days' : statusFilter === 'ACTIVE' ? 'Active' : statusFilter}
                   <button
                     onClick={() => {
                       setStatusFilter('');
@@ -869,6 +843,11 @@ export const Employees = () => {
                           <p className="font-semibold text-zinc-900 group-hover:underline leading-tight">
                             {emp.first_name} {emp.last_name}
                           </p>
+                          {emp.deactivated_on && (
+                            <p className="text-[11px] text-zinc-600 mt-1">
+                              Deactivated {formatDate(emp.deactivated_on)} by {emp.deactivated_by_name}
+                            </p>
+                          )}
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                             <span className="text-[11px] text-zinc-500">{emp.designation_name || 'Staff'}</span>
                             {emp.is_branch_manager && (
@@ -969,6 +948,9 @@ export const Employees = () => {
                     <td className="py-3 px-4">
                       {(() => {
                         const inact = getInactivity(emp);
+                        if (emp.status === 'INACTIVE') {
+                          return <Badge variant="neutral">{emp.deactivated_on ? 'Deactivated' : 'Inactive'}</Badge>;
+                        }
                         if (emp.status === 'TERMINATED' || emp.status === 'RESIGNED') {
                           return (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200 select-none">
@@ -1014,14 +996,14 @@ export const Employees = () => {
                         </Link>
 
                         {/* Edit Action */}
-                        <button
+                        {canEdit && <button
                           type="button"
                           onClick={() => openEditModal(emp)}
                           className="px-2.5 py-1 text-xs font-semibold text-zinc-700  hover:text-black  hover:bg-zinc-100  rounded transition-colors"
                           title="Edit Employee Information"
                         >
                           Edit
-                        </button>
+                        </button>}
 
                         {/* More Menu Dropdown */}
                         <div className="relative inline-block text-left" ref={activeMenuId === emp.id ? menuRef : null}>
@@ -1045,14 +1027,14 @@ export const Employees = () => {
                                 <span>View Full Profile</span>
                               </Link>
 
-                              <button
+                              {canEdit && <button
                                 type="button"
                                 onClick={() => openEditModal(emp)}
                                 className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-zinc-700  hover:bg-zinc-50 "
                               >
                                 <Edit2 className="w-3.5 h-3.5 text-zinc-400" />
                                 <span>Edit Employee</span>
-                              </button>
+                              </button>}
 
                               <button
                                 type="button"
@@ -1080,7 +1062,7 @@ export const Employees = () => {
 
                               <div className="border-t border-zinc-100  my-1"></div>
 
-                              <button
+                              {canChangeStatus && <button
                                 type="button"
                                 onClick={() => {
                                   setActiveMenuId(null);
@@ -1088,7 +1070,7 @@ export const Employees = () => {
                                 }}
                                 className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-zinc-800  hover:bg-zinc-50 "
                               >
-                                {emp.status === 'ACTIVE' ? (
+                                {!['INACTIVE', 'TERMINATED', 'ABSCONDING'].includes(emp.status) ? (
                                   <>
                                     <XCircle className="w-3.5 h-3.5 text-zinc-500" />
                                     <span>Deactivate Employee</span>
@@ -1099,24 +1081,9 @@ export const Employees = () => {
                                     <span>Activate Employee</span>
                                   </>
                                 )}
-                              </button>
+                              </button>}
 
-                              {isOwner && (
-                                <>
-                                  <div className="border-t border-zinc-100  my-1"></div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setActiveMenuId(null);
-                                      handleDeleteEmployee(emp);
-                                    }}
-                                    className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-zinc-900  hover:bg-zinc-100  font-semibold"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5 text-zinc-500" />
-                                    <span>Remove Employee</span>
-                                  </button>
-                                </>
-                              )}
+
                             </div>
                           )}
                         </div>
@@ -1402,7 +1369,7 @@ export const Employees = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-2.5">
-            <div>
+            {canChangeStatus && <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">Status</label>
               <select
                 value={editFormData.status || 'ACTIVE'}
@@ -1414,7 +1381,7 @@ export const Employees = () => {
                 <option value="ON_NOTICE">ON_NOTICE</option>
                 <option value="TERMINATED">TERMINATED</option>
               </select>
-            </div>
+            </div>}
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">Date of Birth</label>
               <input
@@ -1504,21 +1471,7 @@ export const Employees = () => {
           </div>
 
           <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
-            {isOwner && (
-              <button
-                type="button"
-                onClick={() => {
-                  const emp = editModalEmp;
-                  setEditModalEmp(null);
-                  handleDeleteEmployee(emp);
-                }}
-                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-                title="Permanently remove employee"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Remove Employee</span>
-              </button>
-            )}
+
             <div className="flex items-center gap-2 ml-auto">
               <button
                 type="button"
@@ -1832,7 +1785,7 @@ export const Employees = () => {
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Branch</label>
                     <select
-                      value={formData.branch || (branches[0] ? branches[0].id : '')}
+                      value={formData.branch || ''}
                       disabled={branches.length === 1}
                       onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
                       className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white disabled:bg-zinc-100 disabled:text-zinc-600 text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
@@ -1861,7 +1814,7 @@ export const Employees = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Designation</label>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Designation (optional)</label>
                     <select
                       value={formData.designation}
                       onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
@@ -1931,24 +1884,9 @@ export const Employees = () => {
                         'Fixed gross base monthly salary for official monthly payroll.'}
                     </span>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Work Shift Assignment</label>
-                    <select
-                      value={formData.shift_id}
-                      onChange={(e) => setFormData({ ...formData, shift_id: e.target.value })}
-                      className="w-full px-2.5 py-1.5 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 font-medium transition-colors"
-                    >
-                      <option value="">Assign Shift (Optional)</option>
-                      {shifts.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="block text-[10px] text-zinc-500 mt-1">
-                      Assign morning, evening or general rotational shift policy.
-                    </span>
-                  </div>
+                  {hasPermission('shift.assign') && (
+                    <ShiftSelect shifts={shifts} value={formData.shift_id} onChange={(shift_id) => setFormData({ ...formData, shift_id })} />
+                  )}
                 </div>
               </div>
 
@@ -1981,7 +1919,7 @@ export const Employees = () => {
                   </div>
                 </div>
 
-                <label className="flex items-center gap-2.5 p-2.5 bg-white rounded-lg cursor-pointer border border-zinc-200 hover:bg-zinc-50/80 transition-colors">
+                {hasPermission('role.assign') && <label className="flex items-center gap-2.5 p-2.5 bg-white rounded-lg cursor-pointer border border-zinc-200 hover:bg-zinc-50/80 transition-colors">
                   <input
                     type="checkbox"
                     checked={formData.send_invite}
@@ -1996,8 +1934,28 @@ export const Employees = () => {
                       Sends credentials to the candidate email allowing them to clock in and access self-service.
                     </span>
                   </div>
-                </label>
+                </label>}
               </div>
+
+              {hasPermission('employee.view_bank') && (
+                <fieldset className="rounded-xl border border-zinc-200 bg-white p-4">
+                  <legend className="px-1 text-xs font-semibold">Bank details (optional)</legend>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {[['bank_name', 'Bank name'], ['bank_account_number', 'Account number'], ['bank_ifsc_code', 'IFSC code']].map(([key, label]) => (
+                      <label key={key} className="text-xs font-semibold text-zinc-700">
+                        {label}
+                        <input value={formData[key] || ''} onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-normal text-zinc-900" />
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+              <OnboardingProgress steps={{
+                phone: formData.phone?.trim(),
+                aadhaar: formData.aadhaar_number?.trim(),
+                bank: ['bank_name', 'bank_account_number', 'bank_ifsc_code'].every((key) => formData[key]?.trim()),
+              }} />
 
               {/* 4 Action Buttons */}
               <div className="pt-3 border-t border-zinc-200 flex flex-wrap items-center justify-end gap-2.5">

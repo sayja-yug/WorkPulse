@@ -20,7 +20,7 @@ export const PageHeader = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight leading-tight truncate">
+            <h1 className="font-serif text-2xl sm:text-3xl font-medium text-zinc-950 tracking-tight leading-tight truncate">
               {title}
             </h1>
             {badge && (

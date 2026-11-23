@@ -32,7 +32,9 @@ import { calculateWorkHoursSummary } from '../utils/workHours';
 import { HelpButton } from '../components/ui/HelpButton';
 
 export const Attendance = () => {
-  const { isEmployee, isFieldEmployee, isSelfAttendanceOnly, isBranchManagerStrict } = usePermissions();
+  const { hasPermission, user, isFieldEmployee, isSelfAttendanceOnly, isBranchManagerStrict } = usePermissions();
+  const canPunchOwn = hasPermission('attendance.mark_own');
+  const canMarkTeam = hasPermission('attendance.mark');
   const { toast } = useNotification();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -80,12 +82,12 @@ export const Attendance = () => {
   const fetchAttendance = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/attendance/');
+      const res = await api.get('/attendance/', { params: { branch: selectedBranch || undefined, own: isSelfAttendanceOnly || undefined } });
       const data = res.data?.data || res.data?.results || res.data || [];
       const list = Array.isArray(data) ? data : [];
       setRecords(list);
 
-      const todayRec = list.find((r) => r.date === todayStr && r.check_in && !r.check_out);
+      const todayRec = list.find((r) => (isSelfAttendanceOnly || r.employee === user?.employee_id) && r.date === todayStr && r.check_in && !r.check_out);
       setIsCheckedIn(!!todayRec);
     } catch (err) {
       console.error('Failed to load attendance', err);
@@ -97,7 +99,7 @@ export const Attendance = () => {
   // 3. Fetch employees list (optionally filtered by branch)
   const fetchEmployeesList = async (branchId = selectedBranch) => {
     try {
-      const url = branchId ? `/employees/?branch=${branchId}` : '/employees/';
+      const url = branchId ? `/employees/?status=ACTIVE&branch=${branchId}` : '/employees/?status=ACTIVE';
       const res = await api.get(url);
       const data = res.data?.data || res.data?.results || res.data || [];
       setEmployees(Array.isArray(data) ? data : []);
@@ -113,20 +115,20 @@ export const Attendance = () => {
       fetchEmployeesList(selectedBranch);
     }
 
-    if (navigator.geolocation) {
+    if (canPunchOwn && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setGeoCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           setGeoStatus(`GPS Locked (±${Math.round(pos.coords.accuracy)}m)`);
         },
         () => {
-          setGeoCoords({ lat: 28.6280, lng: 77.3649 });
-          setGeoStatus('Branch geofence active');
+          setGeoCoords(null);
+          setGeoStatus('Location unavailable');
         }
       );
     } else {
-      setGeoCoords({ lat: 28.6280, lng: 77.3649 });
-      setGeoStatus('Geolocation default coordinates active');
+      setGeoCoords(null);
+      setGeoStatus('Location unavailable');
     }
   }, [isSelfAttendanceOnly, selectedBranch]);
 
@@ -153,8 +155,8 @@ export const Attendance = () => {
     try {
       setPunching(true);
       await api.post('/attendance/check-in/', {
-        latitude: geoCoords?.lat || 28.6280,
-        longitude: geoCoords?.lng || 77.3649,
+        latitude: geoCoords?.lat ?? null,
+        longitude: geoCoords?.lng ?? null,
         source: isFieldEmployee ? 'MOBILE_FIELD' : 'WEB',
       });
       setIsCheckedIn(true);
@@ -171,8 +173,8 @@ export const Attendance = () => {
     try {
       setPunching(true);
       await api.post('/attendance/check-out/', {
-        latitude: geoCoords?.lat || 28.6280,
-        longitude: geoCoords?.lng || 77.3649,
+        latitude: geoCoords?.lat ?? null,
+        longitude: geoCoords?.lng ?? null,
       });
       setIsCheckedIn(false);
       await fetchAttendance();
@@ -192,7 +194,7 @@ export const Attendance = () => {
         action,
       });
       await fetchAttendance();
-      toast.success(`Employee marked as ${action === 'IN' ? 'Punched In (Active)' : 'Punched Out (Inactive)'}.`);
+      toast.success(`Employee marked as ${action === 'IN' ? 'Punched In' : 'Punched Out'}.`);
     } catch (err) {
       toast.error(err.response?.data?.error?.message || `Punch ${action} failed`);
     } finally {
@@ -216,11 +218,7 @@ export const Attendance = () => {
     };
   });
 
-  // Filter history logs: if branch selected, only show records matching employees of that branch
-  const employeeIdsInBranch = new Set(employees.map((e) => e.id));
-  const filteredRecords = selectedBranch
-    ? records.filter((r) => employeeIdsInBranch.has(r.employee))
-    : records;
+  const filteredRecords = records;
 
   const formatLogsLine = (checkIn, checkOut, hours) => {
     if (!checkIn && !checkOut) return 'No punch logs recorded yet';
@@ -398,7 +396,7 @@ export const Attendance = () => {
       })()}
 
       {/* 4. Self Punch In / Punch Out Banner */}
-      <div className="bg-white rounded-2xl border border-zinc-200 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {canPunchOwn && <div className="bg-white rounded-2xl border border-zinc-200 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 border ${
             isCheckedIn
@@ -447,7 +445,7 @@ export const Attendance = () => {
             </Button>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* 4. Workforce / History Table */}
       <Card>
@@ -503,7 +501,7 @@ export const Attendance = () => {
                     <th className="py-3 px-4">Punch In</th>
                     <th className="py-3 px-4">Punch Out</th>
                     <th className="py-3 px-4">Hours</th>
-                    <th className="py-3 px-4 text-right">Punch Action</th>
+                    {canMarkTeam && <th className="py-3 px-4 text-right">Punch Action</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200">
@@ -532,7 +530,7 @@ export const Attendance = () => {
                       <td className="py-3.5 px-4 font-bold text-zinc-950 whitespace-nowrap">
                         {row.working_hours ? `${row.working_hours} hrs` : '-'}
                       </td>
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      {canMarkTeam && <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
                           {!(row.check_in && !row.check_out) ? (
                             <Button
@@ -556,7 +554,7 @@ export const Attendance = () => {
                             </Button>
                           )}
                         </div>
-                      </td>
+                      </td>}
                     </tr>
                   ))}
                 </tbody>
@@ -584,7 +582,7 @@ export const Attendance = () => {
                   <th className="py-3 px-4">Start Work</th>
                   <th className="py-3 px-4">End Work</th>
                   <th className="py-3 px-4">Working Hours</th>
-                  {!isSelfAttendanceOnly && <th className="py-3 px-4 text-right">Action</th>}
+                  {!isSelfAttendanceOnly && canMarkTeam && <th className="py-3 px-4 text-right">Action</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
@@ -610,7 +608,7 @@ export const Attendance = () => {
                     <td className="py-3.5 px-4 font-bold text-zinc-950 whitespace-nowrap">
                       {r.working_hours ? `${r.working_hours} hrs` : '-'}
                     </td>
-                    {!isSelfAttendanceOnly && (
+                    {!isSelfAttendanceOnly && canMarkTeam && (
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
                           {!(r.check_in && !r.check_out) ? (

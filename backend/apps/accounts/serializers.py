@@ -54,11 +54,11 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'email', 'phone', 'first_name', 'last_name', 'full_name',
-            'avatar', 'is_active', 'email_verified', 'phone_verified',
+            'avatar', 'is_active', 'is_superuser', 'email_verified', 'phone_verified',
             'active_business', 'date_joined', 'last_login', 'role',
             'branch_id', 'branch_name', 'assigned_branch',
         ]
-        read_only_fields = ['id', 'email', 'is_active', 'email_verified', 'phone_verified', 'date_joined', 'last_login', 'role', 'branch_id', 'branch_name', 'assigned_branch']
+        read_only_fields = ['id', 'email', 'is_active', 'is_superuser', 'email_verified', 'phone_verified', 'date_joined', 'last_login', 'role', 'branch_id', 'branch_name', 'assigned_branch']
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -78,83 +78,10 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        from django.utils.text import slugify
-        import uuid
-        from apps.businesses.models import Business, BusinessMembership
-        from apps.branches.models import Branch
-        from apps.accounts.models import Role, UserRole
-        from apps.employees.models import Employee
-
-        validated_data.pop('password_confirm', None)
-        company_name = validated_data.pop('company_name', None)
-        defer_business = validated_data.pop('defer_business', False)
-
-        user = User.objects.create_user(**validated_data)
-
-        if defer_business:
-            return user
-
-        # Create business if company name is provided or default to user's company
-        biz_name = (company_name or f"{user.first_name}'s Organization").strip()
-        base_slug = slugify(biz_name) or 'company'
-        unique_slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
-
-        business = Business.objects.create(
-            name=biz_name,
-            slug=unique_slug,
-            email=user.email,
-            phone=user.phone or '',
-            country='India',
-            currency='INR',
-            timezone='Asia/Kolkata',
-            working_days=['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
-        )
-
-        # Create primary branch
-        branch = Branch.objects.create(
-            business=business,
-            name='Headquarters',
-            code='BR-HQ',
-            is_head_office=True,
-            geofence_radius=500
-        )
-
-        # Create business owner membership
-        BusinessMembership.objects.create(
-            user=user,
-            business=business,
-            is_owner=True
-        )
-
-        # Assign BUSINESS_OWNER role
-        owner_role = Role.objects.filter(code='BUSINESS_OWNER', is_system=True).first()
-        if owner_role:
-            UserRole.objects.create(
-                user=user,
-                business=business,
-                role=owner_role,
-                branch=branch
-            )
-
-        # Create self employee profile
-        from django.utils import timezone
-        Employee.objects.create(
-            user=user,
-            business=business,
-            branch=branch,
-            employee_code=f'WP-{uuid.uuid4().hex[:4].upper()}',
-            first_name=user.first_name,
-            last_name=user.last_name,
-            email=user.email,
-            phone=user.phone or '',
-            joining_date=timezone.now().date(),
-            status=Employee.Status.ACTIVE
-        )
-
-        user.active_business = business
-        user.save(update_fields=['active_business'])
-
-        return user
+        validated_data.pop('password_confirm')
+        validated_data.pop('company_name', None)
+        validated_data.pop('defer_business', None)
+        return User.objects.create_user(**validated_data)
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -231,11 +158,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 })
 
             has_membership = user.business_memberships.filter(business=selected_biz, is_active=True).exists()
-            has_employee = user.employee_profiles.filter(business=selected_biz, status='ACTIVE').exists()
-            has_role = user.user_roles.filter(business=selected_biz).exists()
 
             # Super admins can log in to any tenant
-            if not (user.is_superuser or has_membership or has_employee or has_role):
+            if not (user.is_superuser or has_membership):
                 raise serializers.ValidationError({
                     'detail': f"Access Denied: Your account ({user.email}) is not registered with '{selected_biz.name}'. Employees can only log in to their registered organization."
                 })
@@ -243,7 +168,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             user.active_business = selected_biz
             user.save(update_fields=['active_business'])
         elif business_id == 'PLATFORM_ADMIN':
-            is_platform = user.is_superuser or user.is_staff or user.user_roles.filter(
+            is_platform = user.is_superuser or user.user_roles.filter(role__is_active=True, role__is_system=True,
                 role__code__in=['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN']
             ).exists()
             if not is_platform:
@@ -294,7 +219,7 @@ class RoleSerializer(serializers.ModelSerializer):
             'id', 'name', 'code', 'description', 'business',
             'is_system', 'is_active', 'permissions', 'permission_ids',
         ]
-        read_only_fields = ['id', 'is_system']
+        read_only_fields = ['id', 'is_system', 'business']
 
 
 class RoleListSerializer(serializers.ModelSerializer):

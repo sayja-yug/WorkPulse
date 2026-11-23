@@ -20,7 +20,7 @@ export const Button = forwardRef(({
     secondary: 'bg-white hover:bg-zinc-50 active:bg-zinc-100 text-zinc-900 border border-zinc-300 shadow-2xs',
     outline: 'bg-transparent hover:bg-zinc-100 active:bg-zinc-200 text-zinc-900 border border-zinc-300',
     ghost: 'bg-transparent hover:bg-zinc-100 active:bg-zinc-200 text-zinc-700 hover:text-zinc-950',
-    danger: 'bg-zinc-950 hover:bg-black text-white border border-zinc-900 shadow-2xs',
+    danger: 'bg-rose-800 hover:bg-rose-900 text-white border border-rose-800 shadow-2xs',
     icon: 'bg-transparent hover:bg-zinc-100 active:bg-zinc-200 text-zinc-600 hover:text-zinc-950 rounded-lg',
   };
 

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import api from '../api/client';
 import { usePermissions } from '../hooks/usePermissions';
 import { useNotification } from '../context/NotificationContext';
 import {
   ArrowLeft,
-  User,
   Briefcase,
   CalendarCheck2,
   Clock,
@@ -15,22 +14,51 @@ import {
   HandCoins,
   FileText,
   History,
-  Settings as SettingsIcon,
+  Pencil,
+  UserMinus,
   LayoutDashboard,
-  Trash2,
-  AlertTriangle,
-  CheckCircle2,
+
 } from 'lucide-react';
+import { OnboardingProgress } from '../components/employees/OnboardingProgress';
+import { Modal } from '../components/ui/Modal';
 import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
-import { formatDate, formatINR, formatTime, calculateAge, getAgeInfo } from '../utils/formatters';
+import { formatDate, formatINR, formatTime, getAgeInfo } from '../utils/formatters';
 import { calculateWorkHoursSummary } from '../utils/workHours';
-import { calculateEmployeeInactivity } from '../utils/employeeInactivity';
+const profileFields = [
+  ['first_name', 'First name', 'text'], ['last_name', 'Last name', 'text'], ['email', 'Email', 'email'],
+  ['phone', 'Phone', 'tel'], ['joining_date', 'Joining date', 'date'], ['date_of_birth', 'Date of birth', 'date'],
+  ['gender', 'Gender', 'select'], ['city', 'City', 'text'], ['address', 'Address', 'text'],
+  ['salary_type', 'Salary type', 'select'], ['base_salary', 'Base salary', 'number'],
+];
+
+const choices = {
+  gender: [['PREFER_NOT_TO_SAY', 'Prefer not to say'], ['FEMALE', 'Female'], ['MALE', 'Male'], ['OTHER', 'Other']],
+  salary_type: [['MONTHLY', 'Monthly'], ['WEEKLY', 'Weekly'], ['DAILY', 'Daily'], ['HOURLY', 'Hourly']],
+};
+
+function InformationCard({ title, rows }) {
+  return (
+    <section className="bg-white rounded-2xl border border-zinc-200 p-5 sm:p-6">
+      <h3 className="text-base font-semibold text-zinc-950 mb-4">{title}</h3>
+      <dl className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+        {rows.map(([label, value]) => (
+          <div key={label} className="min-w-0">
+            <dt className="text-xs font-medium text-zinc-500">{label}</dt>
+            <dd className="mt-1 text-sm font-medium text-zinc-900 break-words">{value || '—'}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
 
 export const EmployeeProfile = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { isOwner, isHR, canManagePayroll } = usePermissions();
+  const { hasPermission } = usePermissions();
+  const canEdit = hasPermission('employee.update');
+  const canChangeStatus = hasPermission('employee.deactivate');
   const { toast, confirm } = useNotification();
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -45,16 +73,8 @@ export const EmployeeProfile = () => {
   const [tabLoading, setTabLoading] = useState(false);
 
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    first_name: '',
-    last_name: '',
-    phone: '',
-    address: '',
-    city: '',
-    date_of_birth: '',
-    salary_type: 'MONTHLY',
-    base_salary: '',
-  });
+  const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
 
   const fetchEmployee = async () => {
     try {
@@ -62,26 +82,8 @@ export const EmployeeProfile = () => {
       const res = await api.get(`/employees/${id}/`);
       const emp = res.data?.data || res.data;
       setEmployee(emp);
-      setEditForm({
-        first_name: emp.first_name || '',
-        last_name: emp.last_name || '',
-        phone: emp.phone || '',
-        address: emp.address || '',
-        city: emp.city || '',
-        date_of_birth: emp.date_of_birth || '',
-        salary_type: emp.salary_type || 'MONTHLY',
-        base_salary: emp.base_salary ?? '',
-      });
-
-      // Preload attendance so weekly & monthly hours are immediately available on overview tab
-      try {
-        const attRes = await api.get('/attendance/', { params: { employee: id } });
-        const attData = attRes.data?.data || attRes.data?.results || attRes.data || [];
-        setAttendance(Array.isArray(attData) ? attData : []);
-      } catch {
-        // silent
-      }
     } catch (err) {
+      setEmployee(null);
       console.error('Failed to load employee profile', err);
     } finally {
       setLoading(false);
@@ -133,7 +135,7 @@ export const EmployeeProfile = () => {
   }, [activeTab, id]);
 
   const handleToggleStatus = async () => {
-    const isActivating = employee.status !== 'ACTIVE';
+    const isActivating = ['INACTIVE', 'TERMINATED', 'ABSCONDING'].includes(employee.status);
     const endpoint = isActivating ? 'activate' : 'deactivate';
     const empName = employee.full_name || employee.first_name;
     const confirmed = await confirm({
@@ -167,33 +169,25 @@ export const EmployeeProfile = () => {
       }
     }
     try {
-      await api.patch(`/employees/${id}/`, editForm);
+      setSaving(true);
+      const payload = Object.fromEntries(Object.entries(editForm).filter(
+        ([key, value]) => value !== (employee[key] ?? '')
+      ));
+      if (payload.date_of_birth === '') payload.date_of_birth = null;
+      await api.patch(`/employees/${id}/`, payload);
       setEditing(false);
-      fetchEmployee();
-      toast.success('Employee updated successfully!');
+      await fetchEmployee();
+      toast.success('Employee updated.');
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to update employee');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDeleteEmployee = async () => {
-    const empName = employee.full_name || `${employee.first_name} ${employee.last_name}`;
-    const confirmed = await confirm({
-      title: 'Remove Employee',
-      message: `Are you sure you want to permanently remove ${empName} from the company? This action cannot be undone and will delete all associated profile data.`,
-      confirmText: 'Remove Employee',
-      cancelText: 'Cancel',
-      type: 'danger',
-    });
-    if (!confirmed) return;
-
-    try {
-      await api.delete(`/employees/${id}/`);
-      toast.success(`Employee ${empName} has been removed successfully.`);
-      navigate('/employees');
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to remove employee');
-    }
+  const openEditor = () => {
+    setEditForm(Object.fromEntries(profileFields.map(([field]) => [field, employee[field] ?? ''])));
+    setEditing(true);
   };
 
   if (loading) return <Loader message="Loading Employee Profile..." />;
@@ -210,16 +204,14 @@ export const EmployeeProfile = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'personal', label: 'Personal Information', icon: User },
     { id: 'employment', label: 'Employment Details', icon: Briefcase },
-    { id: 'attendance', label: 'Attendance', icon: CalendarCheck2 },
-    { id: 'shifts', label: 'Shifts', icon: Clock },
-    { id: 'leave', label: 'Leave', icon: CalendarOff },
-    ...(canManagePayroll || isOwner ? [{ id: 'salary', label: 'Salary', icon: Banknote }] : []),
-    { id: 'advances', label: 'Advances', icon: HandCoins },
+    ...(hasPermission('attendance.view') ? [{ id: 'attendance', label: 'Attendance', icon: CalendarCheck2 }] : []),
+    ...(hasPermission('shift.view') ? [{ id: 'shifts', label: 'Shifts', icon: Clock }] : []),
+    ...(hasPermission('leave.view') ? [{ id: 'leave', label: 'Leave', icon: CalendarOff }] : []),
+    ...(hasPermission('payroll.view') ? [{ id: 'salary', label: 'Salary', icon: Banknote }] : []),
+    ...(hasPermission('advance.view') ? [{ id: 'advances', label: 'Advances', icon: HandCoins }] : []),
     { id: 'documents', label: 'Documents', icon: FileText },
     { id: 'history', label: 'Activity History', icon: History },
-    ...(isOwner || isHR ? [{ id: 'settings', label: 'Settings', icon: SettingsIcon }] : []),
   ];
 
   return (
@@ -239,60 +231,36 @@ export const EmployeeProfile = () => {
             {employee.last_name?.[0] || ''}
           </div>
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               <h2 className="text-xl font-bold text-zinc-950">
                 {employee.full_name || `${employee.first_name} ${employee.last_name}`}
               </h2>
-              {(() => {
-                const inact = calculateEmployeeInactivity(employee, attendance);
-                if (employee.status === 'TERMINATED' || employee.status === 'RESIGNED') {
-                  return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-                      <span>INACTIVE ({employee.status})</span>
-                    </span>
-                  );
-                }
-                if (inact.isInactive) {
-                  return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title={inact.label}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                      <span>INACTIVE ({inact.days}d no punch)</span>
-                    </span>
-                  );
-                }
-                return (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>ACTIVE</span>
-                  </span>
-                );
-              })()}
+              <Badge variant={employee.status === 'ACTIVE' ? 'success' : 'neutral'}>
+                {employee.deactivated_on ? 'Deactivated' : employee.status.replaceAll('_', ' ')}
+              </Badge>
             </div>
             <p className="text-xs text-zinc-500 mt-0.5">
               <span className="font-mono font-semibold text-zinc-900">{employee.employee_code}</span> &bull;{' '}
-              {employee.designation_name || 'Staff'} &bull; {employee.department_name || 'General'} &bull; {employee.branch_name || 'HQ'}
+              {[employee.designation_name, employee.department_name, employee.branch_name].filter(Boolean).join(' · ') || 'Employee'}
             </p>
           </div>
         </div>
 
         {/* Profile Header Actions */}
         <div className="flex items-center gap-2">
-          {(isOwner || isHR) && (
-            <button
-              type="button"
-              onClick={handleDeleteEmployee}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-colors shadow-2xs cursor-pointer"
-              title="Permanently remove employee from company"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-              <span>Remove Employee</span>
+          {canEdit && (
+            <button type="button" onClick={openEditor} className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-950 text-white rounded-lg text-sm font-semibold">
+              <Pencil className="w-4 h-4" /> Edit
+            </button>
+          )}
+          {canChangeStatus && (
+            <button type="button" onClick={handleToggleStatus} className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm font-semibold">
+              <UserMinus className="w-4 h-4" /> {['INACTIVE', 'TERMINATED', 'ABSCONDING'].includes(employee.status) ? 'Activate' : 'Deactivate'}
             </button>
           )}
         </div>
       </div>
 
-      {/* 11-Tab Bar (Horizontal scroll on mobile, flex on desktop) */}
       <div className="flex items-center gap-1.5 border-b border-zinc-200 pb-2 overflow-x-auto">
         {tabs.map((t) => (
           <button
@@ -309,96 +277,25 @@ export const EmployeeProfile = () => {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+      <div className={activeTab === 'overview' ? '' : 'bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6 overflow-x-auto'}>
         {tabLoading ? (
           <Loader message="Loading tab data..." />
         ) : activeTab === 'overview' ? (
-          <div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Email</p>
-                <p className="font-semibold text-slate-900 mt-1">{employee.email || '-'}</p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Phone</p>
-                <p className="font-semibold text-slate-900 mt-1">{employee.phone || '-'}</p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Joining Date</p>
-                <p className="font-semibold text-slate-900 mt-1">{formatDate(employee.joining_date)}</p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Branch</p>
-                <p className="font-semibold text-slate-900 mt-1">{employee.branch_name || '-'}</p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Department</p>
-                <p className="font-semibold text-slate-900 mt-1">{employee.department_name || '-'}</p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Employment Type</p>
-                <p className="font-semibold text-slate-900 mt-1">{employee.employment_type}</p>
-              </div>
-            </div>
-
-            {/* Cumulative Shift, Weekly & Monthly Hours Summary */}
-            <div className="mt-5 pt-4 border-t border-zinc-100">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-zinc-900" />
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-950">Work Hours &amp; Shift Summary</h4>
-                </div>
-                <div className="flex items-center gap-1.5 text-2xs font-mono text-zinc-500">
-                  <span className="px-2 py-0.5 bg-zinc-100 rounded-md font-bold text-zinc-800">Week: {calculateWorkHoursSummary(attendance).weekLabel}</span>
-                  <span className="px-2 py-0.5 bg-zinc-100 rounded-md font-bold text-zinc-800">Month: {calculateWorkHoursSummary(attendance).monthLabel}</span>
-                </div>
-              </div>
-
-              {(() => {
-                const summary = calculateWorkHoursSummary(attendance);
-                return (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Today&apos;s Hours</span>
-                      <p className="text-xl font-mono font-bold text-zinc-950 mt-1">{summary.todayFormatted}</p>
-                      <span className="text-[11px] text-zinc-500">{summary.todayText}</span>
-                    </div>
-                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Total Weekly Hours</span>
-                      <p className="text-xl font-mono font-bold text-zinc-950 mt-1">{summary.weeklyFormatted}</p>
-                      <span className="text-[11px] text-zinc-500">{summary.weeklyText} &bull; Monday to Sunday</span>
-                    </div>
-                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/80">
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Total Monthly Hours</span>
-                      <p className="text-xl font-mono font-bold text-zinc-950 mt-1">{summary.monthlyFormatted}</p>
-                      <span className="text-[11px] text-zinc-500">{summary.monthlyText} &bull; {summary.monthLabel}</span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        ) : activeTab === 'personal' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-            <div><p className="text-slate-400 font-bold text-[10px] uppercase">First Name</p><p className="font-semibold mt-1">{employee.first_name}</p></div>
-            <div><p className="text-slate-400 font-bold text-[10px] uppercase">Last Name</p><p className="font-semibold mt-1">{employee.last_name || '-'}</p></div>
-            <div><p className="text-slate-400 font-bold text-[10px] uppercase">Gender</p><p className="font-semibold mt-1">{employee.gender || '-'}</p></div>
-            <div>
-              <p className="text-slate-400 font-bold text-[10px] uppercase">Date of Birth &amp; Age</p>
-              <div className="font-semibold mt-1 flex items-center gap-2 flex-wrap">
-                <span>{employee.date_of_birth ? formatDate(employee.date_of_birth) : '-'}</span>
-                {employee.date_of_birth && (() => {
-                  const age = calculateAge(employee.date_of_birth);
-                  return age !== null ? (
-                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                      {age} years old
-                    </span>
-                  ) : null;
-                })()}
-              </div>
-            </div>
-            <div><p className="text-slate-400 font-bold text-[10px] uppercase">City</p><p className="font-semibold mt-1">{employee.city || '-'}</p></div>
-            <div><p className="text-slate-400 font-bold text-[10px] uppercase">Address</p><p className="font-semibold mt-1">{employee.address || '-'}</p></div>
+          <div className="space-y-4">
+            <InformationCard title="Basic Information" rows={[
+              ['Employee code', employee.employee_code], ['Email', employee.email], ['Phone', employee.phone],
+              ['Joining Date', formatDate(employee.joining_date)], ['Time with the company', employee.tenure],
+              ['Employment type', employee.employment_type?.replaceAll('_', ' ')],
+              ['Branch', employee.branch_name], ['Department', employee.department_name], ['Designation', employee.designation_name],
+            ]} />
+            <InformationCard title="Personal Details" rows={[
+              ['First name', employee.first_name], ['Last name', employee.last_name],
+              ['Gender', choices.gender.find(([code]) => code === employee.gender)?.[1]],
+              ['Date of birth', employee.date_of_birth && formatDate(employee.date_of_birth)],
+              ['Age', employee.age != null && `${employee.age} years`],
+              ['City', employee.city], ['Address', employee.address],
+            ]} />
+            <OnboardingProgress steps={employee.onboarding_progress} />
           </div>
         ) : activeTab === 'employment' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
@@ -471,7 +368,7 @@ export const EmployeeProfile = () => {
                   </div>
                 </div>
 
-                {(isOwner || isHR) && (
+                {hasPermission('attendance.mark') && !employee.deactivated_on && (
                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
                     <div>
                       <span className="text-xs font-semibold text-slate-700">
@@ -592,140 +489,36 @@ export const EmployeeProfile = () => {
               </div>
             ))}</div>
           )
-        ) : (
-          /* Settings Tab */
-          <div className="space-y-4">
-            {editing ? (
-              <form onSubmit={handleSaveEdit} className="space-y-3 max-w-md">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-xs font-semibold mb-1 text-zinc-800 ">First Name</label><input type="text" value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900 " /></div>
-                  <div><label className="block text-xs font-semibold mb-1 text-zinc-800 ">Last Name</label><input type="text" value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900 " /></div>
-                </div>
-                <div><label className="block text-xs font-semibold mb-1 text-zinc-800 ">Phone</label><input type="text" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900 " /></div>
-                <div><label className="block text-xs font-semibold mb-1 text-zinc-800 ">City</label><input type="text" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} className="w-full px-3 py-1.5 text-xs border border-zinc-200  rounded-lg bg-white  text-zinc-900 " /></div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-zinc-800 ">Date of Birth</label>
-                  <input
-                    type="date"
-                    value={editForm.date_of_birth}
-                    onChange={(e) => setEditForm({ ...editForm, date_of_birth: e.target.value })}
-                    className={`w-full px-3 py-1.5 text-xs border rounded-lg bg-white text-zinc-900 ${
-                      editForm.date_of_birth && getAgeInfo(editForm.date_of_birth).isUnderage
-                        ? 'border-rose-400 bg-rose-50/20'
-                        : 'border-zinc-200'
-                    }`}
-                  />
-                  {editForm.date_of_birth && (() => {
-                    const ageInfo = getAgeInfo(editForm.date_of_birth);
-                    return ageInfo.isUnderage ? (
-                      <div className="mt-1.5 p-2 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 text-[11px] flex items-start gap-1.5 shadow-xs">
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
-                        <div>
-                          <strong className="block font-bold">{ageInfo.label}</strong>
-                          <span className="text-rose-700">{ageInfo.text}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-1.5 p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 font-medium">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>{ageInfo.label}</span>
-                        </div>
-                        <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">
-                          Legal Working Age
-                        </span>
-                      </div>
-                    );
-                  })()}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold mb-1 text-zinc-800 ">Salary Type</label>
-                    <select
-                      value={editForm.salary_type || 'MONTHLY'}
-                      onChange={(e) => setEditForm({ ...editForm, salary_type: e.target.value })}
-                      className="w-full px-2.5 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white text-zinc-900"
-                    >
-                      <option value="MONTHLY">Monthly Salary</option>
-                      <option value="HOURLY">Hourly Wage</option>
-                      <option value="DAILY">Daily Wage</option>
-                      <option value="WEEKLY">Weekly Wage</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-1 text-zinc-800 ">
-                      {editForm.salary_type === 'HOURLY'
-                        ? 'Hourly Wage Rate (₹/hr)'
-                        : editForm.salary_type === 'DAILY'
-                        ? 'Daily Wage Rate (₹/day)'
-                        : editForm.salary_type === 'WEEKLY'
-                        ? 'Weekly Wage Rate (₹/wk)'
-                        : 'Base Monthly Salary (₹)'}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder={
-                        editForm.salary_type === 'HOURLY'
-                          ? 'e.g. 250'
-                          : editForm.salary_type === 'DAILY'
-                          ? 'e.g. 800'
-                          : 'e.g. 45000'
-                      }
-                      value={editForm.base_salary ?? ''}
-                      onChange={(e) => setEditForm({ ...editForm, base_salary: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white text-zinc-900"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="submit"
-                    disabled={Boolean(editForm.date_of_birth && getAgeInfo(editForm.date_of_birth).isUnderage)}
-                    className="px-4 py-1.5 bg-zinc-950 hover:bg-black text-white rounded-lg text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
-                  >
-                    Save Changes
-                  </button>
-                  <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 bg-zinc-100  text-zinc-700  rounded-lg text-xs font-semibold">Cancel</button>
-                </div>
-              </form>
-            ) : (
-              <div className="space-y-6 max-w-xl">
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={() => setEditing(true)} className="px-4 py-2 bg-zinc-950 hover:bg-black text-white    rounded-lg text-xs font-bold shadow-xs">Edit Employee Profile</button>
-                  <button onClick={handleToggleStatus} className={`px-4 py-2 rounded-lg text-xs font-semibold border ${employee.status === 'ACTIVE' ? 'bg-zinc-100 text-zinc-700 border-zinc-300   ' : 'bg-zinc-950 text-white  '}`}>
-                    {employee.status === 'ACTIVE' ? 'Deactivate Employee' : 'Activate Employee'}
-                  </button>
-                </div>
-
-                {/* Danger Zone: Permanent Employee Removal */}
-                {(isOwner || isHR) && (
-                  <div className="border border-rose-200 bg-rose-50/50 rounded-xl p-4 space-y-2">
-                    <h4 className="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
-                      <Trash2 className="w-4 h-4 text-rose-600" />
-                      <span>Danger Zone — Remove Employee</span>
-                    </h4>
-                    <p className="text-xs text-rose-700 leading-relaxed">
-                      Permanently remove this employee from your company workspace. This action removes their profile, shifts, and directory entries.
-                    </p>
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={handleDeleteEmployee}
-                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Permanently Remove Employee</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        ) : null}
       </div>
+      {canEdit && (
+        <Modal isOpen={editing} onClose={() => setEditing(false)} title="Edit employee">
+          <form onSubmit={handleSaveEdit} className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {profileFields.map(([name, label, type]) => (
+                <label key={name} className="text-xs font-medium text-zinc-700">
+                  {label}
+                  {type === 'select' ? (
+                    <select value={editForm[name] ?? ''} onChange={(e) => setEditForm({ ...editForm, [name]: e.target.value })}
+                      className="mt-1 block w-full bg-white rounded-lg px-3 py-2 border border-zinc-200">
+                      {choices[name].map(([value, text]) => <option key={value} value={value}>{text}</option>)}
+                    </select>
+                  ) : (
+                    <input type={type} required={name === 'first_name' || name === 'joining_date'}
+                      min={type === 'number' ? '0' : undefined} step={type === 'number' ? '0.01' : undefined}
+                      value={editForm[name] ?? ''} onChange={(e) => setEditForm({ ...editForm, [name]: e.target.value })}
+                      className="mt-1 block w-full bg-white rounded-lg px-3 py-2 border border-zinc-200" />
+                  )}
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setEditing(false)} className="px-4 py-2 border border-zinc-200 rounded-lg text-sm">Cancel</button>
+              <button disabled={saving} className="px-4 py-2 bg-zinc-950 text-white rounded-lg text-sm font-semibold">Save Changes</button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };
-

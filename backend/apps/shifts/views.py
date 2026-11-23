@@ -1,17 +1,20 @@
+from common.permissions import HasPermission
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from common.mixins import TenantViewSetMixin
 from apps.notifications.services import notify_employee
-from apps.employees.models import Employee
+from apps.attendance.scope import workforce_scope
+from django.shortcuts import get_object_or_404
 from .models import Shift, ShiftAssignment
 from .serializers import ShiftSerializer, ShiftAssignmentSerializer
 
 
 class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ShiftSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['shift.view'], 'write': ['shift.create'], 'assign_employee': ['shift.assign'], 'remove_employee': ['shift.assign']}
     queryset = Shift.objects.prefetch_related('assignments', 'assignments__employee').all()
     filterset_fields = ['type', 'is_active', 'is_overnight']
     search_fields = ['name', 'code']
@@ -25,13 +28,8 @@ class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             .select_related('employee', 'employee__branch', 'employee__department')
             .order_by('-effective_from')
         )
-        user = request.user
-        business = getattr(request, 'business', None)
-        if business and not user.is_superuser:
-            from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
-                assignments = assignments.filter(employee__branch_id__in=branch_ids)
+        employees, _ = workforce_scope(request, request.business)
+        assignments = assignments.filter(employee__in=employees)
 
         data = [
             {
@@ -59,24 +57,14 @@ class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        emp = Employee.objects.filter(id=employee_id).first()
-        business = getattr(request, 'business', None)
-        if business and not request.user.is_superuser:
-            from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(request.user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
-                if not emp or emp.branch_id not in branch_ids:
-                    return Response(
-                        {'success': False, 'error': {'message': 'You can only assign employees from your own branch.'}},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
+        employees, _ = workforce_scope(request, request.business)
+        emp = get_object_or_404(employees, pk=employee_id)
 
         effective_from = request.data.get('effective_from') or timezone.now().date()
         assignment, created = ShiftAssignment.objects.update_or_create(
-            employee_id=employee_id,
+            employee=emp, effective_from=effective_from,
             defaults={
                 'shift': shift,
-                'effective_from': effective_from,
                 'assigned_by': request.user,
             }
         )
@@ -101,19 +89,9 @@ class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
         """Remove an employee assignment from this shift roster."""
         shift = self.get_object()
         employee_id = request.data.get('employee_id')
-        business = getattr(request, 'business', None)
-        if business and not request.user.is_superuser:
-            from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(request.user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
-                emp = Employee.objects.filter(id=employee_id).first()
-                if not emp or emp.branch_id not in branch_ids:
-                    return Response(
-                        {'success': False, 'error': {'message': 'You can only modify employees from your own branch.'}},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-
-        ShiftAssignment.objects.filter(shift=shift, employee_id=employee_id).delete()
+        employees, _ = workforce_scope(request, request.business)
+        employee = get_object_or_404(employees, pk=employee_id)
+        ShiftAssignment.objects.filter(shift=shift, employee=employee).delete()
         return Response({
             'success': True,
             'data': {'message': 'Employee unassigned from shift.'}
@@ -122,18 +100,22 @@ class ShiftViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
 class ShiftAssignmentViewSet(viewsets.ModelViewSet):
     serializer_class = ShiftAssignmentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['shift.view'], 'write': ['shift.assign'], 'assign_employee': ['shift.assign'], 'remove_employee': ['shift.assign']}
 
     def get_queryset(self):
-        business = getattr(self.request, 'business', None)
-        qs = ShiftAssignment.objects.filter(employee__business=business).select_related('employee', 'shift')
-        user = self.request.user
-        if business and not user.is_superuser:
-            from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
-                qs = qs.filter(employee__branch_id__in=branch_ids)
-        return qs
+        employees, _ = workforce_scope(self.request, self.request.business)
+        return ShiftAssignment.objects.filter(employee__in=employees, shift__business=self.request.business).select_related('employee', 'shift')
+
+    filterset_fields = ['employee', 'shift']
+
+    def get_serializer(self, *args, **kwargs):
+        serializer = super().get_serializer(*args, **kwargs)
+        if not kwargs.get('many', False):
+            employees, _ = workforce_scope(self.request, self.request.business)
+            serializer.fields['employee'].queryset = employees
+            serializer.fields['shift'].queryset = Shift.objects.filter(business=self.request.business)
+        return serializer
 
     def perform_create(self, serializer):
         serializer.save(assigned_by=self.request.user)

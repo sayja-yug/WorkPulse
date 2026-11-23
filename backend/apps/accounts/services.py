@@ -24,24 +24,35 @@ class PermissionService:
 
         Returns a set of permission code strings.
         """
-        cache_key = f'user_perms:{user.id}:{business.id}'
-        permissions = cache.get(cache_key)
-        if permissions is not None:
-            return permissions
+        from apps.accounts.models import Permission, RolePermission
+        from apps.businesses.models import BusinessMembership
+        if user.is_superuser:
+            return set(Permission.objects.values_list('code', flat=True))
+        membership = BusinessMembership.objects.filter(user=user, business=business, is_active=True).first()
+        if not membership:
+            return set()
+        catalog = cls.tenant_permissions()
+        if membership.granted_permissions is not None:
+            return set(catalog.filter(code__in=membership.granted_permissions).values_list('code', flat=True))
+        return set(RolePermission.objects.filter(
+            permission__in=catalog, role__is_active=True,
+            role__user_role_assignments__user=user, role__user_role_assignments__business=business,
+        ).values_list('permission__code', flat=True))
 
-        from apps.accounts.models import UserRole
-        user_roles = UserRole.objects.filter(
-            user=user,
-            business=business,
-        ).select_related('role').prefetch_related('role__role_permissions__permission')
+    @staticmethod
+    def tenant_permissions():
+        from apps.accounts.models import Permission
+        return Permission.objects.exclude(scope_type='GLOBAL').exclude(code__startswith='platform.')
 
-        permissions = set()
-        for user_role in user_roles:
-            for rp in user_role.role.role_permissions.all():
-                permissions.add(rp.permission.code)
-
-        cache.set(cache_key, permissions, cls.CACHE_TTL)
-        return permissions
+    @classmethod
+    def can_delegate_role(cls, user, business, role):
+        from apps.accounts.models import Role
+        if not role.is_active or (not role.is_system and role.business_id != business.id):
+            return False
+        if role.code in (Role.RoleCode.SUPER_ADMIN, Role.RoleCode.SUPPORT_ADMIN,
+                         Role.RoleCode.BILLING_ADMIN, Role.RoleCode.BUSINESS_OWNER):
+            return user.is_superuser and role.is_system
+        return set(role.permissions.values_list('code', flat=True)) <= cls.get_user_permissions(user, business)
 
     @classmethod
     def has_permissions(cls, user, business, required_permissions):
@@ -68,7 +79,7 @@ class PermissionService:
         return list(
             UserRole.objects.filter(
                 user=user,
-                business=business,
+                business=business, role__is_active=True,
             ).values_list('role__code', flat=True)
         )
 
@@ -98,7 +109,7 @@ class PermissionService:
 
         user_roles = UserRole.objects.filter(
             user=user,
-            business=business,
+            business=business, role__is_active=True,
         ).select_related('role')
 
         # Priority order for scope
@@ -135,7 +146,7 @@ class PermissionService:
         user_roles = set(
             UserRole.objects.filter(
                 user=user,
-                business=business,
+                business=business, role__is_active=True,
             ).values_list('role__code', flat=True)
         )
 
@@ -173,7 +184,7 @@ class PermissionService:
 
         user_roles = UserRole.objects.filter(
             user=user,
-            business=business,
+            business=business, role__is_active=True,
         ).select_related('role')
 
         # Business-wide roles can access all branches

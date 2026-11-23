@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -27,6 +27,7 @@ import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { TestingPanel } from './pages/TestingPanel';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import { canOpenPage } from './utils/access';
 import { Loader } from './components/ui/Loader';
 
 const ProtectedRoute = ({ children }) => {
@@ -69,10 +70,11 @@ const RoleIndexSwitch = () => {
   return isPlatformAdmin ? <PlatformDashboard view="overview" /> : <Dashboard />;
 };
 
-const RoleRoute = ({ children, allowedRoles, moduleName }) => {
-  const { activeRole, hasRole } = useAuth();
-
-  const isAllowed = allowedRoles.includes(activeRole) || hasRole('BUSINESS_OWNER') || hasRole('SUPER_ADMIN');
+const RoleRoute = ({ children, moduleName }) => {
+  const auth = useAuth();
+  const { activeRole } = auth;
+  const { pathname } = useLocation();
+  const isAllowed = canOpenPage(pathname.replace(/\/$/, '') || '/', auth);
 
   if (!isAllowed) {
     return (
@@ -134,7 +136,7 @@ export const App = () => {
             <Route
               path="platform/tenants"
               element={
-                <RoleRoute allowedRoles={['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN']} moduleName="Tenant Governance">
+                <RoleRoute moduleName="Tenant Governance">
                   <PlatformDashboard view="tenants" />
                 </RoleRoute>
               }
@@ -142,7 +144,7 @@ export const App = () => {
             <Route
               path="platform/billing"
               element={
-                <RoleRoute allowedRoles={['SUPER_ADMIN', 'BILLING_ADMIN']} moduleName="Platform Billing">
+                <RoleRoute moduleName="Platform Billing">
                   <PlatformDashboard view="billing" />
                 </RoleRoute>
               }
@@ -151,7 +153,7 @@ export const App = () => {
             <Route
               path="organization"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN']} moduleName="Organization Structure">
+                <RoleRoute moduleName="Organization Structure">
                   <Organization />
                 </RoleRoute>
               }
@@ -159,7 +161,7 @@ export const App = () => {
             <Route
               path="employees"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN']} moduleName="Employee Management">
+                <RoleRoute moduleName="Employee Management">
                   <Employees />
                 </RoleRoute>
               }
@@ -167,27 +169,27 @@ export const App = () => {
             <Route
               path="employees/:id"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN', 'EMPLOYEE']} moduleName="Employee Profile">
+                <RoleRoute moduleName="Employee Profile">
                   <EmployeeProfile />
                 </RoleRoute>
               }
             />
-            <Route path="attendance" element={<Attendance />} />
+            <Route path="attendance" element={<RoleRoute moduleName="Attendance"><Attendance /></RoleRoute>} />
             <Route
               path="shifts"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN']} moduleName="Shifts & Roster">
+                <RoleRoute moduleName="Shifts & Roster">
                   <Shifts />
                 </RoleRoute>
               }
             />
-            <Route path="leaves" element={<Leaves />} />
-            <Route path="payroll" element={<Payroll />} />
-            <Route path="advances" element={<Advances />} />
+            <Route path="leaves" element={<RoleRoute moduleName="Leaves"><Leaves /></RoleRoute>} />
+            <Route path="payroll" element={<RoleRoute moduleName="Payroll"><Payroll /></RoleRoute>} />
+            <Route path="advances" element={<RoleRoute moduleName="Advances"><Advances /></RoleRoute>} />
             <Route
               path="cashbook"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'ACCOUNTANT', 'SUPER_ADMIN', 'AUDITOR']} moduleName="Cashbook & Expenses">
+                <RoleRoute moduleName="Cashbook & Expenses">
                   <Expenses />
                 </RoleRoute>
               }
@@ -197,7 +199,7 @@ export const App = () => {
             <Route
               path="field-management"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'FIELD_EMPLOYEE', 'SUPER_ADMIN']} moduleName="Field Management">
+                <RoleRoute moduleName="Field Management">
                   <FieldManagement />
                 </RoleRoute>
               }
@@ -205,7 +207,7 @@ export const App = () => {
             <Route
               path="reports"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'HR_MANAGER', 'ACCOUNTANT', 'BRANCH_MANAGER', 'AUDITOR', 'SUPER_ADMIN']} moduleName="Reports & Analytics">
+                <RoleRoute moduleName="Reports & Analytics">
                   <Reports />
                 </RoleRoute>
               }
@@ -214,7 +216,7 @@ export const App = () => {
             <Route
               path="roles"
               element={
-                <RoleRoute allowedRoles={['SUPER_ADMIN']} moduleName="Roles & Permissions">
+                <RoleRoute moduleName="Roles & Permissions">
                   <RolesPermissions />
                 </RoleRoute>
               }
@@ -222,7 +224,7 @@ export const App = () => {
             <Route
               path="subscription"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'SUPER_ADMIN']} moduleName="Subscription & Billing">
+                <RoleRoute moduleName="Subscription & Billing">
                   <Subscription />
                 </RoleRoute>
               }
@@ -230,7 +232,7 @@ export const App = () => {
             <Route
               path="settings"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'SUPER_ADMIN']} moduleName="Organization Settings">
+                <RoleRoute moduleName="Organization Settings">
                   <Settings />
                 </RoleRoute>
               }
@@ -238,7 +240,7 @@ export const App = () => {
             <Route
               path="testing-panel"
               element={
-                <RoleRoute allowedRoles={['BUSINESS_OWNER', 'SUPER_ADMIN']} moduleName="System Check">
+                <RoleRoute moduleName="System Check">
                   <TestingPanel />
                 </RoleRoute>
               }

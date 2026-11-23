@@ -1,7 +1,9 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from common.permissions import HasPermission, IsBusinessOwner, IsBusinessMember
+from common.permissions import IsSuperAdmin, IsBusinessOwner, IsBusinessMember
+from apps.accounts.services import PermissionService
+from rest_framework.exceptions import PermissionDenied
 from .models import Business, BusinessMembership
 from .serializers import (
     BusinessSerializer,
@@ -15,9 +17,16 @@ from .services import BusinessService
 class BusinessViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
+    http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
+
+    def get_permissions(self):
+        if self.action in ['create', 'toggle_status']:
+            return [permissions.IsAuthenticated(), IsSuperAdmin()]
+        return super().get_permissions()
+
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser or user.is_staff or user.user_roles.filter(
+        if user.is_superuser or user.user_roles.filter(role__is_system=True, role__is_active=True,
             role__code__in=['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN']
         ).exists():
             return Business.objects.all().select_related('subscription__plan').prefetch_related('employees', 'memberships__user').order_by('-created_at')
@@ -49,6 +58,8 @@ class BusinessViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+        if not PermissionService.has_permissions(request.user, instance, ['business.update']):
+            raise PermissionDenied('Company settings require the business update permission.')
         serializer = BusinessSerializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -57,6 +68,8 @@ class BusinessViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get', 'patch'], permission_classes=[permissions.IsAuthenticated, IsBusinessOwner], url_path='settings')
     def business_settings(self, request, pk=None):
         business = self.get_object()
+        if not PermissionService.has_permissions(request.user, business, ['business.update']):
+            raise PermissionDenied('Company settings require the business update permission.')
         if request.method == 'GET':
             return Response({'success': True, 'data': business.settings})
         business.settings = request.data

@@ -97,7 +97,7 @@ export const getAgeInfo = (dobString) => {
     isUnderage: false,
     isFuture: false,
     label: `Age: ${age} years old (Legal working age)`,
-    text: `Verified adult (${age} yrs) — eligible for full-time employment`,
+    text: `Adult (${age} yrs) — eligible for full-time employment`,
     badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
   };
 };

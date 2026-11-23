@@ -1,12 +1,15 @@
-import datetime
-from decimal import Decimal
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.mixins import TenantViewSetMixin
+from common.permissions import HasPermission, resolve_business
+from .scope import workforce_scope, business_zone
 from apps.employees.models import Employee
-from .models import AttendanceRecord, AttendancePunch, AttendanceCorrection, Holiday, OvertimeRecord
+from .models import AttendanceRecord, AttendanceCorrection, Holiday, OvertimeRecord
 from .serializers import (
     AttendanceRecordSerializer,
     CheckInPunchSerializer,
@@ -17,143 +20,58 @@ from .serializers import (
 from .services import AttendanceService
 
 
-def get_business_context(request):
-    """Safely resolve active business from request, headers, or authenticated user."""
-    business = getattr(request, 'business', None)
-    if not business:
-        business_id = request.headers.get('X-Business-ID') or request.META.get('HTTP_X_BUSINESS_ID')
-        if business_id:
-            from apps.businesses.models import Business
-            business = Business.objects.filter(id=business_id).first()
-        elif getattr(request.user, 'active_business', None):
-            business = request.user.active_business
-        elif getattr(request.user, 'is_authenticated', False):
-            from apps.businesses.models import BusinessMembership
-            mem = BusinessMembership.objects.filter(user=request.user, is_active=True).first()
-            if mem:
-                business = mem.business
-    return business
-
-
 def get_or_link_employee(user, business):
-    """Guarantees employee profile exists and is properly linked to the user and business."""
-    if not user or not user.is_authenticated:
-        return None
-    emp = None
-    if business:
-        emp = Employee.objects.filter(user=user, business=business).first()
-    if not emp:
-        emp = Employee.objects.filter(user=user).first()
-    if not emp and user.email:
-        emp = Employee.objects.filter(email__iexact=user.email).first()
-        if emp:
-            emp.user = user
-            if business and not emp.business:
-                emp.business = business
-            emp.save(update_fields=['user', 'business', 'updated_at'])
-    if not emp and business:
-        from apps.branches.models import Branch, Department, Designation
-        branch = Branch.objects.filter(business=business).first()
-        dept = Department.objects.filter(business=business).first()
-        desig = Designation.objects.filter(business=business).first()
-        emp = Employee.objects.create(
-            user=user,
-            business=business,
-            employee_code=f'EMP-{user.id.hex[:6].upper()}',
-            first_name=user.first_name or 'Staff',
-            last_name=user.last_name or '',
-            email=user.email,
-            branch=branch,
-            department=dept,
-            designation=desig,
-            joining_date=timezone.now().date(),
-            status=Employee.Status.ACTIVE
-        )
-    return emp
+    employees = Employee.objects.filter(business=business)
+    employee = employees.filter(user=user).first()
+    if not employee and user.email:
+        employee = employees.filter(email__iexact=user.email, user__isnull=True).first()
+        if employee:
+            employee.user = user
+            employee.save(update_fields=['user', 'updated_at'])
+    return employee
 
 
 class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = AttendanceRecordSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {
+        'read': ['attendance.view'], 'write': ['attendance.mark'], 'daily_summary': ['attendance.view_reports'],
+    }
     queryset = AttendanceRecord.objects.select_related('employee', 'shift').prefetch_related('punches').all().order_by('-date', '-check_in')
     filterset_fields = ['employee', 'date', 'status', 'is_late', 'source']
     search_fields = ['employee__first_name', 'employee__last_name', 'employee__employee_code']
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        user = self.request.user
-        business = get_business_context(self.request)
-        if not user.is_superuser:
-            from apps.accounts.services import PermissionService
-            roles = PermissionService.get_user_roles(user, business) if business else []
-            if 'SUPERVISOR' in roles and not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN'} for r in roles):
-                sup_emp = Employee.objects.filter(user=user, business=business).first()
-                if sup_emp:
-                    team_ids = [sup_emp.id] + list(Employee.objects.filter(reporting_manager=sup_emp).values_list('id', flat=True))
-                    qs = qs.filter(employee_id__in=team_ids)
-                else:
-                    qs = qs.none()
-            elif PermissionService.is_branch_scoped(user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
-                qs = qs.filter(employee__branch_id__in=branch_ids)
-            elif not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'AUDITOR', 'SUPER_ADMIN'} for r in roles) and not self.request.query_params.get('employee'):
-                qs = qs.filter(employee__user=user)
-        return qs.order_by('-date', '-check_in')
+        employees, _ = workforce_scope(self.request, self.request.business)
+        if self.request.query_params.get('own') == 'true':
+            employees = employees.filter(user=self.request.user)
+        return super().get_queryset().filter(employee__in=employees).order_by('-date', '-check_in', 'pk')
+
+    def _selected_employee(self, request):
+        employees, _ = workforce_scope(request, request.business)
+        employee_id = serializers.UUIDField().run_validation(request.data.get('employee_id'))
+        return get_object_or_404(employees, pk=employee_id)
+
+    def get_serializer(self, *args, **kwargs):
+        serializer = super().get_serializer(*args, **kwargs)
+        if not kwargs.get('many') and self.request.method not in permissions.SAFE_METHODS:
+            employees, _ = workforce_scope(self.request, self.request.business)
+            serializer.fields['employee'].queryset = employees
+            serializer.fields['shift'].queryset = serializer.fields['shift'].queryset.filter(business=self.request.business)
+        return serializer
 
     @action(detail=False, methods=['post'], url_path='mark-manual')
     def mark_manual(self, request):
-        employee_id = request.data.get('employee_id')
-        date_val = request.data.get('date', timezone.now().date())
-        att_status = request.data.get('status', AttendanceRecord.Status.PRESENT)
+        business = request.business
+        employee = self._selected_employee(request)
+        date_val = request.data.get('date', timezone.localdate(timezone=business_zone(business)))
+        date_obj = serializers.DateField().run_validation(date_val)
+        att_status = serializers.ChoiceField(choices=AttendanceRecord.Status.choices).run_validation(
+            request.data.get('status', AttendanceRecord.Status.PRESENT)
+        )
+        if employee.deactivated_on and date_obj >= employee.deactivated_on:
+            raise ValidationError('This employee has been deactivated.')
         notes = request.data.get('notes', '')
-
-        business = get_business_context(request)
-        try:
-            if business:
-                employee = Employee.objects.get(id=employee_id, business=business)
-            else:
-                employee = Employee.objects.get(id=employee_id)
-        except Employee.DoesNotExist:
-            return Response({'success': False, 'error': {'message': 'Employee not found.'}}, status=status.HTTP_404_NOT_FOUND)
-
-        if business and not request.user.is_superuser:
-            from apps.accounts.services import PermissionService
-            roles = PermissionService.get_user_roles(request.user, business)
-            if not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN'} for r in roles):
-                return Response(
-                    {'success': False, 'error': {'message': 'Accountants cannot mark attendance for other employees. Attendance is self-service only.'}},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            if PermissionService.is_branch_scoped(request.user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
-                if employee.branch_id not in branch_ids:
-                    return Response(
-                        {'success': False, 'error': {'message': 'You can only mark attendance for employees in your assigned branch.'}},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-
-        if not business:
-            business = employee.business
-
-        if isinstance(date_val, str):
-            try:
-                date_obj = datetime.date.fromisoformat(date_val)
-            except ValueError:
-                date_obj = timezone.now().date()
-        else:
-            date_obj = date_val
-
-        check_in = None
-        check_out = None
-        working_hours = Decimal('0.00')
-
-        if att_status == AttendanceRecord.Status.PRESENT:
-            check_in = timezone.make_aware(datetime.datetime.combine(date_obj, datetime.time(9, 30)))
-            check_out = timezone.make_aware(datetime.datetime.combine(date_obj, datetime.time(18, 30)))
-            working_hours = Decimal('8.50')
-        elif att_status == AttendanceRecord.Status.HALF_DAY:
-            check_in = timezone.make_aware(datetime.datetime.combine(date_obj, datetime.time(9, 30)))
-            working_hours = Decimal('4.00')
 
         record, _ = AttendanceRecord.objects.update_or_create(
             employee=employee,
@@ -161,9 +79,6 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
             defaults={
                 'business': business,
                 'status': att_status,
-                'check_in': check_in,
-                'check_out': check_out,
-                'working_hours': working_hours,
                 'notes': notes,
                 'source': AttendanceRecord.Source.MANUAL,
                 'marked_by': request.user
@@ -174,34 +89,10 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='punch-employee')
     def punch_employee(self, request):
         """Allows HR/Manager to punch in (IN) or punch out (OUT) for any employee."""
-        employee_id = request.data.get('employee_id')
-        punch_action = str(request.data.get('action', 'IN')).upper()
-        business = get_business_context(request)
-
-        try:
-            if business:
-                employee = Employee.objects.get(id=employee_id, business=business)
-            else:
-                employee = Employee.objects.get(id=employee_id)
-        except Employee.DoesNotExist:
-            return Response({'success': False, 'error': {'message': 'Employee not found.'}}, status=status.HTTP_404_NOT_FOUND)
-
-        if business and not request.user.is_superuser:
-            from apps.accounts.services import PermissionService
-            roles = PermissionService.get_user_roles(request.user, business)
-            if not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN'} for r in roles):
-                return Response(
-                    {'success': False, 'error': {'message': 'Accountants cannot punch for other employees. Attendance is self-service only.'}},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            if PermissionService.is_branch_scoped(request.user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
-                if employee.branch_id not in branch_ids:
-                    return Response(
-                        {'success': False, 'error': {'message': 'You can only punch for employees in your assigned branch.'}},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-
+        employee = self._selected_employee(request)
+        punch_action = serializers.ChoiceField(choices=['IN', 'OUT']).run_validation(
+            str(request.data.get('action', 'IN')).upper()
+        )
         if punch_action == 'OUT':
             record = AttendanceService.check_out(
                 employee=employee,
@@ -216,20 +107,27 @@ class AttendanceViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='daily')
     def daily_summary(self, request):
-        business = get_business_context(request)
-        date_str = request.query_params.get('date', str(timezone.now().date()))
-        summary = AttendanceService.get_daily_summary(business, date_str)
+        date_val = serializers.DateField().run_validation(request.query_params.get(
+            'date', timezone.localdate(timezone=business_zone(request.business))
+        ))
+        records = self.get_queryset().filter(date=date_val)
+        summary = {
+            'date': date_val, 'present': records.filter(status='PRESENT').count(),
+            'absent': records.filter(status='ABSENT').count(), 'half_day': records.filter(status='HALF_DAY').count(),
+            'leave': records.filter(status__in=['PAID_LEAVE', 'UNPAID_LEAVE']).count(), 'total_marked': records.count(),
+        }
         return Response({'success': True, 'data': summary})
 
 
 class CheckInView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    required_permissions = ['attendance.mark_own']
 
     def post(self, request):
         serializer = CheckInPunchSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        business = get_business_context(request)
+        business = resolve_business(request)
         employee = get_or_link_employee(request.user, business)
         if not employee:
             return Response(
@@ -250,13 +148,14 @@ class CheckInView(views.APIView):
 
 
 class CheckOutView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    required_permissions = ['attendance.mark_own']
 
     def post(self, request):
         serializer = CheckInPunchSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        business = get_business_context(request)
+        business = resolve_business(request)
         employee = get_or_link_employee(request.user, business)
         if not employee:
             return Response(
@@ -278,20 +177,22 @@ class CheckOutView(views.APIView):
 
 class AttendanceCorrectionViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceCorrectionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {
+        'read': ['attendance.view'], 'create': ['attendance.correct'], 'approve': ['attendance.approve'],
+        'write': ['attendance.approve'],
+    }
 
     def get_queryset(self):
-        business = getattr(self.request, 'business', None) or get_business_context(self.request)
-        qs = AttendanceCorrection.objects.filter(attendance__business=business)
-        user = self.request.user
-        if business and not user.is_superuser:
-            from apps.accounts.services import PermissionService
-            if PermissionService.is_branch_scoped(user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(user, business)
-                qs = qs.filter(attendance__employee__branch_id__in=branch_ids)
-            elif not user.user_roles.filter(role__code__in=['BUSINESS_OWNER', 'HR_MANAGER', 'SUPER_ADMIN']).exists():
-                qs = qs.filter(attendance__employee__user=user)
-        return qs
+        employees, _ = workforce_scope(self.request, self.request.business)
+        return AttendanceCorrection.objects.filter(attendance__business=self.request.business, attendance__employee__in=employees)
+
+    def get_serializer(self, *args, **kwargs):
+        serializer = super().get_serializer(*args, **kwargs)
+        if not kwargs.get('many') and self.request.method not in permissions.SAFE_METHODS:
+            employees, _ = workforce_scope(self.request, self.request.business)
+            serializer.fields['attendance'].queryset = AttendanceRecord.objects.filter(business=self.request.business, employee__in=employees)
+        return serializer
 
     def perform_create(self, serializer):
         serializer.save(requested_by=self.request.user)
@@ -299,23 +200,6 @@ class AttendanceCorrectionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'])
     def approve(self, request, pk=None):
         corr = self.get_object()
-        business = get_business_context(request)
-        if business and not request.user.is_superuser:
-            from apps.accounts.services import PermissionService
-            roles = PermissionService.get_user_roles(request.user, business)
-            if not any(r in {'BUSINESS_OWNER', 'HR_MANAGER', 'BRANCH_MANAGER', 'SUPERVISOR', 'SUPER_ADMIN'} for r in roles):
-                return Response(
-                    {'success': False, 'error': {'message': 'You do not have permission to approve attendance corrections.'}},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            if PermissionService.is_branch_scoped(request.user, business):
-                branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
-                if corr.attendance.employee.branch_id not in branch_ids:
-                    return Response(
-                        {'success': False, 'error': {'message': 'You can only approve regularizations for employees in your branch.'}},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-
         corr.status = AttendanceCorrection.Status.APPROVED
         corr.reviewed_by = request.user
         corr.reviewed_at = timezone.now()
@@ -335,14 +219,16 @@ class AttendanceCorrectionViewSet(viewsets.ModelViewSet):
 
 class HolidayViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = HolidaySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['attendance.view'], 'write': ['attendance.mark']}
     queryset = Holiday.objects.all()
     filterset_fields = ['is_active', 'type']
 
 
 class OvertimeRecordViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     serializer_class = OvertimeRecordSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['attendance.view'], 'write': ['attendance.approve']}
     queryset = OvertimeRecord.objects.all()
     filterset_fields = ['status']
 

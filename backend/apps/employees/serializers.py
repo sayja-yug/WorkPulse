@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 from .models import Employee, EmployeeDocument, EmploymentHistory
+from .services import business_today, completed_tenure
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -10,6 +11,57 @@ class EmployeeSerializer(serializers.ModelSerializer):
     designation_name = serializers.CharField(source='designation.name', read_only=True)
     age = serializers.SerializerMethodField()
     base_salary = serializers.SerializerMethodField()
+    tenure = serializers.SerializerMethodField()
+
+    def get_tenure(self, obj):
+        return completed_tenure(obj.joining_date, obj.deactivated_on or business_today(obj.business))
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        request = self.context['request']
+        business = request.business
+        for field in ('branch', 'department', 'designation', 'reporting_manager'):
+            obj = attrs.get(field)
+            if obj and obj.business_id != business.id:
+                raise serializers.ValidationError({field: 'Choose a record in the selected company.'})
+        from apps.accounts.services import PermissionService
+        if PermissionService.is_branch_scoped(request.user, business):
+            branch_ids = PermissionService.get_accessible_branch_ids(request.user, business)
+            if 'branch' not in attrs and not self.instance and branch_ids:
+                from apps.branches.models import Branch
+                attrs['branch'] = Branch.objects.get(pk=branch_ids[0], business=business)
+            branch = attrs.get('branch', self.instance.branch if self.instance else None)
+            manager = attrs.get('reporting_manager')
+            if not branch or branch.pk not in branch_ids or (manager and manager.branch_id not in branch_ids):
+                raise serializers.ValidationError({'branch': 'Choose an assigned branch.'})
+        return attrs
+
+    onboarding_progress = serializers.SerializerMethodField()
+    bank_fields = ('bank_name', 'bank_account_number', 'bank_ifsc_code')
+
+    def get_onboarding_progress(self, employee):
+        return {
+            'phone': bool(employee.phone.strip()),
+            'aadhaar': bool(employee.aadhaar_number.strip()),
+            'bank': all(getattr(employee, key).strip() for key in self.bank_fields),
+            'other': False,
+        }
+
+    def get_fields(self):
+        from apps.accounts.services import PermissionService
+        fields = super().get_fields()
+        request = self.context.get('request')
+        business = getattr(request, 'business', None)
+        if not business or not PermissionService.has_permissions(request.user, business, ['employee.view_bank']):
+            for key in self.bank_fields:
+                fields.pop(key, None)
+        return fields
+
+    def to_internal_value(self, data):
+        from rest_framework.exceptions import PermissionDenied
+        if any(key in data and key not in self.fields for key in self.bank_fields):
+            raise PermissionDenied('Bank details require permission to access employee banking information.')
+        return super().to_internal_value(data)
 
     def get_base_salary(self, obj):
         struct = obj.salary_structures.filter(is_current=True).first()
@@ -82,11 +134,12 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'reporting_manager', 'date_of_birth', 'age', 'gender', 'blood_group',
             'emergency_contact_name', 'emergency_contact_phone', 'address',
             'city', 'state', 'country', 'zip_code', 'bank_name',
-            'bank_account_number', 'bank_ifsc_code', 'pan_number',
+            'bank_account_number', 'bank_ifsc_code', 'pan_number', 'onboarding_progress',
             'aadhaar_number', 'is_field_employee', 'status', 'created_at', 'updated_at',
-            'is_branch_manager', 'managed_branch_id', 'managed_branch_name'
+            'is_branch_manager', 'managed_branch_id', 'managed_branch_name',
+            'deactivated_on', 'deactivated_by_name', 'tenure',
         ]
-        read_only_fields = ['id', 'business', 'age', 'base_salary', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'business', 'user', 'age', 'base_salary', 'created_at', 'updated_at']
         extra_kwargs = {
             'employee_code': {'required': False, 'allow_blank': True},
         }
@@ -169,7 +222,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
         return rec.check_in if rec else None
 
     def get_duty_status(self, obj):
-        if obj.status in ('TERMINATED', 'RESIGNED', 'ABSCONDING'):
+        if obj.status in ('INACTIVE', 'TERMINATED', 'RESIGNED', 'ABSCONDING'):
             return obj.status
         unpunched = self.get_unpunched_days(obj)
         if unpunched >= 3:
@@ -209,7 +262,8 @@ class EmployeeListSerializer(serializers.ModelSerializer):
             'status', 'duty_status', 'is_punched_in', 'check_in_time',
             'last_punch_date', 'unpunched_days', 'date_of_birth', 'age',
             'joining_date', 'emergency_contact_name', 'emergency_contact_phone',
-            'address', 'city', 'is_branch_manager', 'managed_branch_id', 'managed_branch_name'
+            'address', 'city', 'is_branch_manager', 'managed_branch_id', 'managed_branch_name',
+            'deactivated_on', 'deactivated_by_name',
         ]
 
 

@@ -117,18 +117,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const selectBusiness = async (businessId) => {
+    const found = businesses.find((item) => item.id === businessId);
+    if (!found) throw new Error('Company is unavailable.');
+    const res = await api.post('/auth/me/switch-business/', { business_id: businessId });
     localStorage.setItem('active_business_id', businessId);
     sessionStorage.setItem('business_confirmed', 'true');
     setNeedsBusinessSelection(false);
-    try {
-      const res = await api.post('/auth/me/switch-business/', { business_id: businessId });
-      setRoles(res.data?.data?.roles || []);
-      setPermissions(res.data?.data?.permissions || []);
-    } catch (err) {
-      console.error('Select business failed', err);
-    }
-    const found = businesses.find((b) => b.id === businessId);
-    if (found) setBusiness(found);
+    setRoles(res.data.data.roles || []);
+    setPermissions(res.data.data.permissions || []);
+    setAssignedBranch(null);
+    setBusiness(found);
   };
 
   const switchBusiness = async (businessId) => {
@@ -147,11 +145,10 @@ export const AuthProvider = ({ children }) => {
     return created;
   };
 
-  const activeRole = roles.length > 0 ? roles[0] : (user?.role || (user?.is_superuser ? 'SUPER_ADMIN' : 'EMPLOYEE'));
+  const activeRole = roles.length > 0 ? roles[0] : (user?.is_superuser ? 'SUPER_ADMIN' : 'EMPLOYEE');
 
   const hasPermission = (perm) => {
     if (user?.is_superuser) return true;
-    if (roles.includes('BUSINESS_OWNER') || roles.includes('SUPER_ADMIN')) return true;
     if (Array.isArray(perm)) {
       return perm.some((p) => permissions.includes(p));
     }
@@ -160,7 +157,7 @@ export const AuthProvider = ({ children }) => {
 
   const hasRole = (role) => {
     if (user?.is_superuser) return true;
-    const currentRoles = roles.length > 0 ? roles : (user?.role ? [user.role] : []);
+    const currentRoles = roles;
     if (Array.isArray(role)) {
       return role.some((r) => currentRoles.includes(r));
     }

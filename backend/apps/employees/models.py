@@ -29,6 +29,7 @@ class Employee(TenantModel):
         OTHER = 'OTHER', 'Other'
         PREFER_NOT_TO_SAY = 'PREFER_NOT_TO_SAY', 'Prefer Not to Say'
 
+    business = models.ForeignKey('businesses.Business', on_delete=models.PROTECT, related_name='employees')
     user = models.ForeignKey(
         'accounts.User',
         on_delete=models.SET_NULL,
@@ -106,6 +107,8 @@ class Employee(TenantModel):
     aadhaar_number = models.CharField(max_length=20, blank=True, default='')
 
     is_field_employee = models.BooleanField(default=False)
+    deactivated_on = models.DateField(null=True, blank=True, editable=False)
+    deactivated_by_name = models.CharField(max_length=301, blank=True, default='', editable=False)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,

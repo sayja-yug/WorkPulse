@@ -37,11 +37,7 @@ export const Shifts = () => {
   const { toast, confirm } = useNotification();
 
   // Role permissions
-  const canManageShifts =
-    activeRole === 'BUSINESS_OWNER' ||
-    activeRole === 'HR_MANAGER' ||
-    activeRole === 'SUPER_ADMIN' ||
-    hasPermission('MANAGE_SHIFTS');
+  const canManageShifts = hasPermission('shift.create');
 
   // State
   const [shifts, setShifts] = useState([]);

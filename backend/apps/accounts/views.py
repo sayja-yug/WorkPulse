@@ -3,14 +3,16 @@ import logging
 from datetime import timedelta
 
 from django.contrib.auth import update_session_auth_hash
+from django.db import models, transaction
 from django.utils import timezone
-from rest_framework import generics, permissions, status, views
+from rest_framework import generics, permissions, serializers, status, views
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from common.permissions import HasPermission, IsBusinessMember, IsSuperAdmin
+from common.permissions import HasPermission, IsBusinessMember, IsBusinessOwner, resolve_business
 
 from .models import Invitation, Permission, Role, User, UserRole
 from .serializers import (
@@ -178,14 +180,6 @@ class ProfileView(views.APIView):
 class VerifyAccountView(views.APIView):
     """Verify the authenticated user's email/phone during onboarding."""
 
-    def post(self, request):
-        user = request.user
-        user.email_verified = True
-        if user.phone:
-            user.phone_verified = True
-        user.save(update_fields=['email_verified', 'phone_verified'])
-        return Response({'success': True, 'data': UserSerializer(user).data})
-
     def patch(self, request):
         serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -284,7 +278,8 @@ class SwitchBusinessView(views.APIView):
 class RoleListView(generics.ListAPIView):
     """List roles available in the business."""
     serializer_class = RoleListSerializer
-    permission_classes = [permissions.IsAuthenticated, IsBusinessMember]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    required_permissions = ['role.view']
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None)
@@ -299,36 +294,86 @@ class RoleListView(generics.ListAPIView):
 class RoleDetailView(generics.RetrieveAPIView):
     """Get role details with permissions."""
     serializer_class = RoleSerializer
-    permission_classes = [permissions.IsAuthenticated, IsBusinessMember]
-    queryset = Role.objects.filter(is_active=True)
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    required_permissions = ['role.view']
+
+    def get_queryset(self):
+        return Role.objects.filter(models.Q(is_system=True) | models.Q(business=self.request.business), is_active=True)
 
 
 class RoleCreateView(generics.CreateAPIView):
     """Create a custom role for the business."""
     serializer_class = RoleSerializer
-    permission_classes = [permissions.IsAuthenticated, HasPermission]
     required_permissions = ['role.create']
+    permission_classes = [permissions.IsAuthenticated, HasPermission, IsBusinessOwner]
 
+    @transaction.atomic
     def perform_create(self, serializer):
-        business = getattr(self.request, 'business', None)
-        role = serializer.save(business=business, is_system=False)
+        business = self.request.business
+        codes = {code for code, _ in Role.RoleCode.choices}
+        code = serializer.validated_data['code'].upper()
+        if code in codes or Role.objects.filter(business=business, code__iexact=code).exists():
+            raise serializers.ValidationError({'code': 'Choose a distinct custom role code.'})
+        requested = set(serializer.validated_data.pop('permission_ids', []))
+        allowed = PermissionService.tenant_permissions().filter(
+            code__in=PermissionService.get_user_permissions(self.request.user, business), id__in=requested
+        )
+        if allowed.count() != len(requested):
+            raise PermissionDenied('Only permissions held in this company can be delegated.')
+        role = serializer.save(business=business, is_system=False, code=code)
+        role.permissions.set(allowed)
 
-        # Assign permissions
-        permission_ids = serializer.validated_data.get('permission_ids', [])
-        if permission_ids:
-            # Validate delegation — user cannot assign permissions they don't have
-            user_perms = PermissionService.get_user_permissions(self.request.user, business)
-            requested_perms = Permission.objects.filter(id__in=permission_ids)
-            for perm in requested_perms:
-                if perm.code not in user_perms and not self.request.user.is_superuser:
-                    raise serializers.ValidationError(
-                        f'Cannot assign permission "{perm.code}" — you do not have it.'
-                    )
-            from .models import RolePermission
-            RolePermission.objects.bulk_create([
-                RolePermission(role=role, permission=perm)
-                for perm in requested_perms
-            ])
+
+def validate_assignment(user, business, role, branch_id):
+    from apps.branches.models import Branch
+    if not PermissionService.can_delegate_role(user, business, role):
+        raise PermissionDenied('This role exceeds your delegation permissions.')
+    if branch_id and not Branch.objects.filter(business=business, id=branch_id, is_active=True).exists():
+        raise serializers.ValidationError({'branch_id': 'Choose a branch in this company.'})
+    if not user.is_superuser and PermissionService.get_user_scope(user, business) != 'BUSINESS':
+        if not branch_id or branch_id not in PermissionService.get_accessible_branch_ids(user, business):
+            raise PermissionDenied('Choose an assigned branch.')
+        if role.is_system and role.code not in ['BRANCH_MANAGER', 'EMPLOYEE', 'FIELD_EMPLOYEE']:
+            raise PermissionDenied('Choose a role scoped to this branch.')
+
+
+class MemberGrantsView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated, HasPermission, IsBusinessOwner]
+    required_permissions = ['role.assign']
+
+    def members(self, request):
+        from apps.businesses.models import BusinessMembership
+        return BusinessMembership.objects.filter(
+            business=request.business, is_active=True, is_owner=False,
+            user__is_superuser=False,
+        ).exclude(user=request.user).exclude(user__user_roles__role__code__in=[
+            'SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN', 'BUSINESS_OWNER',
+        ]).select_related('user').order_by('user__first_name', 'user__email').distinct()
+
+    def get(self, request):
+        allowed = PermissionService.get_user_permissions(request.user, request.business)
+        return Response({'data': [{
+            'id': str(member.user_id), 'name': member.user.full_name or member.user.email,
+            'email': member.user.email,
+            'permissions': sorted(PermissionService.get_user_permissions(member.user, request.business) & allowed),
+        } for member in self.members(request)]})
+
+    @transaction.atomic
+    def patch(self, request):
+        from django.shortcuts import get_object_or_404
+        member = get_object_or_404(self.members(request).select_for_update(), user_id=request.data.get('user_id'))
+        codes = request.data.get('permissions')
+        if not isinstance(codes, list) or not all(isinstance(code, str) for code in codes):
+            raise serializers.ValidationError({'permissions': 'Provide a list of permission codes.'})
+        allowed = set(PermissionService.tenant_permissions().filter(
+            code__in=PermissionService.get_user_permissions(request.user, request.business)
+        ).values_list('code', flat=True))
+        if not set(codes) <= allowed:
+            raise PermissionDenied('Only permissions held in this company can be delegated.')
+        existing = PermissionService.get_user_permissions(member.user, request.business)
+        member.granted_permissions = sorted((existing - allowed) | set(codes))
+        member.save(update_fields=['granted_permissions', 'updated_at'])
+        return Response({'data': {'permissions': sorted(set(codes))}})
 
 
 class UserRoleAssignView(views.APIView):
@@ -365,6 +410,8 @@ class UserRoleAssignView(views.APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        validate_assignment(request.user, business, role, branch_id)
+
         # Validate user is a member of the business
         from apps.businesses.models import BusinessMembership
         if not BusinessMembership.objects.filter(user_id=user_id, business=business, is_active=True).exists():
@@ -396,8 +443,13 @@ class UserRoleAssignView(views.APIView):
 class PermissionListView(generics.ListAPIView):
     """List all available permissions."""
     serializer_class = PermissionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = Permission.objects.all()
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    required_permissions = ['role.view']
+
+    def get_queryset(self):
+        return PermissionService.tenant_permissions().filter(
+            code__in=PermissionService.get_user_permissions(self.request.user, self.request.business)
+        )
     filterset_fields = ['module']
     search_fields = ['name', 'code']
 
@@ -406,7 +458,7 @@ class UserPermissionsView(views.APIView):
     """Get the current user's permissions for the active business."""
 
     def get(self, request):
-        business = getattr(request, 'business', None)
+        business = resolve_business(request)
         if not business:
             return Response({'success': True, 'data': {'roles': [], 'permissions': []}})
 
@@ -445,7 +497,7 @@ class UserPermissionsView(views.APIView):
 class InvitationCreateView(views.APIView):
     """Create and send a business invitation."""
     permission_classes = [permissions.IsAuthenticated, HasPermission]
-    required_permissions = ['employee.create']
+    required_permissions = ['employee.create', 'role.assign']
 
     def post(self, request):
         serializer = InvitationCreateSerializer(data=request.data)
@@ -482,6 +534,11 @@ class InvitationCreateView(views.APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        validate_assignment(request.user, business, role, serializer.validated_data.get('branch_id'))
+        department_id = serializer.validated_data.get('department_id')
+        if department_id and not business.departments.filter(id=department_id).exists():
+            raise serializers.ValidationError({'department_id': 'Choose a department in this company.'})
+
         token = AuthService.generate_invitation_token()
         invitation = Invitation.objects.create(
             business=business,
@@ -509,7 +566,8 @@ class InvitationCreateView(views.APIView):
 class InvitationListView(generics.ListAPIView):
     """List invitations for the current business."""
     serializer_class = InvitationSerializer
-    permission_classes = [permissions.IsAuthenticated, IsBusinessMember]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    required_permissions = ['role.assign']
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None)
@@ -525,6 +583,7 @@ class InvitationAcceptView(views.APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
+    @transaction.atomic
     def post(self, request):
         serializer = InvitationAcceptSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -532,7 +591,7 @@ class InvitationAcceptView(views.APIView):
         token = serializer.validated_data['token']
 
         try:
-            invitation = Invitation.objects.select_related('business', 'role').get(
+            invitation = Invitation.objects.select_for_update().select_related('business', 'role').get(
                 token=token,
                 status=Invitation.Status.PENDING,
             )
@@ -550,6 +609,12 @@ class InvitationAcceptView(views.APIView):
                 status=status.HTTP_410_GONE,
             )
 
+        if not invitation.invited_by or not PermissionService.has_permissions(
+            invitation.invited_by, invitation.business, ['role.assign', 'employee.create']
+        ):
+            raise PermissionDenied('The inviter no longer has permission to assign this role.')
+        validate_assignment(invitation.invited_by, invitation.business, invitation.role, invitation.branch_id)
+
         # Create or get user
         user, created = User.objects.get_or_create(
             email=invitation.email,
@@ -557,10 +622,11 @@ class InvitationAcceptView(views.APIView):
                 'first_name': serializer.validated_data.get('first_name', invitation.first_name),
                 'last_name': serializer.validated_data.get('last_name', invitation.last_name),
                 'phone': invitation.phone,
-                'email_verified': True,
             },
         )
 
+        if not created and not user.check_password(serializer.validated_data['password']):
+            raise PermissionDenied('Use your existing account password to accept the invitation.')
         if created:
             user.set_password(serializer.validated_data['password'])
             user.save()
@@ -610,8 +676,3 @@ class InvitationAcceptView(views.APIView):
             },
             status=status.HTTP_200_OK,
         )
-
-
-# Need to import models for Q usage in RoleListView
-from django.db import models  # noqa: E402
-

@@ -1,3 +1,15 @@
+// Shared scales also theme existing screens that use the original utility names.
+const neutral = {
+  50: '#f8f7f2', 100: '#f0f1e9', 200: '#e1e5da', 300: '#cbd4c6',
+  400: '#9fae9e', 500: '#637568', 600: '#506457', 700: '#3c5345',
+  800: '#304d3e', 900: '#234535', 950: '#163b2c',
+};
+const sage = {
+  50: '#f1f6ef', 100: '#e2eddf', 200: '#cbdcc8', 300: '#adc6a9',
+  400: '#83a987', 500: '#648d6d', 600: '#467553', 700: '#345f43',
+  800: '#294f37', 900: '#21422f', 950: '#153222',
+};
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
@@ -16,80 +28,17 @@ export default {
     },
     extend: {
       colors: {
-        // Pure extremes
-        black: '#000000',
-        white: '#ffffff',
-
-        // Strict monochrome token scale
-        mono: {
-          50: '#fafafa',
-          100: '#f5f5f5',
-          200: '#e5e5e5',
-          300: '#d4d4d8',
-          400: '#a3a3a3',
-          500: '#737373',
-          600: '#525252',
-          700: '#404040',
-          800: '#262626',
-          900: '#171717',
-          950: '#0a0a0a',
-        },
-
-        // Map brand and legacy color utilities to unified monochrome
-        brand: {
-          50: '#fafafa',
-          100: '#f5f5f5',
-          200: '#e5e5e5',
-          300: '#d4d4d8',
-          400: '#a3a3a3',
-          500: '#737373',
-          600: '#171717',
-          700: '#0a0a0a',
-          800: '#0a0a0a',
-          900: '#000000',
-          950: '#000000',
-        },
-        indigo: {
-          50: '#fafafa',
-          100: '#f5f5f5',
-          200: '#e5e5e5',
-          300: '#d4d4d8',
-          400: '#a3a3a3',
-          500: '#737373',
-          600: '#171717',
-          700: '#0a0a0a',
-          800: '#0a0a0a',
-          900: '#000000',
-          950: '#000000',
-        },
-        purple: {
-          50: '#fafafa',
-          100: '#f5f5f5',
-          200: '#e5e5e5',
-          300: '#d4d4d8',
-          400: '#a3a3a3',
-          500: '#737373',
-          600: '#171717',
-          700: '#0a0a0a',
-          800: '#0a0a0a',
-          900: '#000000',
-          950: '#000000',
-        },
-        violet: {
-          50: '#fafafa',
-          100: '#f5f5f5',
-          200: '#e5e5e5',
-          300: '#d4d4d8',
-          400: '#a3a3a3',
-          500: '#737373',
-          600: '#171717',
-          700: '#0a0a0a',
-          800: '#0a0a0a',
-          900: '#000000',
-          950: '#000000',
-        },
+        mono: neutral,
+        zinc: neutral,
+        slate: neutral,
+        gray: neutral,
+        brand: sage,
+        indigo: sage,
+        violet: sage,
+        purple: sage,
       },
       fontFamily: {
+        serif: ['Georgia', 'Cambria', 'serif'],
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       fontSize: {

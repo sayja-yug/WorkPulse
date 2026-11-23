@@ -8,6 +8,9 @@ class EmployeeAdmin(admin.ModelAdmin):
     search_fields = ['employee_code', 'first_name', 'last_name', 'email']
     list_filter = ['status', 'employment_type', 'salary_type', 'is_field_employee']
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 
 @admin.register(EmployeeDocument)
 class EmployeeDocumentAdmin(admin.ModelAdmin):

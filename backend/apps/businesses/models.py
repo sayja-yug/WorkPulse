@@ -57,6 +57,7 @@ class BusinessMembership(BaseModel):
         related_name='memberships'
     )
     is_owner = models.BooleanField(default=False)
+    granted_permissions = models.JSONField(null=True, blank=True, default=None)
     is_active = models.BooleanField(default=True)
     joined_at = models.DateTimeField(auto_now_add=True)
 

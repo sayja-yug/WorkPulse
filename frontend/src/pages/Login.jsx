@@ -165,15 +165,6 @@ export const Login = () => {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
 
-  // Verification state
-  const [otpCode, setOtpCode] = useState('123456');
-
-  // Business Setup state (Owner registration only)
-  const [companyName, setCompanyName] = useState('');
-  const [companyCity, setCompanyCity] = useState('');
-  const [companyCurrency, setCompanyCurrency] = useState('INR');
-  const [createdBusinessName, setCreatedBusinessName] = useState('');
-
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -197,28 +188,7 @@ export const Login = () => {
     fetchCompanies();
   }, []);
 
-  // Auto-detect company when user enters email
-  const handleEmailBlur = async () => {
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) return;
 
-    if (cleanEmail === 'superadmin@workpulse.com' || cleanEmail.includes('workpulse.com')) {
-      setSelectedCompanyId('PLATFORM_ADMIN');
-      setAutoDetectedCompany({ name: 'WorkPulse Platform Governance (Super Admin)' });
-      return;
-    }
-
-    try {
-      const res = await api.post('/businesses/lookup-by-email/', { email: cleanEmail });
-      const detected = res.data?.data;
-      if (detected && detected.id) {
-        setSelectedCompanyId(detected.id);
-        setAutoDetectedCompany(detected);
-      }
-    } catch {
-      // Ignore background lookup errors
-    }
-  };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -273,11 +243,12 @@ export const Login = () => {
       await api.post('/auth/register/', {
         email: email.trim().toLowerCase(),
         password,
+        password_confirm: passwordConfirm,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         phone: phone.trim(),
       });
-      setRegStep('verify');
+      setRegStep('done');
     } catch (err) {
       const serverErr =
         err.response?.data?.error?.message ||
@@ -288,63 +259,6 @@ export const Login = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleVerifyContinue = (e) => {
-    e.preventDefault();
-    if (otpCode !== '123456') {
-      setError('Invalid OTP code. For demo/sandbox use: 123456');
-      return;
-    }
-    setError('');
-    setRegStep('business');
-  };
-
-  const handleCreateBusiness = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (!companyName.trim()) {
-      setError('Company name is required.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const registerRes = await api.post('/auth/register/owner/', {
-        email: email.trim().toLowerCase(),
-        password,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        phone: phone.trim(),
-        company_name: companyName.trim(),
-        city: companyCity.trim(),
-        currency: companyCurrency,
-      });
-
-      const registeredBiz = registerRes.data?.data?.business || { name: companyName };
-      setCreatedBusinessName(registeredBiz.name);
-
-      await login({
-        email: email.trim().toLowerCase(),
-        password,
-        business_id: registeredBiz.id,
-      });
-
-      setRegStep('done');
-    } catch (err) {
-      const serverErr =
-        err.response?.data?.error?.message ||
-        err.response?.data?.detail ||
-        'Failed to set up company organization. Please try again.';
-      setError(serverErr);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoToDashboard = () => {
-    navigate('/');
   };
 
   const handleQuickFill = (acc) => {
@@ -470,7 +384,7 @@ export const Login = () => {
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
-              <span>Register as Owner</span>
+              <span>Create account</span>
             </button>
           </div>
 
@@ -554,7 +468,6 @@ export const Login = () => {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      onBlur={handleEmailBlur}
                       placeholder="e.g. employee@trinetra.com"
                       className="w-full pl-9 pr-3 py-2 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
                     />
@@ -710,33 +623,14 @@ export const Login = () => {
             /* Owner Registration Step 1 */
             <>
               <div className="mb-4">
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-100 text-zinc-800 border border-zinc-200 rounded text-[10px] font-bold uppercase tracking-wider mb-2">
-                  <Briefcase className="w-3 h-3" />
-                  <span>Business Owners &amp; Employers Only</span>
-                </div>
-                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">Register Your Business</h2>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Create your administrator account and setup your company workspace.
-                </p>
-              </div>
-
-              {/* Notice for Employees */}
-              <div className="p-3 bg-zinc-100 border border-zinc-200 rounded-lg text-[11px] text-zinc-700 mb-3 leading-relaxed">
-                <strong>Notice for Employees:</strong> Employees do not need to register here. Your account is provisioned by your company HR/Owner. Switch to the{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsRegistering(false)}
-                  className="font-bold underline text-zinc-950 cursor-pointer"
-                >
-                  Sign In
-                </button>{' '}
-                tab to access your company portal.
+                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">Create your account</h2>
+                <p className="mt-1 text-xs text-zinc-600">Your company owner can invite this account to a workspace.</p>
               </div>
 
               <form onSubmit={handleCreateAccount} className="space-y-2.5">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">Owner First Name *</label>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">First Name *</label>
                     <input
                       type="text"
                       required
@@ -814,101 +708,7 @@ export const Login = () => {
                   disabled={isLoading}
                   className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
-                  <span>{isLoading ? 'Creating Owner Account...' : 'Continue to Verification'}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            </>
-          ) : regStep === 'verify' ? (
-            /* Owner Registration Step 2 - Verification */
-            <>
-              <div className="mb-4">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase">Step 2 of 3 — Verification</span>
-                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">Verify Owner Credentials</h2>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Confirm verification for <strong>{email}</strong> ({phone})
-                </p>
-              </div>
-              <form onSubmit={handleVerifyContinue} className="space-y-4">
-                <div className="p-3 bg-zinc-100 border border-zinc-200 rounded-lg text-xs text-zinc-800 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-zinc-900 shrink-0" />
-                  <span>Sandbox verification OTP: <strong className="font-mono">123456</strong></span>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-zinc-800 mb-1">Verification Code (OTP)</label>
-                  <input
-                    type="text"
-                    required
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    placeholder="Enter 6-digit code"
-                    className="w-full px-3 py-2 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-sm font-mono tracking-widest focus:ring-1 focus:ring-zinc-950 outline-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-                >
-                  <span>{isLoading ? 'Verifying...' : 'Set Up Business Organization'}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            </>
-          ) : regStep === 'business' ? (
-            /* Owner Registration Step 3 - Business Details */
-            <>
-              <div className="mb-4">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase">Step 3 of 3 — Company Setup</span>
-                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">Set Up Your Company</h2>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Enter your company organization details to launch your workspace.
-                </p>
-              </div>
-              <form onSubmit={handleCreateBusiness} className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-800 mb-1">Registered Business Name *</label>
-                  <div className="relative">
-                    <Building className="w-4 h-4 text-zinc-400 absolute left-3 top-2 pointer-events-none" />
-                    <input
-                      type="text"
-                      required
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="e.g. Acme Corp Technologies Ltd"
-                      className="w-full pl-9 pr-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-bold text-zinc-800 mb-1">Headquarters City</label>
-                    <input
-                      type="text"
-                      value={companyCity}
-                      onChange={(e) => setCompanyCity(e.target.value)}
-                      placeholder="e.g. Mumbai"
-                      className="w-full px-3 py-1.5 border border-zinc-300 bg-white text-zinc-900 rounded-lg text-base sm:text-xs focus:ring-1 focus:ring-zinc-950 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-zinc-800 mb-1">Operating Currency</label>
-                    <select
-                      value={companyCurrency}
-                      onChange={(e) => setCompanyCurrency(e.target.value)}
-                      className="w-full px-3 py-1.5 border border-zinc-300 rounded-lg text-base sm:text-xs bg-white text-zinc-900 focus:ring-1 focus:ring-zinc-950 outline-none"
-                    >
-                      <option value="INR">INR (₹)</option>
-                      <option value="USD">USD ($)</option>
-                    </select>
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full mt-2 py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-                >
-                  <span>{isLoading ? 'Creating Business...' : 'Launch Business Workspace'}</span>
+                  <span>{isLoading ? 'Creating account...' : 'Create account'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
@@ -920,17 +720,17 @@ export const Login = () => {
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-zinc-950">Organization Created!</h2>
+                <h2 className="text-xl font-bold text-zinc-950">Account created</h2>
                 <p className="text-xs text-zinc-500 mt-1">
-                  <strong>{createdBusinessName}</strong> is ready. You are provisioned as Business Owner with full platform access.
+                  Contact your company owner for workspace access.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={handleGoToDashboard}
+                onClick={() => { setIsRegistering(false); setRegStep('account'); }}
                 className="w-full py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Go to Dashboard</span>
+                <span>Sign in</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

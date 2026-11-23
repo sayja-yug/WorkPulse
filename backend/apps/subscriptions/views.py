@@ -1,3 +1,4 @@
+from common.permissions import HasPermission
 from decimal import Decimal
 from django.utils import timezone
 from rest_framework import viewsets, permissions, views, status
@@ -13,7 +14,8 @@ class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class CurrentSubscriptionView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['subscription.view'], 'write': ['subscription.view']}
 
     def get(self, request):
         business = getattr(request, 'business', None)
@@ -51,7 +53,8 @@ class CurrentSubscriptionView(views.APIView):
 
 class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = InvoiceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    permission_map = {'read': ['subscription.view'], 'write': ['subscription.view']}
 
     def get_queryset(self):
         business = getattr(self.request, 'business', None)
@@ -100,7 +103,7 @@ class PlatformSubscriptionOverview(views.APIView):
 
     def get(self, request):
         user = request.user
-        if not (user.is_superuser or user.is_staff or user.user_roles.filter(role__code__in=['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN']).exists()):
+        if not (user.is_superuser or user.user_roles.filter(role__is_system=True, role__is_active=True, role__code__in=['SUPER_ADMIN', 'SUPPORT_ADMIN', 'BILLING_ADMIN']).exists()):
             return Response({'success': False, 'error': {'message': 'Restricted to Platform Administrators.'}}, status=status.HTTP_403_FORBIDDEN)
 
         from apps.businesses.models import Business

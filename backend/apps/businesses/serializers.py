@@ -19,7 +19,7 @@ class BusinessSerializer(serializers.ModelSerializer):
             'subscription', 'total_employees', 'active_employees',
             'owner_name', 'owner_email'
         ]
-        read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'slug', 'is_active', 'created_at', 'updated_at']
 
     def get_subscription(self, obj):
         sub = getattr(obj, 'subscription', None)

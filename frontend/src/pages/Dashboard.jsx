@@ -6,6 +6,7 @@ import {
   UserPlus, Users, Wallet, LogIn, LogOut,
 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { EmployeeOverview } from '../components/dashboard/EmployeeOverview';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -104,7 +105,8 @@ function SelfPunch({ businessId }) {
 }
 
 function DashboardContent() {
-  const { user, business, hasPermission } = useAuth();
+  const { user, business, hasPermission, activeRole } = useAuth();
+  const personal = ['EMPLOYEE', 'FIELD_EMPLOYEE'].includes(activeRole);
   const { toast } = useNotification();
   const [branch, setBranch] = useState('');
   const [branches, setBranches] = useState([]);
@@ -185,9 +187,9 @@ function DashboardContent() {
         <p className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-2"><CalendarDays size={14} />
           {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         <h1 className="text-3xl sm:text-[2.5rem] text-zinc-950 leading-tight">{greeting}, {user?.first_name || user?.full_name || 'there'}!</h1>
-        <p className="mt-2 text-sm text-zinc-600">Here’s your overview for {business?.name || 'your company'}.</p>
+        <p className="mt-2 text-sm text-zinc-600">{personal ? business?.name : `Here’s your overview for ${business?.name || 'your company'}.`}</p>
       </div>
-      {hasPermission('attendance.mark_own') && !canReport && <SelfPunch businessId={business?.id} />}
+      {!personal && hasPermission('attendance.mark_own') && !canReport && <SelfPunch businessId={business?.id} />}
       {(canReport || canBank) && <label className="relative z-[1] inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-zinc-700 shadow-xs">
         <Building2 size={15} /><select aria-label="Dashboard branch" value={branch}
           onChange={e => { setBranch(e.target.value); setPage(1); setGroup(''); }}
@@ -197,6 +199,7 @@ function DashboardContent() {
       </label>}
     </section>
 
+    {personal && <EmployeeOverview />}
     {canReport && <>
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
         {metrics.map(({ key, label, detail, icon: Icon, color }) => <button key={key} disabled={!current} onClick={() => setGroup(key)}
